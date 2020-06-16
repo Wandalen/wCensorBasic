@@ -1,7 +1,7 @@
 
 # module::CensorBasic - Experimental [![Status](https://github.com/Wandalen/wCensorBasic/workflows/Test/badge.svg)](https://github.com/Wandalen/wCensorBasic/actions?query=workflow%3ATest)
 
-___
+Tool to edit files massively and with undo
 
 ## Try out
 ```
@@ -13,4 +13,3 @@ node sample/Sample.s
 ```
 npm add 'wcensorbasic@alpha'
 ```
-
