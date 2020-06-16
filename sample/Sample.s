@@ -3,5 +3,4 @@ let _ = require( 'wcensorbasic' );
 
 /**/
 
-___
-
+_.censor.replace( __filename, '/**/', '/**//**/' );
