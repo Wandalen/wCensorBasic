@@ -3,17 +3,17 @@ root:
   - wCensorBasic.out
 consistency:
   ../.ex.will.yml: &ref_0
-    hash: 05e970ca4023b6e8eacac77e39ddeff7
-    size: 1685
+    hash: 1f46e4d63e1d42a2bb5666944dfb8b11
+    size: 1723
   ../.im.will.yml: &ref_1
-    hash: 4bd2ad8e081461ac0a9600e6aa2abea9
-    size: 4662
+    hash: dd948189af392e0218384429e6259f8f
+    size: 4723
 module:
   wCensorBasic.out:
     about:
       name: wCensorBasic
       org: noorg
-      description: ___
+      description: Tool to edit files massively and with undo
       enabled: 1
       version: 0.3.0
       interpreters: &ref_2
@@ -106,7 +106,7 @@ module:
       entry.proto.no.tests:
         criterion:
           tests: no.tests
-        path: ../proto/dwtools/___
+        path: ../proto/dwtools/amid/l5/censor/entry/CensorBasic.s
       entry.proto.only.tests:
         criterion:
           tests: only.tests
@@ -116,13 +116,13 @@ module:
           debug: debug
           raw: raw
           content: prime
-        path: '{path::out.*=1}/source/dwtools/___'
+        path: '{path::out.*=1}/source/dwtools/amid/l5/censor/entry/CensorBasic.s'
       entry.out.raw.debug.release:
         criterion:
           debug: release
           raw: raw
           content: prime
-        path: '{path::out.*=1}/source/dwtools/___'
+        path: '{path::out.*=1}/source/dwtools/amid/l5/censor/entry/CensorBasic.s'
       entry.out.compiled.debug.debug:
         criterion:
           debug: debug
@@ -153,6 +153,15 @@ module:
           - ../proto/dwtools/Tools.s
           - ../proto/dwtools/abase
           - ../proto/dwtools/amid
+          - ../proto/dwtools/amid/l5
+          - ../proto/dwtools/amid/l5/censor
+          - ../proto/dwtools/amid/l5/censor/entry
+          - ../proto/dwtools/amid/l5/censor/entry/CensorBasic.s
+          - ../proto/dwtools/amid/l5/censor/include
+          - ../proto/dwtools/amid/l5/censor/include/Basic.s
+          - ../proto/dwtools/amid/l5/censor/include/Mid.s
+          - ../proto/dwtools/amid/l5/censor/l1
+          - ../proto/dwtools/amid/l5/censor/l1/Namespace.s
           - ../proto/dwtools/atop
     submodule:
       wTools:
@@ -766,7 +775,7 @@ module:
     about:
       name: wCensorBasic
       org: noorg
-      description: ___
+      description: Tool to edit files massively and with undo
       enabled: 1
       version: 0.3.0
       interpreters: *ref_2
@@ -851,7 +860,7 @@ module:
       entry.proto.no.tests:
         criterion:
           tests: no.tests
-        path: proto/dwtools/___
+        path: proto/dwtools/amid/l5/censor/entry/CensorBasic.s
       entry.proto.only.tests:
         criterion:
           tests: only.tests
@@ -861,13 +870,13 @@ module:
           debug: debug
           raw: raw
           content: prime
-        path: '{path::out.*=1}/source/dwtools/___'
+        path: '{path::out.*=1}/source/dwtools/amid/l5/censor/entry/CensorBasic.s'
       entry.out.raw.debug.release:
         criterion:
           debug: release
           raw: raw
           content: prime
-        path: '{path::out.*=1}/source/dwtools/___'
+        path: '{path::out.*=1}/source/dwtools/amid/l5/censor/entry/CensorBasic.s'
       entry.out.compiled.debug.debug:
         criterion:
           debug: debug
@@ -1423,8 +1432,8 @@ module:
           - 'build::npm'
     consistency:
       ../.ex.will.yml:
-        hash: 05e970ca4023b6e8eacac77e39ddeff7
-        size: 1685
+        hash: 1f46e4d63e1d42a2bb5666944dfb8b11
+        size: 1723
       ../.im.will.yml:
-        hash: 4bd2ad8e081461ac0a9600e6aa2abea9
-        size: 4662
+        hash: dd948189af392e0218384429e6259f8f
+        size: 4723
