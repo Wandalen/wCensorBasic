@@ -249,7 +249,15 @@ function fileReplace_body( o )
   {
     let _ = _global_.wTools;
     debugger;
-    console.log( _.intIs );
+
+    for( let i = 0 ; i < op.action.parameters.found.length ; i++ )
+    {
+      let it = op.action.parameters.found[ i ];
+
+      debugger;
+
+    }
+
     debugger;
     // console.log( `redo ${op.action.name}` );
   }
