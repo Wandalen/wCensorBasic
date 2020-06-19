@@ -11,6 +11,7 @@ if( typeof module !== 'undefined' )
   _.include( 'wFiles' );
   _.include( 'wStringsExtra' );
   _.include( 'wStringer' );
+  _.include( 'wBlueprint' );
   module[ 'exports' ] = _global_.wTools;
 }
 
