@@ -73,18 +73,20 @@ function actionRedo( o )
 
     o = _.routineOptions( actionRedo, arguments );
     _.assert( _.mapIs( o.action.status ) );
-    _.assert( o.action.status.done === false, () => `${o.action.name} is alread done` );
+    _.assert( o.action.status.done === false, () => `${o.action.name} is already done` );
     if( o.action.status.error )
     throw _.err( o.action.status.error );
+
+    debugger;
+    let files = _.fileProvider.fileRead( _.mapKeys( action.hash ) );
+    debugger;
+    let outdated = _.censor.actionOutdatedFiles({ action : o.action, files });
+    if( outdated.length )
+    throw _.errBrief( `Files are outdated:\n  ${ outdated.join( '  \n' ) }` );
 
     let redo = o.action.redo;
     if( _.strIs( redo ) )
     redo = _.routineMake({ code : redo, prependingReturn : 1 })();
-
-    let outdated = _.censor.actionOutdatedFiles( o.action );
-    if( outdated.length )
-    throw _.errBrief( `Files are outdated:\n  ${ outdated.join( '  \n' ) }` );
-
     redo( o );
 
     if( o.verbosity && !o.log )
@@ -94,6 +96,8 @@ function actionRedo( o )
       else
       o.log = o.action.description;
     }
+
+    xxx
 
     debugger;
     if( o.logging )
@@ -129,16 +133,25 @@ actionRedo.defaults =
 
 //
 
-function actionOutdatedFiles( action )
+// function actionOutdatedFiles( action )
+function actionOutdatedFiles( o )
 {
   let result = [];
 
   _.assert( _.mapIs( action.hash ) );
 
+  o.files = o.files || Object.create( null );
+
   for( let filePath in action.hash )
   {
     let hash = action.hash[ filePath ];
 
+    debugger;
+    if( !o.files[ filePath ] === undefined )
+    o.files[ filePath ] = _.fileProvider.read( filePath, 'buffer.raw' );
+    debugger;
+
+    // if( !_.fileProvider.hashSzIsUpToDate( filePath, hash ) )
     if( !_.fileProvider.hashSzIsUpToDate( filePath, hash ) )
     {
       debugger;
@@ -148,6 +161,12 @@ function actionOutdatedFiles( action )
   }
 
   return result;
+}
+
+actionOutdatedFiles.defaults =
+{
+  action : null,
+  files : null,
 }
 
 // --
@@ -191,14 +210,14 @@ function fileReplace_body( o )
     o.searchLog = o.log;
     delete o.log;
     delete o.src;
-    o.found.forEach( ( it ) =>
+    o.parcels.forEach( ( parcel ) =>
     {
-      _.assert( _.strIs( it.input ) );
-      delete it.input;
+      _.assert( _.strIs( parcel.input ) );
+      delete parcel.input;
     });
   }
 
-  if( !o.found.length )
+  if( !o.parcels.length )
   return o;
 
   let opened = _.censor.storageOpen();
@@ -211,11 +230,11 @@ function fileReplace_body( o )
   action.filePath = o.filePath;
   action.hash = { [ action.filePath ] : hash };
 
-  action.name = `action::replace ${o.found.length} in ${o.filePath}`;
+  action.name = `action::replace ${o.parcels.length} in ${o.filePath}`;
   if( o.gray )
-  action.description = ` + replace ${o.found.length} in ${o.filePath}`;
+  action.description = ` + replace ${o.parcels.length} in ${o.filePath}`;
   else
-  action.description = ` + replace ${o.found.length} in ${_.ct.format( o.filePath, 'path' )}`;
+  action.description = ` + replace ${o.parcels.length} in ${_.ct.format( o.filePath, 'path' )}`;
   action.description2 = action.description + `\n`;
   action.description2 += tab + _.strLinesIndentation( o.searchLog, tab );
   action.redo = _.routineSourceGet( redo );
@@ -250,13 +269,12 @@ function fileReplace_body( o )
     let _ = _global_.wTools;
     debugger;
 
-    for( let i = 0 ; i < op.action.parameters.found.length ; i++ )
-    {
-      let it = op.action.parameters.found[ i ];
-
-      debugger;
-
-    }
+    _.strSearchReplace
+    ({
+      src : op.src,
+      parcels : op.action.parameters.parcels,
+      logging : op.logging,
+    });
 
     debugger;
     // console.log( `redo ${op.action.name}` );
@@ -299,7 +317,7 @@ function filesReplace_body( o )
     _.censor.storageClose( opened );
   }
 
-  o.nreplacements = 0;
+  o.nparcels = 0;
   o.nfiles = 0;
   o.files = [];
 
@@ -331,10 +349,10 @@ function filesReplace_body( o )
     o2.filePath = files[ f ].absolute;
     o2.redoReseting = 0;
     _.censor.fileReplace( o2 );
-    _.assert( _.intIs( o2.found.length ) );
+    _.assert( _.intIs( o2.parcels.length ) );
     o.files.push( o2 );
-    o.nreplacements += o2.found.length;
-    if( o2.found.length )
+    o.nparcels += o2.parcels.length;
+    if( o2.parcels.length )
     o.nfiles += 1;
     if( o.verbosity >= 2 && o2.log )
     o.log += o2.log;
@@ -342,7 +360,7 @@ function filesReplace_body( o )
 
   if( o.verbosity >= 1 )
   {
-    let log = `\n . Found ${files.length} file(s). Arranged ${o.nreplacements} replacement(s) in ${o.nfiles} file(s).`;
+    let log = `\n . Found ${files.length} file(s). Arranged ${o.nparcels} replacement(s) in ${o.nfiles} file(s).`;
     o.log += log;
     if( o.logging )
     logger.log( log );
