@@ -66,14 +66,16 @@ actionStatus.defaults =
 
 //
 
-function actionRedo( o )
+function actionDo( o )
 {
   try
   {
 
-    o = _.routineOptions( actionRedo, arguments );
+    o = _.routineOptions( actionDo, arguments );
     _.assert( _.mapIs( o.action.status ) );
     _.assert( o.action.status.done === false, () => `${o.action.name} is already done` );
+    _.assert( _.longHas( [ 'redo', 'undo' ], o.mode ) );
+
     if( o.action.status.error )
     throw _.err( o.action.status.error );
 
@@ -83,23 +85,25 @@ function actionRedo( o )
     if( outdated.length )
     throw _.errBrief( `Files are outdated:\n  ${ outdated.join( '  \n' ) }` );
 
-    let redo = o.action.redo;
-    if( _.strIs( redo ) )
-    redo = _.routineMake({ code : redo, prependingReturn : 1 })();
-    redo( o );
+    let _do = o.action[ o.mode ];
+    if( _.strIs( _do ) )
+    _do = _.routineMake({ code : _do, prependingReturn : 1 })();
 
-    hashUpdate();
+    o.hashAfterUpdate = hashAfterUpdate;
+    o.filesUndo = filesUndo;
 
-    if( o.verbosity && !o.log )
+    _do( o );
+
+    if( o.verbosity && o.log === undefined )
     {
-      // if( o.verbosity >= 2 )
-      // o.log = o.action.description2;
-      // else
+      if( o.verbosity >= 2 )
+      o.log = o.action.description2;
+      else
       o.log = o.action.description;
     }
 
-    if( o.logging )
-    logger.log( o.log );
+    if( o.verbosity && o.logging )
+    logger.log( o.action.description );
 
     o.action.status.done = true;
     if( o.storage )
@@ -119,7 +123,17 @@ function actionRedo( o )
     throw err;
   }
 
-  function hashUpdate()
+  /* */
+
+  function filesUndo()
+  {
+    debugger;
+    console.log( o + _ )
+  }
+
+  /* */
+
+  function hashAfterUpdate()
   {
     let dataMap = _.fileProvider.filesRead({ filePath : _.mapKeys( o.action.hash ), encoding : 'buffer.raw' }).dataMap;
 
@@ -133,10 +147,13 @@ function actionRedo( o )
     return dataMap;
   }
 
+  /* */
+
 }
 
-actionRedo.defaults =
+actionDo.defaults =
 {
+  mode : 'redo',
   action : null,
   dry : 0,
   storage : null,
@@ -277,21 +294,30 @@ function fileReplace_body( o )
   {
     let _ = _global_.wTools;
 
-    op.dst = _.strSearchReplace
-    ({
+    let o2 =
+    {
       src : _.strFrom( op.dataMap[ op.action.filePath ] ),
       parcels : op.action.parameters.parcels,
       logging : op.logging,
       verbosity : op.verbosity,
-    });
+    }
+    op.dst = _.strSearchReplace( o2 );
+
+    debugger;
+    op.log = o2.log
 
     _.fileProvider.fileWrite( op.action.filePath, op.dst );
+
+    op.hashAfterUpdate();
 
   }
 
   function undo( op )
   {
-    // console.log( `undo ${op.action.name}` );
+    let _ = _global_.wTools;
+
+    op.filesUndo();
+
   }
 
 }
@@ -478,11 +504,11 @@ function redo( o )
     let redoArray = opened.storage.redo.slice();
     for( let i = 0 ; i < o.depth; i++ )
     {
-      let o2 = _.mapOnly( o, _.censor.actionRedo.defaults );
+      let o2 = _.mapOnly( o, _.censor.actionDo.defaults );
       o2.action = redoArray[ i ];
       o2.verbosity = o2.verbosity - 1 >= 0 ? o2.verbosity - 1 : 0;
       o2.storage = opened.storage;
-      _.censor.actionRedo( o2 );
+      _.censor.actionDo( o2 );
       if( o.verbosity > 1 )
       if( o.log )
       o.log += '\n' + o2.log;
@@ -523,7 +549,7 @@ function redo( o )
 
 redo.defaults =
 {
-  ... _.mapBut( actionRedo.defaults, [ 'action' ] ),
+  ... _.mapBut( actionDo.defaults, [ 'action' ] ),
   storageName : null,
   dry : 0,
   depth : 1,
@@ -721,7 +747,7 @@ let Extension =
 
   actionIs,
   actionStatus,
-  actionRedo,
+  actionDo,
   actionOutdatedFiles,
 
   // operation
