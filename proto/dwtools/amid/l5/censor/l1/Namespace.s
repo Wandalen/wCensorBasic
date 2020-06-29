@@ -77,10 +77,9 @@ function actionRedo( o )
     if( o.action.status.error )
     throw _.err( o.action.status.error );
 
-    debugger;
-    let files = _.fileProvider.fileRead( _.mapKeys( action.hash ) );
-    debugger;
-    let outdated = _.censor.actionOutdatedFiles({ action : o.action, files });
+    if( !o.dataMap )
+    o.dataMap = _.fileProvider.filesRead({ filePath : _.mapKeys( o.action.hash ), encoding : 'buffer.raw' }).dataMap;
+    let outdated = _.censor.actionOutdatedFiles({ action : o.action, dataMap : o.dataMap });
     if( outdated.length )
     throw _.errBrief( `Files are outdated:\n  ${ outdated.join( '  \n' ) }` );
 
@@ -89,17 +88,16 @@ function actionRedo( o )
     redo = _.routineMake({ code : redo, prependingReturn : 1 })();
     redo( o );
 
+    hashUpdate();
+
     if( o.verbosity && !o.log )
     {
-      if( o.verbosity >= 2 )
-      o.log = o.action.description2;
-      else
+      // if( o.verbosity >= 2 )
+      // o.log = o.action.description2;
+      // else
       o.log = o.action.description;
     }
 
-    xxx
-
-    debugger;
     if( o.logging )
     logger.log( o.log );
 
@@ -120,6 +118,21 @@ function actionRedo( o )
     _.errLogEnd( err, 0 );
     throw err;
   }
+
+  function hashUpdate()
+  {
+    let dataMap = _.fileProvider.filesRead({ filePath : _.mapKeys( o.action.hash ), encoding : 'buffer.raw' }).dataMap;
+
+    o.action.hashAfter = o.action.hashAfter || Object.create( null );
+
+    for( let filePath in dataMap )
+    {
+      o.action.hashAfter[ filePath ] = _.files.hashSzFrom( dataMap[ filePath ] );
+    }
+
+    return dataMap;
+  }
+
 }
 
 actionRedo.defaults =
@@ -133,26 +146,22 @@ actionRedo.defaults =
 
 //
 
-// function actionOutdatedFiles( action )
 function actionOutdatedFiles( o )
 {
   let result = [];
 
-  _.assert( _.mapIs( action.hash ) );
+  _.assert( _.mapIs( o.action.hash ) );
 
-  o.files = o.files || Object.create( null );
+  o.dataMap = o.dataMap || Object.create( null );
 
-  for( let filePath in action.hash )
+  for( let filePath in o.action.hash )
   {
-    let hash = action.hash[ filePath ];
+    let hash = o.action.hash[ filePath ];
 
-    debugger;
-    if( !o.files[ filePath ] === undefined )
-    o.files[ filePath ] = _.fileProvider.read( filePath, 'buffer.raw' );
-    debugger;
+    if( !o.dataMap[ filePath ] === undefined )
+    o.dataMap[ filePath ] = _.fileProvider.read( filePath, 'buffer.raw' );
 
-    // if( !_.fileProvider.hashSzIsUpToDate( filePath, hash ) )
-    if( !_.fileProvider.hashSzIsUpToDate( filePath, hash ) )
+    if( !_.fileProvider.hashSzIsUpToDate({ filePath, data : o.dataMap[ filePath ], hash }) )
     {
       debugger;
       result.push( filePath );
@@ -166,7 +175,7 @@ function actionOutdatedFiles( o )
 actionOutdatedFiles.defaults =
 {
   action : null,
-  files : null,
+  dataMap : null,
 }
 
 // --
@@ -240,7 +249,7 @@ function fileReplace_body( o )
   action.redo = _.routineSourceGet( redo );
   action.undo = _.routineSourceGet( undo );
   action.parameters = _.mapExtend( null, o );
-  debugger;
+
   delete action.parameters.arranging;
   delete action.parameters.determiningLineNumber;
   delete action.parameters.dry;
@@ -267,17 +276,17 @@ function fileReplace_body( o )
   function redo( op )
   {
     let _ = _global_.wTools;
-    debugger;
 
-    _.strSearchReplace
+    op.dst = _.strSearchReplace
     ({
-      src : op.src,
+      src : _.strFrom( op.dataMap[ op.action.filePath ] ),
       parcels : op.action.parameters.parcels,
       logging : op.logging,
+      verbosity : op.verbosity,
     });
 
-    debugger;
-    // console.log( `redo ${op.action.name}` );
+    _.fileProvider.fileWrite( op.action.filePath, op.dst );
+
   }
 
   function undo( op )
@@ -682,6 +691,7 @@ let Action = _.blueprint.define
   description2 : null,
   filePath : null,
   hash : null,
+  hashAfter : null,
   status : null, /* xxx : use ActionStatus immediately */
   parameters : null,
   redo : null,
