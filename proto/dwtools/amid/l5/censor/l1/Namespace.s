@@ -292,8 +292,9 @@ function hashMapOutdatedFiles( o )
     let hash = o.hashMap[ filePath ];
 
     if( !o.dataMap[ filePath ] === undefined )
-    o.dataMap[ filePath ] = _.fileProvider.read( filePath, 'buffer.raw' );
+    o.dataMap[ filePath ] = _.fileProvider.fileRead( filePath, 'buffer.raw' );
 
+    debugger;
     if( !_.fileProvider.hashSzIsUpToDate({ filePath, data : o.dataMap[ filePath ], hash }) )
     {
       debugger;
@@ -489,7 +490,6 @@ function filesReplace_body( o )
   if( o.basePath === null )
   o.basePath = _.path.current();
   let filter = { filePath : o.filePath, basePath : o.basePath };
-  debugger;
   let files = _.fileProvider.filesFind
   ({
     filter,
@@ -498,8 +498,9 @@ function filesReplace_body( o )
     withDirs : 0,
     withDefunct : 0,
     revisitingHardLinked : 0,
+    resolvingSoftLink : 1,
+    revisiting : 0,
   });
-  debugger;
 
   for( let f = 0 ; f < files.length ; f++ )
   {
@@ -561,8 +562,6 @@ function status( o )
 
   if( o.verbosity >= 2 )
   {
-
-    debugger;
 
     result.redo = _.filter_( null, opened.storage.redo, ( action ) =>
     {
