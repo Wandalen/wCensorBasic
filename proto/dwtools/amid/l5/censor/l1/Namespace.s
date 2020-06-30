@@ -47,11 +47,17 @@ function actionStatus( o )
   {
     if( o.verbosity >= 2 )
     {
-      result = o.action.description2;
+      if( o.action.status === 'redo' )
+      result = o.action.undoDescription2;
+      else
+      result = o.action.redoDescription2;
     }
     else if( o.verbosity >= 1 )
     {
-      result = o.action.description;
+      if( o.action.status === 'redo' )
+      result = o.action.undoDescription;
+      else
+      result = o.action.redoDescription;
     }
   }
 
@@ -72,45 +78,59 @@ function actionDo( o )
   {
 
     o = _.routineOptions( actionDo, arguments );
-    _.assert( _.mapIs( o.action.status ) );
-    _.assert( o.action.status.done === false, () => `${o.action.name} is already done` );
-    _.assert( _.longHas( [ 'redo', 'undo' ], o.mode ) );
 
+    verify();
+
+    if( o.mode.redo )
     if( o.action.status.error )
     throw _.err( o.action.status.error );
 
-    if( !o.dataMap )
-    o.dataMap = _.fileProvider.filesRead({ filePath : _.mapKeys( o.action.hash ), encoding : 'buffer.raw' }).dataMap;
-    let outdated = _.censor.actionOutdatedFiles({ action : o.action, dataMap : o.dataMap });
+    if( o.mode === 'redo' )
+    dataBeforeUpdate();
+
+    let outdated = _.censor.hashMapOutdatedFiles
+    ({
+      hashMap : o.mode === 'redo' ? o.action.hashBefore : o.action.hashAfter,
+      dataMap : o.dataMap,
+    });
+
     if( outdated.length )
     throw _.errBrief( `Files are outdated:\n  ${ outdated.join( '  \n' ) }` );
 
-    let _do = o.action[ o.mode ];
-    if( _.strIs( _do ) )
-    _do = _.routineMake({ code : _do, prependingReturn : 1 })();
+    let act = o.action[ o.mode ];
+    if( _.strIs( act ) )
+    act = _.routineMake({ code : act, prependingReturn : 1 })();
 
     o.hashAfterUpdate = hashAfterUpdate;
     o.filesUndo = filesUndo;
 
-    _do( o );
+    act( o );
 
     if( o.verbosity && o.log === undefined )
     {
-      if( o.verbosity >= 2 )
-      o.log = o.action.description2;
+      if( o.mode === 'redo' )
+      {
+        if( o.verbosity >= 2 )
+        o.log = o.action.redoDescription2;
+        else
+        o.log = o.action.redoDescription;
+      }
       else
-      o.log = o.action.description;
+      {
+        if( o.verbosity >= 2 )
+        o.log = o.action.undoDescription2;
+        else
+        o.log = o.action.undoDescription;
+      }
     }
 
     if( o.verbosity && o.logging )
-    logger.log( o.action.description );
+    logger.log( o.action.redoDescription );
 
-    o.action.status.done = true;
-    if( o.storage )
-    {
-      _.arrayRemoveOnceStrictly( o.storage.redo, o.action );
-      _.arrayPrepend( o.storage.undo, o.action );
-    }
+    if( o.mode.undo )
+    o.action.dataMapBefore = null;
+    o.action.status.current = o.mode;
+    storageUpdate();
 
   }
   catch( err )
@@ -118,9 +138,54 @@ function actionDo( o )
     debugger;
     err = _.err( err, `\nFailed to redo ${o.action.name}` );
     o.action.status.error = String( err );
-    _.errAttend( err, 0 );
-    _.errLogEnd( err, 0 );
-    throw err;
+    if( o.throwing )
+    {
+      _.errAttend( err, 0 );
+      _.errLogEnd( err, 0 );
+      throw err;
+    }
+    return null;
+  }
+
+  return true;
+
+  /* */
+
+  function verify()
+  {
+    if( !Config.debug )
+    return;
+    _.assert( _.mapIs( o.action.status ) );
+    _.assert( _.longHas( [ 'redo', 'undo' ], o.mode ) );
+    if( o.mode === 'redo' )
+    {
+      _.assert( o.action.status.current === null || o.action.status.current === 'undo', () => `${o.action.name} is already done` );
+      _.assert( _.lengthOf( o.action.hashBefore ) >= 1 );
+    }
+    else
+    {
+      _.assert( o.action.status.current === 'redo', () => `${o.action.name} is not yet done to undo` );
+      _.assert( _.lengthOf( o.action.hashAfter ) >= 1 );
+    }
+  }
+
+  /* */
+
+  function storageUpdate()
+  {
+    if( o.storage )
+    {
+      if( o.mode === 'redo' )
+      {
+        _.arrayRemoveOnceStrictly( o.storage.redo, o.action );
+        _.arrayPrepend( o.storage.undo, o.action );
+      }
+      else
+      {
+        _.arrayRemoveOnceStrictly( o.storage.undo, o.action );
+        _.arrayPrepend( o.storage.redo, o.action );
+      }
+    }
   }
 
   /* */
@@ -128,14 +193,34 @@ function actionDo( o )
   function filesUndo()
   {
     debugger;
-    console.log( o + _ )
+    _.assert( _.mapIs( o.action.dataMapBefore ) );
+    for( let filePath in o.action.dataMapBefore )
+    {
+      _.fileProvider.fileWrite({ filePath, data : o.action.dataMapBefore[ filePath ] });
+    }
+  }
+
+  /* */
+
+  function dataBeforeUpdate()
+  {
+
+    _.assert( o.action.dataMapBefore === null );
+
+    if( !o.dataMap )
+    o.dataMap = _.fileProvider.filesRead({ filePath : _.mapKeys( o.action.hashBefore ), encoding : 'utf8' }).dataMap;
+
+    _.assert( _.lengthOf( o.dataMap ) >= 1 );
+
+    o.action.dataMapBefore = o.dataMap;
+
   }
 
   /* */
 
   function hashAfterUpdate()
   {
-    let dataMap = _.fileProvider.filesRead({ filePath : _.mapKeys( o.action.hash ), encoding : 'buffer.raw' }).dataMap;
+    let dataMap = _.fileProvider.filesRead({ filePath : _.mapKeys( o.action.hashBefore ), encoding : 'buffer.raw' }).dataMap;
 
     o.action.hashAfter = o.action.hashAfter || Object.create( null );
 
@@ -159,21 +244,22 @@ actionDo.defaults =
   storage : null,
   logging : 0,
   verbosity : 2,
+  throwing : 0,
 }
 
 //
 
-function actionOutdatedFiles( o )
+function hashMapOutdatedFiles( o )
 {
   let result = [];
 
-  _.assert( _.mapIs( o.action.hash ) );
+  _.assert( _.mapIs( o.hashMap ) );
 
   o.dataMap = o.dataMap || Object.create( null );
 
-  for( let filePath in o.action.hash )
+  for( let filePath in o.hashMap )
   {
-    let hash = o.action.hash[ filePath ];
+    let hash = o.hashMap[ filePath ];
 
     if( !o.dataMap[ filePath ] === undefined )
     o.dataMap[ filePath ] = _.fileProvider.read( filePath, 'buffer.raw' );
@@ -189,9 +275,9 @@ function actionOutdatedFiles( o )
   return result;
 }
 
-actionOutdatedFiles.defaults =
+hashMapOutdatedFiles.defaults =
 {
-  action : null,
+  hashMap : null,
   dataMap : null,
 }
 
@@ -254,15 +340,24 @@ function fileReplace_body( o )
   let action = this.Action.construct();
   action.status = this.ActionStatus.construct();
   action.filePath = o.filePath;
-  action.hash = { [ action.filePath ] : hash };
+  action.hashBefore = { [ action.filePath ] : hash };
 
   action.name = `action::replace ${o.parcels.length} in ${o.filePath}`;
+
   if( o.gray )
-  action.description = ` + replace ${o.parcels.length} in ${o.filePath}`;
+  action.redoDescription = ` + replace ${o.parcels.length} in ${o.filePath}`;
   else
-  action.description = ` + replace ${o.parcels.length} in ${_.ct.format( o.filePath, 'path' )}`;
-  action.description2 = action.description + `\n`;
-  action.description2 += tab + _.strLinesIndentation( o.searchLog, tab );
+  action.redoDescription = ` + replace ${o.parcels.length} in ${_.ct.format( o.filePath, 'path' )}`;
+  action.redoDescription2 = action.redoDescription + `\n`;
+  action.redoDescription2 += tab + _.strLinesIndentation( o.searchLog, tab );
+
+  if( o.gray )
+  action.undoDescription = ` + undo replace ${o.parcels.length} in ${o.filePath}`;
+  else
+  action.undoDescription = ` + undo replace ${o.parcels.length} in ${_.ct.format( o.filePath, 'path' )}`;
+  action.undoDescription2 = action.undoDescription + `\n`;
+  action.undoDescription2 += tab + _.strLinesIndentation( o.searchLog, tab );
+
   action.redo = _.routineSourceGet( redo );
   action.undo = _.routineSourceGet( undo );
   action.parameters = _.mapExtend( null, o );
@@ -275,9 +370,9 @@ function fileReplace_body( o )
   delete action.parameters.redoReseting;
 
   if( o.verbosity >= 2 )
-  o.log = action.description2;
+  o.log = action.redoDescription2;
   else if( o.verbosity )
-  o.log = action.description;
+  o.log = action.redoDescription;
 
   opened.storage.redo.push( action );
 
@@ -302,9 +397,7 @@ function fileReplace_body( o )
       verbosity : op.verbosity,
     }
     op.dst = _.strSearchReplace( o2 );
-
-    debugger;
-    op.log = o2.log
+    op.log = o2.log;
 
     _.fileProvider.fileWrite( op.action.filePath, op.dst );
 
@@ -315,9 +408,7 @@ function fileReplace_body( o )
   function undo( op )
   {
     let _ = _global_.wTools;
-
     op.filesUndo();
-
   }
 
 }
@@ -476,20 +567,27 @@ status.defaults =
 
 //
 
-function redo( o )
+function do_pre( routine, args )
+{
+  let o = _.routineOptions( routine, args );
+  _.assert( _.longHas( [ 'redo', 'undo' ], o.mode ) );
+  return o;
+}
+
+//
+
+function do_body( o )
 {
   let opened;
   try
   {
 
-    o = _.routineOptions( redo, arguments );
-
     opened = _.censor.storageOpen({ storageName : o.storageName });
 
-    if( !opened.storage || !opened.storage.redo.length )
+    if( !opened.storage || !opened.storage[ o.mode ].length )
     {
       if( o.verbosity )
-      o.log = 'Nothing to redo.';
+      o.log = `Nothing to ${o.mode}.`;
       if( o.logging )
       logger.log( o.log );
       return o;
@@ -497,15 +595,15 @@ function redo( o )
 
     if( o.depth === 0 )
     o.depth = Infinity;
-    o.depth = Math.min( o.depth, opened.storage.redo.length );
+    o.depth = Math.min( o.depth, opened.storage[ o.mode ].length );
 
     let ndone = 0;
     let nerrors = 0;
-    let redoArray = opened.storage.redo.slice();
+    let doArray = opened.storage[ o.mode ].slice();
     for( let i = 0 ; i < o.depth; i++ )
     {
       let o2 = _.mapOnly( o, _.censor.actionDo.defaults );
-      o2.action = redoArray[ i ];
+      o2.action = doArray[ i ];
       o2.verbosity = o2.verbosity - 1 >= 0 ? o2.verbosity - 1 : 0;
       o2.storage = opened.storage;
       _.censor.actionDo( o2 );
@@ -514,7 +612,7 @@ function redo( o )
       o.log += '\n' + o2.log;
       else
       o.log = o2.log;
-      if( o2.action.status.done )
+      if( o2.action.status.current )
       ndone += 1;
       if( o2.action.status.error )
       nerrors += 1;
@@ -522,13 +620,17 @@ function redo( o )
 
     if( o.verbosity ) /* xxx */
     {
-      let log = `Did ${ndone} action(s). Thrown ${nerrors} error(s).`;
-      if( o.log ) /* xxx : rename */
+      let log = ``;
+      if( o.mode === 'undo' )
+      log += `Undone ${ndone} action(s). Thrown ${nerrors} error(s).`;
+      else
+      log += `Done ${ndone} action(s). Thrown ${nerrors} error(s).`;
+      if( o.logging ) /* xxx : logging -> logger */
+      logger.log( log );
+      if( o.log )
       o.log += '\n' + log;
       else
       o.log = log;
-      if( o.logging ) /* xxx : logging -> logger */
-      logger.log( log );
     }
 
     _.censor.storageClose( opened );
@@ -547,7 +649,7 @@ function redo( o )
   }
 }
 
-redo.defaults =
+do_body.defaults =
 {
   ... _.mapBut( actionDo.defaults, [ 'action' ] ),
   storageName : null,
@@ -555,6 +657,20 @@ redo.defaults =
   depth : 1,
   verbosity : 3,
 }
+
+//
+
+let _do = _.routineFromPreAndBody( do_pre, do_body );
+_do.defaults.depth = 0;
+_do.defaults.mode = 'redo';
+
+let redo = _.routineFromPreAndBody( do_pre, do_body );
+redo.defaults.depth = 1;
+redo.defaults.mode = 'redo';
+
+let undo = _.routineFromPreAndBody( do_pre, do_body );
+undo.defaults.depth = 1;
+undo.defaults.mode = 'undo';
 
 // --
 // storage
@@ -713,11 +829,14 @@ storageReset.defaults =
 let Action = _.blueprint.define
 ({
   name : null,
-  description : null,
-  description2 : null,
+  redoDescription : null,
+  redoDescription2 : null,
+  undoDescription : null,
+  undoDescription2 : null,
   filePath : null,
-  hash : null,
+  hashBefore : null,
   hashAfter : null,
+  dataMapBefore : null,
   status : null, /* xxx : use ActionStatus immediately */
   parameters : null,
   redo : null,
@@ -726,7 +845,7 @@ let Action = _.blueprint.define
 
 let ActionStatus = _.blueprint.define
 ({
-  done : false,
+  current : null,
   error : null,
 });
 
@@ -748,14 +867,16 @@ let Extension =
   actionIs,
   actionStatus,
   actionDo,
-  actionOutdatedFiles,
+  hashMapOutdatedFiles,
 
   // operation
 
   fileReplace,
   filesReplace,
   status,
+  do : _do,
   redo,
+  undo,
 
   // storage
 
