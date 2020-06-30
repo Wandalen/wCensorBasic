@@ -30,17 +30,17 @@ function actionStatus( o )
   _.assert( _.censor.actionIs( o.action ) );
 
   if( !o.verbosity )
-  return;
+  return '';
 
   if( o.action.status.error )
   {
     if( o.verbosity >= 2 )
     {
-      result = String( o.action.error );
+      result = String( o.action.status.error );
     }
-    else if( o.verbosity >= 1 )
+    else
     {
-      result = `Error in ${o.action.naem}`;
+      result = `Error in ${o.action.name}`;
     }
   }
   else
@@ -127,7 +127,7 @@ function actionDo( o )
     if( o.verbosity && o.logging )
     logger.log( o.action.redoDescription );
 
-    if( o.mode.undo )
+    if( o.mode === 'undo' )
     o.action.dataMapBefore = null;
     o.action.status.current = o.mode;
     storageUpdate();
@@ -192,7 +192,6 @@ function actionDo( o )
 
   function filesUndo()
   {
-    debugger;
     _.assert( _.mapIs( o.action.dataMapBefore ) );
     for( let filePath in o.action.dataMapBefore )
     {
@@ -244,7 +243,7 @@ actionDo.defaults =
   storage : null,
   logging : 0,
   verbosity : 2,
-  throwing : 0,
+  throwing : 1,
 }
 
 //
@@ -529,6 +528,8 @@ function status( o )
   if( o.verbosity >= 2 )
   {
 
+    debugger;
+
     log.redo = _.filter_( null, opened.storage.redo, ( action ) =>
     {
       let o2 = _.mapOnly( o, _.censor.actionStatus.defaults );
@@ -578,6 +579,7 @@ function do_pre( routine, args )
 
 function do_body( o )
 {
+  let error;
   let opened;
   try
   {
@@ -601,6 +603,7 @@ function do_body( o )
     let nerrors = 0;
     let doArray = opened.storage[ o.mode ].slice();
     for( let i = 0 ; i < o.depth; i++ )
+    try
     {
       let o2 = _.mapOnly( o, _.censor.actionDo.defaults );
       o2.action = doArray[ i ];
@@ -616,6 +619,13 @@ function do_body( o )
       ndone += 1;
       if( o2.action.status.error )
       nerrors += 1;
+    }
+    catch( err )
+    {
+      err = _.err( err );
+      logger.error( err );
+      if( !error )
+      error = err;
     }
 
     if( o.verbosity ) /* xxx */
@@ -634,6 +644,9 @@ function do_body( o )
     }
 
     _.censor.storageClose( opened );
+
+    if( error )
+    throw error;
 
   }
   catch( err )
