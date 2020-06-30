@@ -95,7 +95,18 @@ function actionDo( o )
     });
 
     if( outdated.length )
-    throw _.errBrief( `Files are outdated:\n  ${ outdated.join( '  \n' ) }` );
+    {
+      let err = _._err
+      ({
+        args : [ `Files are outdated:\n  ${ outdated.join( '  \n' ) }` ],
+        reason : 'outdated'
+      });
+      throw _.errBrief( err );
+    }
+
+    if( o.action.status.outdated && o.action.status.error )
+    o.action.status.error = null;
+    o.action.status.outdated = false
 
     let act = o.action[ o.mode ];
     if( _.strIs( act ) )
@@ -125,7 +136,10 @@ function actionDo( o )
     }
 
     if( o.verbosity && o.logging )
+    if( o.mode === 'redo' )
     logger.log( o.action.redoDescription );
+    else
+    logger.log( o.action.undoDescription );
 
     if( o.mode === 'undo' )
     o.action.dataMapBefore = null;
@@ -135,9 +149,26 @@ function actionDo( o )
   }
   catch( err )
   {
+
+    // err = _.err( err, `\nFailed to redo ${o.action.name}` );
+    err = _.err( err );
+
     debugger;
-    err = _.err( err, `\nFailed to redo ${o.action.name}` );
+    let tab = '    ';
+    err = _._err
+    ({
+      args : [ err ],
+      message : ` ! failed to ${o.mode} ${o.action.name}\n` + tab + _.strLinesIndentation( err.message, tab ),
+    });
+    debugger;
+
+    if( o.mode === 'redo' )
+    o.action.dataMapBefore = null;
     o.action.status.error = String( err );
+
+    if( err.reason === 'outdated' )
+    o.action.status.outdated = true;
+
     if( o.throwing )
     {
       _.errAttend( err, 0 );
@@ -458,6 +489,7 @@ function filesReplace_body( o )
   if( o.basePath === null )
   o.basePath = _.path.current();
   let filter = { filePath : o.filePath, basePath : o.basePath };
+  debugger;
   let files = _.fileProvider.filesFind
   ({
     filter,
@@ -465,7 +497,9 @@ function filesReplace_body( o )
     mandatory : 0,
     withDirs : 0,
     withDefunct : 0,
+    revisitingHardLinked : 0,
   });
+  debugger;
 
   for( let f = 0 ; f < files.length ; f++ )
   {
@@ -510,7 +544,7 @@ let filesReplace = _.routineFromPreAndBody( replace_pre, filesReplace_body );
 function status( o )
 {
   let opened = _.censor.storageOpen();
-  let log = Object.create( null );
+  let result = Object.create( null );
   let errors;
 
   o = _.routineOptions( status, o );
@@ -530,7 +564,7 @@ function status( o )
 
     debugger;
 
-    log.redo = _.filter_( null, opened.storage.redo, ( action ) =>
+    result.redo = _.filter_( null, opened.storage.redo, ( action ) =>
     {
       let o2 = _.mapOnly( o, _.censor.actionStatus.defaults );
       o2.action = action;
@@ -538,7 +572,7 @@ function status( o )
       return _.censor.actionStatus( o2 );
     });
 
-    log.undo = _.filter_( null, opened.storage.undo, ( action ) =>
+    result.undo = _.filter_( null, opened.storage.undo, ( action ) =>
     {
       let o2 = _.mapOnly( o, _.censor.actionStatus.defaults );
       o2.action = action;
@@ -549,13 +583,28 @@ function status( o )
   }
   else if( o.verbosity === 1 )
   {
-    log.redo = opened.storage.redo.length;
-    log.undo = opened.storage.undo.length;
+    result.redo = opened.storage.redo.length + errorsOf( opened.storage.redo );
+    result.undo = opened.storage.undo.length + errorsOf( opened.storage.undo );
   }
 
   _.censor.storageClose( opened );
 
-  return log;
+  return result;
+
+  function errorsOf( actions )
+  {
+    let n = 0;
+    for( let i = 0 ; i < actions.length ; i++ )
+    {
+      let action = actions[ i ];
+      if( action.status.error )
+      n += 1;
+    }
+    if( !n )
+    return ``;
+    return ` -- ${n} error(s)`;
+  }
+
 }
 
 status.defaults =
@@ -622,8 +671,13 @@ function do_body( o )
     }
     catch( err )
     {
+      nerrors += 1;
       err = _.err( err );
       logger.error( err );
+      // let tab = '    ';
+      // logger.error( ` ! failed to ${o.mode} ${doArray[ i ].name}\n` + tab + _.strLinesIndentation( String( err ), tab ) );
+      debugger;
+      // if( err.reason !== 'outdated' )
       if( !error )
       error = err;
     }
@@ -667,7 +721,7 @@ do_body.defaults =
   ... _.mapBut( actionDo.defaults, [ 'action' ] ),
   storageName : null,
   dry : 0,
-  depth : 1,
+  depth : 0,
   verbosity : 3,
 }
 
@@ -678,11 +732,11 @@ _do.defaults.depth = 0;
 _do.defaults.mode = 'redo';
 
 let redo = _.routineFromPreAndBody( do_pre, do_body );
-redo.defaults.depth = 1;
+redo.defaults.depth = 0;
 redo.defaults.mode = 'redo';
 
 let undo = _.routineFromPreAndBody( do_pre, do_body );
-undo.defaults.depth = 1;
+undo.defaults.depth = 0;
 undo.defaults.mode = 'undo';
 
 // --
@@ -860,6 +914,7 @@ let ActionStatus = _.blueprint.define
 ({
   current : null,
   error : null,
+  outdated : null,
 });
 
 let Storage = _.blueprint.define
