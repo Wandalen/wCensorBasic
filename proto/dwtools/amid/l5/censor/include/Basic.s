@@ -9,6 +9,7 @@ if( typeof module !== 'undefined' )
 {
   let _ = require( '../../../../../dwtools/Tools.s' );
   _.include( 'wFiles' );
+  _.include( 'wFilesArchive' );
   _.include( 'wStringsExtra' );
   _.include( 'wStringer' );
   _.include( 'wBlueprint' );

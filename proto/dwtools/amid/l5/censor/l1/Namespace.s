@@ -150,17 +150,14 @@ function actionDo( o )
   catch( err )
   {
 
-    // err = _.err( err, `\nFailed to redo ${o.action.name}` );
     err = _.err( err );
 
-    debugger;
     let tab = '    ';
     err = _._err
     ({
       args : [ err ],
       message : ` ! failed to ${o.mode} ${o.action.name}\n` + tab + _.strLinesIndentation( err.message, tab ),
     });
-    debugger;
 
     if( o.mode === 'redo' )
     o.action.dataMapBefore = null;
@@ -277,39 +274,6 @@ actionDo.defaults =
   throwing : 1,
 }
 
-//
-
-function hashMapOutdatedFiles( o )
-{
-  let result = [];
-
-  _.assert( _.mapIs( o.hashMap ) );
-
-  o.dataMap = o.dataMap || Object.create( null );
-
-  for( let filePath in o.hashMap )
-  {
-    let hash = o.hashMap[ filePath ];
-
-    if( !o.dataMap[ filePath ] === undefined )
-    o.dataMap[ filePath ] = _.fileProvider.fileRead( filePath, 'buffer.raw' );
-
-    if( !_.fileProvider.hashSzIsUpToDate({ filePath, data : o.dataMap[ filePath ], hash }) )
-    {
-      result.push( filePath );
-    }
-
-  }
-
-  return result;
-}
-
-hashMapOutdatedFiles.defaults =
-{
-  hashMap : null,
-  dataMap : null,
-}
-
 // --
 // operations
 // --
@@ -338,7 +302,7 @@ function fileReplace_body( o )
 
   _.assertRoutineOptions( fileReplace_body, arguments );
   _.assert( _.strDefined( o.filePath ) );
-  _.assert( !!o.arranging );
+  _.assert( !!o.arranging, 'not implemented' );
 
   let size = _.fileProvider.statRead( o.filePath ).size;
   let hash = _.fileProvider.hashSzRead( o.filePath );
@@ -448,9 +412,9 @@ fileReplace_body.defaults =
   ins : null,
   sub : null,
   nearestLines : 3,
-  arranging : 1,
-  redoReseting : 1,
-  dry : 1,
+  arranging : 1, /* qqq : implement and cover for routine filesReplace */
+  redoReseting : 1, /* qqq : cover for routine filesReplace */
+  // dry : 1,
   gray : 0,
   verbosity : 0,
   logging : 0,
@@ -539,6 +503,96 @@ filesReplace_body.defaults =
 let filesReplace = _.routineFromPreAndBody( replace_pre, filesReplace_body );
 
 //
+
+function filesHardLink( o )
+{
+
+  o = _.routineOptions( filesHardLink, arguments );
+
+  let config = _.fileProvider.configUserRead();
+
+  let archive = new _.FilesArchive({ fileProvider : _.fileProvider })
+  // let fileProvider = new _.FileFilter.Archive();
+
+  /* basePath */
+
+  o.basePath = _.arrayAs( o.basePath );
+
+  // if( config && config.path && config.path.link )
+  // _.arrayAppendArrayOnce( o.basePath, _.arrayAs( config.path.link ) );
+  // o.basePath = path.s.join( context.will.withPath, o.basePath );
+
+  _.assert( o.basePath.length >= 1 );
+  _.assert( _.all( _.fileProvider.statsResolvedRead( o.basePath ) ) );
+
+  /* mask */
+
+  let excludeAny =
+  [
+    /(\W|^)node_modules(\W|$)/,
+    /\.unique$/,
+    /\.git$/,
+    /\.svn$/,
+    /\.hg$/,
+    /\.tmp($|\/)/,
+    /\.DS_Store$/,
+    /(^|\/)-/,
+  ]
+
+  let maskAll = _.RegexpObject( excludeAny, 'excludeAny' );
+
+  if( !o.dry )
+  {
+
+    /* run */
+
+    if( o.verbosity < 2 )
+    archive.verbosity = 0;
+    else if( o.verbosity === 2 )
+    archive.verbosity = 2;
+    else
+    archive.verbosity = o.verbosity - 1;
+    archive.allowingMissed = 0;
+    archive.allowingCycled = 0;
+    archive.basePath = o.basePath;
+    archive.mask = maskAll;
+    archive.fileMapAutosaving = 1;
+    archive.filesUpdate();
+    archive.filesLinkSame();
+
+  }
+
+  /* log */
+
+  if( o.verbosity )
+  {
+    let log = `Linked files at ${_.ct.format( _.fileProvider.path.commonTextualReport( o.basePath ), 'path' )}`;
+    if( o.log )
+    o.log += '\n' + log;
+    else
+    o.log += log;
+    if( o.logging )
+    logger.log( log );
+  }
+
+  // if( o.beeping )
+  // _.diagnosticBeep();
+
+}
+
+filesHardLink.defaults =
+{
+  // dry : 0,
+  arranging : 0,
+  verbosity : 3,
+  log : null,
+  logging : 1,
+  basePath : null,
+}
+
+// --
+// do
+// --
 
 function status( o )
 {
@@ -671,10 +725,6 @@ function do_body( o )
       nerrors += 1;
       err = _.err( err );
       logger.error( err );
-      // let tab = '    ';
-      // logger.error( ` ! failed to ${o.mode} ${doArray[ i ].name}\n` + tab + _.strLinesIndentation( String( err ), tab ) );
-      debugger;
-      // if( err.reason !== 'outdated' )
       if( !error )
       error = err;
     }
@@ -897,6 +947,41 @@ storageReset.defaults =
 }
 
 // --
+// etc
+// --
+
+function hashMapOutdatedFiles( o )
+{
+  let result = [];
+
+  _.assert( _.mapIs( o.hashMap ) );
+
+  o.dataMap = o.dataMap || Object.create( null );
+
+  for( let filePath in o.hashMap )
+  {
+    let hash = o.hashMap[ filePath ];
+
+    if( !o.dataMap[ filePath ] === undefined )
+    o.dataMap[ filePath ] = _.fileProvider.fileRead( filePath, 'buffer.raw' );
+
+    if( !_.fileProvider.hashSzIsUpToDate({ filePath, data : o.dataMap[ filePath ], hash }) )
+    {
+      result.push( filePath );
+    }
+
+  }
+
+  return result;
+}
+
+hashMapOutdatedFiles.defaults =
+{
+  hashMap : null,
+  dataMap : null,
+}
+
+// --
 // relation
 // --
 
@@ -942,12 +1027,16 @@ let Extension =
   actionIs,
   actionStatus,
   actionDo,
-  hashMapOutdatedFiles,
 
   // operation
 
   fileReplace,
   filesReplace,
+
+  filesHardLink,
+
+  // do
+
   status,
   do : _do,
   redo,
@@ -959,6 +1048,10 @@ let Extension =
   storageOpen,
   storageClose,
   storageReset,
+
+  // etc
+
+  hashMapOutdatedFiles,
 
   //
 
