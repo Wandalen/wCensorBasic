@@ -294,10 +294,8 @@ function hashMapOutdatedFiles( o )
     if( !o.dataMap[ filePath ] === undefined )
     o.dataMap[ filePath ] = _.fileProvider.fileRead( filePath, 'buffer.raw' );
 
-    debugger;
     if( !_.fileProvider.hashSzIsUpToDate({ filePath, data : o.dataMap[ filePath ], hash }) )
     {
-      debugger;
       result.push( filePath );
     }
 
@@ -786,15 +784,18 @@ function storageOpen( o )
     if( o.storageName === null )
     o.storageName = _.censor.storageName;
 
-    o.storage = _.fileProvider.configUserRead( o.storageName );
+    o.storage = _.fileProvider.configUserRead
+    ({
+      name : o.storageName,
+      locking : o.locking,
+    });
+
     if( !o.storage )
     {
       o.storage = _.censor.Storage.construct();
       _.fileProvider.configUserWrite( o.storageName, o.storage );
+      _.fileProvider.configUserLock( o.storageName );
     }
-
-    // if( o.locking )
-    // _.fileProvider.configUserLock( _.censor.storageName ); /* xxx */
 
     return o;
   }
@@ -809,7 +810,7 @@ function storageOpen( o )
 storageOpen.defaults =
 {
   storageName : null,
-  locking : 0,
+  locking : 1,
   throwing : 1,
 }
 
@@ -829,9 +830,16 @@ function storageClose( o )
 
     if( o.storageName === null )
     o.storageName = _.censor.storageName;
-    o.storage = _.fileProvider.configUserWrite( o.storageName, o.storage );
+    o.storage = _.fileProvider.configUserWrite
+    ({
+      name : o.storageName,
+      structure : o.storage,
+      unlocking : o.locking,
+    });
 
-    // if( o.locking ) /* xxx */
+    // if( o.locking )
+    // debugger;
+    // if( o.locking )
     // _.fileProvider.configUserUnlock( _.censor.storageName );
 
     return o;
@@ -957,7 +965,7 @@ let Extension =
   Action,
   ActionStatus,
   Storage,
-  storageName : 'censor.json',
+  storageName : '.censor.json',
 
 }
 
