@@ -509,10 +509,9 @@ function filesHardLink( o )
 
   o = _.routineOptions( filesHardLink, arguments );
 
+  let path = _.fileProvider.path;
   let config = _.fileProvider.configUserRead();
-
   let archive = new _.FilesArchive({ fileProvider : _.fileProvider })
-  // let fileProvider = new _.FileFilter.Archive();
 
   /* basePath */
 
@@ -520,10 +519,8 @@ function filesHardLink( o )
 
   // if( config && config.path && config.path.link )
   // _.arrayAppendArrayOnce( o.basePath, _.arrayAs( config.path.link ) );
-  // o.basePath = path.s.join( context.will.withPath, o.basePath );
 
   _.assert( o.basePath.length >= 1 );
-  _.assert( _.all( _.fileProvider.statsResolvedRead( o.basePath ) ) );
 
   /* mask */
 
@@ -540,6 +537,7 @@ function filesHardLink( o )
   ]
 
   let maskAll = _.RegexpObject( excludeAny, 'excludeAny' );
+  let counter = 0;
 
   if( !o.dry )
   {
@@ -555,10 +553,12 @@ function filesHardLink( o )
     archive.allowingMissed = 0;
     archive.allowingCycled = 0;
     archive.basePath = o.basePath;
+    archive.includingPath = o.includingPath;
+    archive.excludingPath = o.excludingPath;
     archive.mask = maskAll;
     archive.fileMapAutosaving = 1;
     archive.filesUpdate();
-    archive.filesLinkSame();
+    counter = archive.filesLinkSame();
 
   }
 
@@ -566,7 +566,7 @@ function filesHardLink( o )
 
   if( o.verbosity )
   {
-    let log = `Linked files at ${_.ct.format( _.fileProvider.path.commonTextualReport( o.basePath ), 'path' )}`;
+    let log = `Linked ${ counter } file(s) at ${_.ct.format( path.commonTextualReport( o.basePath ), 'path' )}`;
     if( o.log )
     o.log += '\n' + log;
     else
@@ -588,6 +588,8 @@ filesHardLink.defaults =
   log : null,
   logging : 1,
   basePath : null,
+  includingPath : null,
+  excludingPath : null,
 }
 
 // --
