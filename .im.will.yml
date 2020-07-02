@@ -5,6 +5,13 @@ submodule :
   wTools :
     path : npm:///wTools
     enabled : 0 # submodule
+  wFiles :
+    path : npm:///wFiles
+    enabled : 0 # submodule
+  wFilesArchive :
+    path : npm:///wfilesarchive
+    enabled : 0 # submodule
+
   eslint :
     path : npm:///eslint#7.1.0
     enabled : 0 # submodule
