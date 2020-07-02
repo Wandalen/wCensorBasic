@@ -9,7 +9,7 @@ npm install
 node sample/Sample.s
 ```
 
-## To add as submodule
+## To add
 ```
 npm add 'wcensorbasic@alpha'
 ```
