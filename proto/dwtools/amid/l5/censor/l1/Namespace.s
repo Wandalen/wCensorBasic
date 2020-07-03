@@ -322,80 +322,101 @@ function replace_pre( routine, args )
 
 function fileReplace_body( o )
 {
+  let opened;
 
   _.assertRoutineOptions( fileReplace_body, arguments );
   _.assert( _.strDefined( o.filePath ) );
   _.assert( !!o.arranging, 'not implemented' );
 
-  let size = _.fileProvider.statRead( o.filePath ).size;
-  let hash = _.fileProvider.hashSzRead( o.filePath );
-  o.src = _.fileProvider.fileRead( o.filePath );
-
+  try
   {
-    let o2 = _.mapOnly( o, _.strSearchLog.defaults );
-    let searched = _.strSearchLog( o2 );
-    _.mapExtend( o, searched );
-    o.searchLog = o.log;
-    delete o.log;
-    delete o.src;
-    o.parcels.forEach( ( parcel ) =>
+
+    let size = _.fileProvider.statRead( o.filePath ).size;
+    let hash = _.fileProvider.hashSzRead( o.filePath );
+    o.src = _.fileProvider.fileRead( o.filePath );
+
     {
-      _.assert( _.strIs( parcel.input ) );
-      delete parcel.input;
+      let o2 = _.mapOnly( o, _.strSearchLog.defaults );
+      let searched = _.strSearchLog( o2 );
+      _.mapExtend( o, searched );
+      o.searchLog = o.log;
+      delete o.log;
+      delete o.src;
+      o.parcels.forEach( ( parcel ) =>
+      {
+        _.assert( _.strIs( parcel.input ) );
+        delete parcel.input;
+      });
+    }
+
+    if( !o.parcels.length )
+    return o;
+
+    opened = _.censor.storageOpen
+    ({
+      storageDir : o.storageDir,
+      profileDir : o.profileDir,
+      storageTerminal : o.storageTerminal,
     });
+
+    if( o.redoReseting )
+    opened.storage.redo = [];
+
+    let tab = '     ';
+    let action = this.Action.construct();
+    action.status = this.ActionStatus.construct();
+    action.filePath = o.filePath;
+    action.hashBefore = { [ action.filePath ] : hash };
+
+    action.name = `action::replace ${o.parcels.length} in ${o.filePath}`;
+
+    if( o.gray )
+    action.redoDescription = ` + replace ${o.parcels.length} in ${o.filePath}`;
+    else
+    action.redoDescription = ` + replace ${o.parcels.length} in ${_.ct.format( o.filePath, 'path' )}`;
+    action.redoDescription2 = action.redoDescription + `\n`;
+    action.redoDescription2 += tab + _.strLinesIndentation( o.searchLog, tab );
+
+    if( o.gray )
+    action.undoDescription = ` + undo replace ${o.parcels.length} in ${o.filePath}`;
+    else
+    action.undoDescription = ` + undo replace ${o.parcels.length} in ${_.ct.format( o.filePath, 'path' )}`;
+    action.undoDescription2 = action.undoDescription + `\n`;
+    action.undoDescription2 += tab + _.strLinesIndentation( o.searchLog, tab );
+
+    action.redo = _.routineSourceGet( redo );
+    action.undo = _.routineSourceGet( undo );
+    action.parameters = _.mapExtend( null, o );
+
+    delete action.parameters.arranging;
+    delete action.parameters.determiningLineNumber;
+    delete action.parameters.dry;
+    delete action.parameters.logger;
+    delete action.parameters.onTokenize;
+    delete action.parameters.redoReseting;
+
+    if( o.verbosity >= 2 )
+    o.log = action.redoDescription2;
+    else if( o.verbosity )
+    o.log = action.redoDescription;
+
+    opened.storage.redo.push( action );
+
+    _.censor.storageClose( opened );
+
+    if( o.logger )
+    o.logger.log( o.log );
+
   }
+  catch( err )
+  {
+    err = _.err( err );
 
-  if( !o.parcels.length )
-  return o;
+    if( opened )
+    _.censor.storageClose( opened );
 
-  let opened = _.censor.storageOpen();
-  if( o.redoReseting )
-  opened.storage.redo = [];
-
-  let tab = '     ';
-  let action = this.Action.construct();
-  action.status = this.ActionStatus.construct();
-  action.filePath = o.filePath;
-  action.hashBefore = { [ action.filePath ] : hash };
-
-  action.name = `action::replace ${o.parcels.length} in ${o.filePath}`;
-
-  if( o.gray )
-  action.redoDescription = ` + replace ${o.parcels.length} in ${o.filePath}`;
-  else
-  action.redoDescription = ` + replace ${o.parcels.length} in ${_.ct.format( o.filePath, 'path' )}`;
-  action.redoDescription2 = action.redoDescription + `\n`;
-  action.redoDescription2 += tab + _.strLinesIndentation( o.searchLog, tab );
-
-  if( o.gray )
-  action.undoDescription = ` + undo replace ${o.parcels.length} in ${o.filePath}`;
-  else
-  action.undoDescription = ` + undo replace ${o.parcels.length} in ${_.ct.format( o.filePath, 'path' )}`;
-  action.undoDescription2 = action.undoDescription + `\n`;
-  action.undoDescription2 += tab + _.strLinesIndentation( o.searchLog, tab );
-
-  action.redo = _.routineSourceGet( redo );
-  action.undo = _.routineSourceGet( undo );
-  action.parameters = _.mapExtend( null, o );
-
-  delete action.parameters.arranging;
-  delete action.parameters.determiningLineNumber;
-  delete action.parameters.dry;
-  delete action.parameters.logger;
-  delete action.parameters.onTokenize;
-  delete action.parameters.redoReseting;
-
-  if( o.verbosity >= 2 )
-  o.log = action.redoDescription2;
-  else if( o.verbosity )
-  o.log = action.redoDescription;
-
-  opened.storage.redo.push( action );
-
-  _.censor.storageClose( opened );
-
-  if( o.logger )
-  o.logger.log( o.log );
+    throw err;
+  }
 
   return o;
 
@@ -440,6 +461,9 @@ fileReplace_body.defaults =
   gray : 0,
   verbosity : 0,
   logger : 0,
+  storageDir : null,
+  profileDir : null,
+  storageTerminal : null,
 }
 
 let fileReplace = _.routineFromPreAndBody( replace_pre, fileReplace_body );
@@ -453,7 +477,12 @@ function filesReplace_body( o )
 
   if( o.redoReseting )
   {
-    let opened = _.censor.storageOpen();
+    let opened = _.censor.storageOpen
+    ({
+      storageDir : o.storageDir,
+      profileDir : o.profileDir,
+      storageTerminal : o.storageTerminal,
+    });
     opened.storage.redo = [];
     _.censor.storageClose( opened );
   }
@@ -515,6 +544,7 @@ function filesReplace_body( o )
 
 filesReplace_body.defaults =
 {
+
   ... fileReplace.defaults,
   verbosity : 3,
   basePath : null,
@@ -544,9 +574,11 @@ function filesHardLink( o )
   {
     if( o.storageDir === null )
     o.storageDir = _.censor.storageDir;
+    if( o.profileDir === null )
+    o.profileDir = _.censor.profileDir;
     if( o.storageTerminal === null )
     o.storageTerminal = _.censor.configStorageTerminal;
-    let storageName = _.path.join( o.storageDir, o.storageTerminal );
+    let storageName = _.path.join( o.storageDir, o.profileDir, o.storageTerminal );
     let config = _.fileProvider.configUserRead( storageName );
     if( config && config.path && config.path.hlink )
     _.arrayAppendArrayOnce( o.basePath, _.arrayAs( config.path.hlink ) );
@@ -617,6 +649,7 @@ function filesHardLink( o )
 filesHardLink.defaults =
 {
   storageTerminal : null,
+  profileDir : null,
   storageDir : null,
   arranging : 0,
   verbosity : 3,
@@ -634,7 +667,14 @@ filesHardLink.defaults =
 
 function status( o )
 {
-  let opened = _.censor.storageOpen();
+
+  let opened = _.censor.storageOpen
+  ({
+    storageDir : o.storageDir,
+    profileDir : o.profileDir,
+    storageTerminal : o.storageTerminal,
+  });
+
   let result = Object.create( null );
   let errors;
 
@@ -698,6 +738,9 @@ function status( o )
 
 status.defaults =
 {
+  storageTerminal : null,
+  profileDir : null,
+  storageDir : null,
   verbosity : 3,
   withUndo : 1,
   withRedo : 1,
@@ -735,11 +778,18 @@ function do_body( o )
 
     if( o.storageDir === null )
     o.storageDir = _.censor.storageDir;
+    if( o.profileDir === null )
+    o.profileDir = _.censor.profileDir;
     if( o.storageTerminal === null )
     o.storageTerminal = _.censor.arrangedStorageTerminal;
-    let storageName = _.path.join( o.storageDir, o.storageTerminal );
+    let storageName = _.path.join( o.storageDir, o.profileDir, o.storageTerminal );
 
-    opened = _.censor.storageOpen({ storageName : storageName });
+    let opened = _.censor.storageOpen
+    ({
+      storageDir : o.storageDir,
+      profileDir : o.profileDir,
+      storageTerminal : o.storageTerminal,
+    });
 
     if( !opened.storage || !opened.storage[ o.mode ].length )
     {
@@ -837,6 +887,7 @@ do_body.defaults =
   ... _.mapBut( actionDo.defaults, [ 'action' ] ),
   // storageName : null,
   storageDir : null,
+  profileDir : null,
   storageTerminal : null,
   depth : 0,
   verbosity : 3,
@@ -872,12 +923,11 @@ function storageRead( o )
 
     if( o.storageDir === null )
     o.storageDir = _.censor.storageDir;
+    if( o.profileDir === null )
+    o.profileDir = _.censor.profileDir;
     if( o.storageTerminal === null )
     o.storageTerminal = _.censor.arrangedStorageTerminal;
-    let storageName = _.path.join( o.storageDir, o.storageTerminal );
-
-    // if( o.storageName === null )
-    // o.storageName = _.censor.arrangedStorageTerminal;
+    let storageName = _.path.join( o.storageDir, o.profileDir, o.storageTerminal );
 
     let storagePath = _.fileProvider.configUserPath( storageName );
 
@@ -894,8 +944,8 @@ function storageRead( o )
 
 storageRead.defaults =
 {
-  // storageName : null,
   storageDir : null,
+  profileDir : null,
   storageTerminal : null,
 }
 
@@ -910,13 +960,13 @@ function storageOpen( o )
     o = { storageName : arguments[ 0 ] };
     o = _.routineOptions( storageOpen, o );
 
-    // if( o.storageName === null )
-    // o.storageName = _.censor.arrangedStorageTerminal;
     if( o.storageDir === null )
     o.storageDir = _.censor.storageDir;
+    if( o.profileDir === null )
+    o.profileDir = _.censor.profileDir;
     if( o.storageTerminal === null )
     o.storageTerminal = _.censor.arrangedStorageTerminal;
-    let storageName = _.path.join( o.storageDir, o.storageTerminal );
+    let storageName = _.path.join( o.storageDir, o.profileDir, o.storageTerminal );
 
     o.storage = _.fileProvider.configUserRead
     ({
@@ -946,6 +996,7 @@ storageOpen.defaults =
   // storageDir : null,
   // storageName : null,
   storageDir : null,
+  profileDir : null,
   storageTerminal : null,
   locking : 1,
   throwing : 1,
@@ -967,11 +1018,12 @@ function storageClose( o )
 
     if( o.storageDir === null )
     o.storageDir = _.censor.storageDir;
+    if( o.profileDir === null )
+    o.profileDir = _.censor.profileDir;
     if( o.storageTerminal === null )
     o.storageTerminal = _.censor.arrangedStorageTerminal;
-    let storageName = _.path.join( o.storageDir, o.storageTerminal );
-    // if( o.storageName === null )
-    // o.storageName = _.censor.arrangedStorageTerminal;
+
+    let storageName = _.path.join( o.storageDir, o.profileDir, o.storageTerminal );
 
     o.storage = _.fileProvider.configUserWrite
     ({
@@ -1008,16 +1060,15 @@ function storageReset( o )
   try
   {
 
-    // if( o.storageName === null )
-    // o.storageName = _.censor.arrangedStorageTerminal;
-
     if( o.storageDir === null )
     o.storageDir = _.censor.storageDir;
+    if( o.profileDir === null )
+    o.profileDir = _.censor.profileDir;
     if( o.storageTerminal === null )
     o.storageTerminal = _.censor.arrangedStorageTerminal;
     let storageName = _.path.join( o.storageDir, o.storageTerminal );
 
-    let storagePath = _.fileProvider.configUserPath( o.storageName );
+    let storagePath = _.fileProvider.configUserPath( storageName );
 
     if( _.fileProvider.fileExists( storagePath ) )
     _.fileProvider.fileDelete
@@ -1036,8 +1087,8 @@ function storageReset( o )
 
 storageReset.defaults =
 {
-  // storageName : null,
   storageDir : null,
+  profileDir : null,
   storageTerminal : null,
   verbosity : 0,
 }
@@ -1084,8 +1135,8 @@ hashMapOutdatedFiles.defaults =
 function Init()
 {
 
-  this.configStoragePath = _.path.join( this.storageDir, this.configStorageTerminal );
-  this.arrangedStoragePath = _.path.join( this.storageDir, this.arrangedStorageTerminal );
+  this.configStoragePath = _.path.join( this.storageDir, this.profileDir, this.configStorageTerminal );
+  this.arrangedStoragePath = _.path.join( this.storageDir, this.profileDir, this.arrangedStorageTerminal );
 
 }
 
@@ -1172,6 +1223,7 @@ let Extension =
   Storage,
   storageDir : '.censor',
   configStorageTerminal : 'config.yaml',
+  profileDir : 'default',
   arrangedStorageTerminal : 'arranged.json',
   configStoragePath : null,
   arrangedStoragePath : null,
