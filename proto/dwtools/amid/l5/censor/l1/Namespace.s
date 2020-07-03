@@ -542,10 +542,14 @@ function filesHardLink( o )
 
   if( o.withHlink )
   {
-    let config = _.fileProvider.configUserRead( _.censor.configStorageName );
+    if( o.storageDir === null )
+    o.storageDir = _.censor.storageDir;
+    if( o.storageTerminal === null )
+    o.storageTerminal = _.censor.configStorageTerminal;
+    let storageName = _.path.join( o.storageDir, o.storageTerminal );
+    let config = _.fileProvider.configUserRead( storageName );
     if( config && config.path && config.path.hlink )
     _.arrayAppendArrayOnce( o.basePath, _.arrayAs( config.path.hlink ) );
-    // debugger;
   }
 
   _.assert( o.basePath.length >= 1 );
@@ -612,6 +616,8 @@ function filesHardLink( o )
 
 filesHardLink.defaults =
 {
+  storageTerminal : null,
+  storageDir : null,
   arranging : 0,
   verbosity : 3,
   log : null,
@@ -727,7 +733,13 @@ function do_body( o )
       up = true;
     }
 
-    opened = _.censor.storageOpen({ storageName : o.storageName });
+    if( o.storageDir === null )
+    o.storageDir = _.censor.storageDir;
+    if( o.storageTerminal === null )
+    o.storageTerminal = _.censor.arrangedStorageTerminal;
+    let storageName = _.path.join( o.storageDir, o.storageTerminal );
+
+    opened = _.censor.storageOpen({ storageName : storageName });
 
     if( !opened.storage || !opened.storage[ o.mode ].length )
     {
@@ -823,7 +835,9 @@ function do_body( o )
 do_body.defaults =
 {
   ... _.mapBut( actionDo.defaults, [ 'action' ] ),
-  storageName : null,
+  // storageName : null,
+  storageDir : null,
+  storageTerminal : null,
   depth : 0,
   verbosity : 3,
   logger : 1,
@@ -853,13 +867,19 @@ function storageRead( o )
   {
 
     if( _.strIs( arguments[ 0 ] ) )
-    o = { storageName : arguments[ 0 ] };
+    o = { storageDir : arguments[ 0 ] };
     o = _.routineOptions( storageRead, o );
 
-    if( o.storageName === null )
-    o.storageName = _.censor.arrangedStorageName;
+    if( o.storageDir === null )
+    o.storageDir = _.censor.storageDir;
+    if( o.storageTerminal === null )
+    o.storageTerminal = _.censor.arrangedStorageTerminal;
+    let storageName = _.path.join( o.storageDir, o.storageTerminal );
 
-    let storagePath = _.fileProvider.configUserPath( o.storageName );
+    // if( o.storageName === null )
+    // o.storageName = _.censor.arrangedStorageTerminal;
+
+    let storagePath = _.fileProvider.configUserPath( storageName );
 
     if( !_.fileProvider.fileExists( storagePath ) )
     return '';
@@ -868,13 +888,15 @@ function storageRead( o )
   }
   catch( err )
   {
-    throw _.err( err, `\nFailed to read storage::${o.storageName}` );
+    throw _.err( err, `\nFailed to read storage::${storageName}` );
   }
 }
 
 storageRead.defaults =
 {
-  storageName : null,
+  // storageName : null,
+  storageDir : null,
+  storageTerminal : null,
 }
 
 //
@@ -888,20 +910,25 @@ function storageOpen( o )
     o = { storageName : arguments[ 0 ] };
     o = _.routineOptions( storageOpen, o );
 
-    if( o.storageName === null )
-    o.storageName = _.censor.arrangedStorageName;
+    // if( o.storageName === null )
+    // o.storageName = _.censor.arrangedStorageTerminal;
+    if( o.storageDir === null )
+    o.storageDir = _.censor.storageDir;
+    if( o.storageTerminal === null )
+    o.storageTerminal = _.censor.arrangedStorageTerminal;
+    let storageName = _.path.join( o.storageDir, o.storageTerminal );
 
     o.storage = _.fileProvider.configUserRead
     ({
-      name : o.storageName,
+      name : storageName,
       locking : o.locking,
     });
 
     if( !o.storage )
     {
       o.storage = _.censor.Storage.construct();
-      _.fileProvider.configUserWrite( o.storageName, o.storage );
-      _.fileProvider.configUserLock( o.storageName );
+      _.fileProvider.configUserWrite( storageName, o.storage );
+      _.fileProvider.configUserLock( storageName );
     }
 
     return o;
@@ -910,13 +937,16 @@ function storageOpen( o )
   {
     if( !o.throwing )
     return null;
-    throw _.err( err, `\nFailed to open storage::${o.storageName}` );
+    throw _.err( err, `\nFailed to open storage::${storageName}` );
   }
 }
 
 storageOpen.defaults =
 {
-  storageName : null,
+  // storageDir : null,
+  // storageName : null,
+  storageDir : null,
+  storageTerminal : null,
   locking : 1,
   throwing : 1,
 }
@@ -927,7 +957,7 @@ function storageClose( o )
 {
 
   if( _.strIs( arguments[ 0 ] ) )
-  o = { storageName : arguments[ 0 ] };
+  o = { storageDir : arguments[ 0 ] };
   o = _.routineOptions( storageClose, o );
 
   try
@@ -935,11 +965,17 @@ function storageClose( o )
 
     _.assert( _.mapIs( o.storage ) );
 
-    if( o.storageName === null )
-    o.storageName = _.censor.arrangedStorageName;
+    if( o.storageDir === null )
+    o.storageDir = _.censor.storageDir;
+    if( o.storageTerminal === null )
+    o.storageTerminal = _.censor.arrangedStorageTerminal;
+    let storageName = _.path.join( o.storageDir, o.storageTerminal );
+    // if( o.storageName === null )
+    // o.storageName = _.censor.arrangedStorageTerminal;
+
     o.storage = _.fileProvider.configUserWrite
     ({
-      name : o.storageName,
+      name : storageName,
       structure : o.storage,
       unlocking : o.locking,
     });
@@ -950,7 +986,7 @@ function storageClose( o )
   {
     if( !o.throwing )
     return null;
-    throw _.err( err, `\nFailed to close storage::${o.storageName}` );
+    throw _.err( err, `\nFailed to close storage::${storageName}` );
   }
 }
 
@@ -966,14 +1002,20 @@ function storageReset( o )
 {
 
   if( _.strIs( arguments[ 0 ] ) )
-  o = { storageName : arguments[ 0 ] };
+  o = { storageDir : arguments[ 0 ] };
   o = _.routineOptions( storageReset, o );
 
   try
   {
 
-    if( o.storageName === null )
-    o.storageName = _.censor.arrangedStorageName;
+    // if( o.storageName === null )
+    // o.storageName = _.censor.arrangedStorageTerminal;
+
+    if( o.storageDir === null )
+    o.storageDir = _.censor.storageDir;
+    if( o.storageTerminal === null )
+    o.storageTerminal = _.censor.arrangedStorageTerminal;
+    let storageName = _.path.join( o.storageDir, o.storageTerminal );
 
     let storagePath = _.fileProvider.configUserPath( o.storageName );
 
@@ -987,14 +1029,16 @@ function storageReset( o )
   }
   catch( err )
   {
-    throw _.err( err, `\nFailed to delete storage::${o.storageName}` );
+    throw _.err( err, `\nFailed to delete storage::${storageName}` );
   }
 
 }
 
 storageReset.defaults =
 {
-  storageName : null,
+  // storageName : null,
+  storageDir : null,
+  storageTerminal : null,
   verbosity : 0,
 }
 
@@ -1031,6 +1075,18 @@ hashMapOutdatedFiles.defaults =
 {
   hashMap : null,
   dataMap : null,
+}
+
+// --
+// meta
+// --
+
+function Init()
+{
+
+  this.configStoragePath = _.path.join( this.storageDir, this.configStorageTerminal );
+  this.arrangedStoragePath = _.path.join( this.storageDir, this.arrangedStorageTerminal );
+
 }
 
 // --
@@ -1107,16 +1163,23 @@ let Extension =
 
   //
 
+  Init,
+
+  // fields
+
   Action,
   ActionStatus,
   Storage,
   storageDir : '.censor',
-  configStorageName : '.censor/config.yaml',
-  arrangedStorageName : '.censor/arranged.json',
+  configStorageTerminal : 'config.yaml',
+  arrangedStorageTerminal : 'arranged.json',
+  configStoragePath : null,
+  arrangedStoragePath : null,
 
 }
 
 _.mapExtend( Self, Extension );
+_.censor.Init();
 
 //
 
