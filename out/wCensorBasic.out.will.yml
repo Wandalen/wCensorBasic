@@ -1485,6 +1485,4 @@ module:
       ../.im.will.yml:
         hash: 9ab2675d7f79acdde163495ac8f3f38e
         size: 4866
-      wCensorBasic.out.will.yml:
-        hash: f5df251a4c8f82998c9bc4b2e56a3367
-        size: 38198
+      wCensorBasic.out.will.yml: *ref_0
