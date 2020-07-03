@@ -74,10 +74,17 @@ actionStatus.defaults =
 
 function actionDo( o )
 {
+  let up;
   try
   {
 
     o = _.routineOptions( actionDo, arguments );
+
+    if( o.logger )
+    {
+      o.logger.up();
+      up = true;
+    }
 
     verify();
 
@@ -117,6 +124,12 @@ function actionDo( o )
 
     act( o );
 
+    if( o.logger )
+    {
+      o.logger.down();
+      up = false;
+    }
+
     if( o.verbosity && o.log === undefined )
     {
       if( o.mode === 'redo' )
@@ -135,11 +148,11 @@ function actionDo( o )
       }
     }
 
-    if( o.verbosity && o.logging )
+    if( o.verbosity && o.logger )
     if( o.mode === 'redo' )
-    logger.log( o.action.redoDescription );
+    o.logger.log( o.action.redoDescription );
     else
-    logger.log( o.action.undoDescription );
+    o.logger.log( o.action.undoDescription );
 
     if( o.mode === 'undo' )
     o.action.dataMapBefore = null;
@@ -166,12 +179,19 @@ function actionDo( o )
     if( err.reason === 'outdated' )
     o.action.status.outdated = true;
 
+    if( up )
+    {
+      o.logger.down();
+      up = false;
+    }
+
     if( o.throwing )
     {
       _.errAttend( err, 0 );
       _.errLogEnd( err, 0 );
       throw err;
     }
+
     return null;
   }
 
@@ -269,7 +289,7 @@ actionDo.defaults =
   action : null,
   dry : 0,
   storage : null,
-  logging : 0,
+  logger : null,
   verbosity : 2,
   throwing : 1,
 }
@@ -291,6 +311,9 @@ function replace_pre( routine, args )
   _.assert( _.strDefined( o.filePath ) );
   _.assert( _.strDefined( o.ins ) );
   _.assert( _.strDefined( o.sub ) );
+
+  if( _.boolLikeTrue( o.logger ) )
+  o.logger = _.LoggerPrime();
 
   return o;
 }
@@ -358,7 +381,7 @@ function fileReplace_body( o )
   delete action.parameters.arranging;
   delete action.parameters.determiningLineNumber;
   delete action.parameters.dry;
-  delete action.parameters.logging;
+  delete action.parameters.logger;
   delete action.parameters.onTokenize;
   delete action.parameters.redoReseting;
 
@@ -371,8 +394,8 @@ function fileReplace_body( o )
 
   _.censor.storageClose( opened );
 
-  if( o.logging )
-  logger.log( o.log );
+  if( o.logger )
+  o.logger.log( o.log );
 
   return o;
 
@@ -386,7 +409,7 @@ function fileReplace_body( o )
     {
       src : _.strFrom( op.dataMap[ op.action.filePath ] ),
       parcels : op.action.parameters.parcels,
-      logging : op.logging,
+      logger : op.logger,
       verbosity : op.verbosity,
     }
     op.dst = _.strSearchReplace( o2 );
@@ -414,10 +437,9 @@ fileReplace_body.defaults =
   nearestLines : 3,
   arranging : 1, /* qqq : implement and cover for routine filesReplace */
   redoReseting : 1, /* qqq : cover for routine filesReplace */
-  // dry : 1,
   gray : 0,
   verbosity : 0,
-  logging : 0,
+  logger : 0,
 }
 
 let fileReplace = _.routineFromPreAndBody( replace_pre, fileReplace_body );
@@ -482,10 +504,10 @@ function filesReplace_body( o )
 
   if( o.verbosity >= 1 )
   {
-    let log = `\n . Found ${files.length} file(s). Arranged ${o.nparcels} replacement(s) in ${o.nfiles} file(s).`;
+    let log = ` . Found ${files.length} file(s). Arranged ${o.nparcels} replacement(s) in ${o.nfiles} file(s).`;
     o.log += log;
-    if( o.logging )
-    logger.log( log );
+    if( o.logger )
+    o.logger.log( log );
   }
 
   return o;
@@ -494,7 +516,6 @@ function filesReplace_body( o )
 filesReplace_body.defaults =
 {
   ... fileReplace.defaults,
-  logging : 0,
   verbosity : 3,
   basePath : null,
   filePath : null,
@@ -509,16 +530,23 @@ function filesHardLink( o )
 
   o = _.routineOptions( filesHardLink, arguments );
 
+  if( _.boolLikeTrue( o.logger ) )
+  o.logger = _.LoggerPrime();
+
   let path = _.fileProvider.path;
-  let config = _.fileProvider.configUserRead();
   let archive = new _.FilesArchive({ fileProvider : _.fileProvider })
 
   /* basePath */
 
   o.basePath = _.arrayAs( o.basePath );
 
-  // if( config && config.path && config.path.link )
-  // _.arrayAppendArrayOnce( o.basePath, _.arrayAs( config.path.link ) );
+  if( o.withHlink )
+  {
+    let config = _.fileProvider.configUserRead( _.censor.configStorageName );
+    if( config && config.path && config.path.hlink )
+    _.arrayAppendArrayOnce( o.basePath, _.arrayAs( config.path.hlink ) );
+    // debugger;
+  }
 
   _.assert( o.basePath.length >= 1 );
 
@@ -558,7 +586,9 @@ function filesHardLink( o )
     archive.mask = maskAll;
     archive.fileMapAutosaving = 1;
     archive.filesUpdate();
+    debugger;
     counter = archive.filesLinkSame();
+    debugger;
 
   }
 
@@ -571,8 +601,8 @@ function filesHardLink( o )
     o.log += '\n' + log;
     else
     o.log += log;
-    if( o.logging )
-    logger.log( log );
+    if( o.logger )
+    o.logger.log( log );
   }
 
   // if( o.beeping )
@@ -582,14 +612,14 @@ function filesHardLink( o )
 
 filesHardLink.defaults =
 {
-  // dry : 0,
   arranging : 0,
   verbosity : 3,
   log : null,
-  logging : 1,
+  logger : 1,
+  withHlink : 1,
   basePath : null,
   includingPath : null,
-  excludingPath : null,
+  excludingPath : null
 }
 
 // --
@@ -674,6 +704,10 @@ function do_pre( routine, args )
 {
   let o = _.routineOptions( routine, args );
   _.assert( _.longHas( [ 'redo', 'undo' ], o.mode ) );
+
+  if( _.boolLikeTrue( o.logger ) )
+  o.logger = _.LoggerPrime();
+
   return o;
 }
 
@@ -681,19 +715,27 @@ function do_pre( routine, args )
 
 function do_body( o )
 {
+  let up;
   let error;
   let opened;
   try
   {
 
+    if( o.logger )
+    {
+      o.logger.up();
+      up = true;
+    }
+
     opened = _.censor.storageOpen({ storageName : o.storageName });
 
     if( !opened.storage || !opened.storage[ o.mode ].length )
     {
+      let log = `Nothing to ${o.mode}.`;
       if( o.verbosity )
-      o.log = `Nothing to ${o.mode}.`;
-      if( o.logging )
-      logger.log( o.log );
+      o.log = log;
+      if( o.logger )
+      o.logger.log( o.log );
       return o;
     }
 
@@ -707,6 +749,7 @@ function do_body( o )
     for( let i = 0 ; i < o.depth; i++ )
     try
     {
+
       let o2 = _.mapOnly( o, _.censor.actionDo.defaults );
       o2.action = doArray[ i ];
       o2.verbosity = o2.verbosity - 1 >= 0 ? o2.verbosity - 1 : 0;
@@ -721,6 +764,7 @@ function do_body( o )
       ndone += 1;
       if( o2.action.status.error )
       nerrors += 1;
+
     }
     catch( err )
     {
@@ -731,15 +775,21 @@ function do_body( o )
       error = err;
     }
 
-    if( o.verbosity ) /* xxx */
+    if( up )
+    {
+      o.logger.down();
+      up = false;
+    }
+
+    if( o.verbosity )
     {
       let log = ``;
       if( o.mode === 'undo' )
-      log += `Undone ${ndone} action(s). Thrown ${nerrors} error(s).`;
+      log += ` - Undone ${ndone} action(s). Thrown ${nerrors} error(s).`;
       else
-      log += `Done ${ndone} action(s). Thrown ${nerrors} error(s).`;
-      if( o.logging ) /* xxx : logging -> logger */
-      logger.log( log );
+      log += ` + Done ${ndone} action(s). Thrown ${nerrors} error(s).`;
+      if( o.logger )
+      o.logger.log( log );
       if( o.log )
       o.log += '\n' + log;
       else
@@ -754,6 +804,11 @@ function do_body( o )
   }
   catch( err )
   {
+    if( up )
+    {
+      o.logger.down();
+      up = false;
+    }
     if( opened )
     {
       debugger;
@@ -769,9 +824,9 @@ do_body.defaults =
 {
   ... _.mapBut( actionDo.defaults, [ 'action' ] ),
   storageName : null,
-  dry : 0,
   depth : 0,
   verbosity : 3,
+  logger : 1,
 }
 
 //
@@ -802,7 +857,7 @@ function storageRead( o )
     o = _.routineOptions( storageRead, o );
 
     if( o.storageName === null )
-    o.storageName = _.censor.storageName;
+    o.storageName = _.censor.arrangedStorageName;
 
     let storagePath = _.fileProvider.configUserPath( o.storageName );
 
@@ -834,7 +889,7 @@ function storageOpen( o )
     o = _.routineOptions( storageOpen, o );
 
     if( o.storageName === null )
-    o.storageName = _.censor.storageName;
+    o.storageName = _.censor.arrangedStorageName;
 
     o.storage = _.fileProvider.configUserRead
     ({
@@ -881,18 +936,13 @@ function storageClose( o )
     _.assert( _.mapIs( o.storage ) );
 
     if( o.storageName === null )
-    o.storageName = _.censor.storageName;
+    o.storageName = _.censor.arrangedStorageName;
     o.storage = _.fileProvider.configUserWrite
     ({
       name : o.storageName,
       structure : o.storage,
       unlocking : o.locking,
     });
-
-    // if( o.locking )
-    // debugger;
-    // if( o.locking )
-    // _.fileProvider.configUserUnlock( _.censor.storageName );
 
     return o;
   }
@@ -923,7 +973,7 @@ function storageReset( o )
   {
 
     if( o.storageName === null )
-    o.storageName = _.censor.storageName;
+    o.storageName = _.censor.arrangedStorageName;
 
     let storagePath = _.fileProvider.configUserPath( o.storageName );
 
@@ -1060,7 +1110,9 @@ let Extension =
   Action,
   ActionStatus,
   Storage,
-  storageName : '.censor.json',
+  storageDir : '.censor',
+  configStorageName : '.censor/config.yaml',
+  arrangedStorageName : '.censor/arranged.json',
 
 }
 
