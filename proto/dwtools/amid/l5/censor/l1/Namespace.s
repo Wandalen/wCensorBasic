@@ -352,7 +352,7 @@ function fileReplace_body( o )
     if( !o.parcels.length )
     return o;
 
-    opened = _.censor.storageOpen
+    opened = _.censor.arrangementOpen
     ({
       storageDir : o.storageDir,
       profileDir : o.profileDir,
@@ -402,7 +402,7 @@ function fileReplace_body( o )
 
     opened.storage.redo.push( action );
 
-    _.censor.storageClose( opened );
+    _.censor.arrangementClose( opened );
 
     if( o.logger )
     o.logger.log( o.log );
@@ -413,7 +413,7 @@ function fileReplace_body( o )
     err = _.err( err );
 
     if( opened )
-    _.censor.storageClose( opened );
+    _.censor.arrangementClose( opened );
 
     throw err;
   }
@@ -477,14 +477,14 @@ function filesReplace_body( o )
 
   if( o.redoReseting )
   {
-    let opened = _.censor.storageOpen
+    let opened = _.censor.arrangementOpen
     ({
       storageDir : o.storageDir,
       profileDir : o.profileDir,
       storageTerminal : o.storageTerminal,
     });
     opened.storage.redo = [];
-    _.censor.storageClose( opened );
+    _.censor.arrangementClose( opened );
   }
 
   o.nparcels = 0;
@@ -572,12 +572,7 @@ function filesHardLink( o )
 
   if( o.withHlink )
   {
-    if( o.storageDir === null )
-    o.storageDir = _.censor.storageDir;
-    if( o.profileDir === null )
-    o.profileDir = _.censor.profileDir;
-    if( o.storageTerminal === null )
-    o.storageTerminal = _.censor.configStorageTerminal;
+    this._configFromDefaults( o );
     let storageName = _.path.join( o.storageDir, o.profileDir, o.storageTerminal );
     let config = _.fileProvider.configUserRead( storageName );
     if( config && config.path && config.path.hlink )
@@ -668,7 +663,7 @@ filesHardLink.defaults =
 function status( o )
 {
 
-  let opened = _.censor.storageOpen
+  let opened = _.censor.arrangementOpen
   ({
     storageDir : o.storageDir,
     profileDir : o.profileDir,
@@ -716,7 +711,7 @@ function status( o )
     result.undo = opened.storage.undo.length + errorsOf( opened.storage.undo );
   }
 
-  _.censor.storageClose( opened );
+  _.censor.arrangementClose( opened );
 
   return result;
 
@@ -764,6 +759,7 @@ function do_pre( routine, args )
 
 function do_body( o )
 {
+  let self = this;
   let up;
   let error;
   let opened;
@@ -776,15 +772,10 @@ function do_body( o )
       up = true;
     }
 
-    if( o.storageDir === null )
-    o.storageDir = _.censor.storageDir;
-    if( o.profileDir === null )
-    o.profileDir = _.censor.profileDir;
-    if( o.storageTerminal === null )
-    o.storageTerminal = _.censor.arrangedStorageTerminal;
+    self._arrangementFromDefaults( o );
     let storageName = _.path.join( o.storageDir, o.profileDir, o.storageTerminal );
 
-    let opened = _.censor.storageOpen
+    let opened = _.censor.arrangementOpen
     ({
       storageDir : o.storageDir,
       profileDir : o.profileDir,
@@ -858,7 +849,7 @@ function do_body( o )
       o.log = log;
     }
 
-    _.censor.storageClose( opened );
+    _.censor.arrangementClose( opened );
 
     if( error )
     throw error;
@@ -875,7 +866,7 @@ function do_body( o )
     {
       debugger;
       opened.throwing = 0;
-      _.censor.storageClose( opened )
+      _.censor.arrangementClose( opened )
     }
     debugger;
     throw _.err( err );
@@ -912,37 +903,158 @@ undo.defaults.mode = 'undo';
 // storage
 // --
 
+function _storageFromDefaults( o )
+{
+
+  if( o.storageDir === null )
+  o.storageDir = _.censor.storageDir;
+
+  _.assert( _.strIs( o.storageDir ), 'Expects defined {- o.storageDir -}' );
+
+  return o;
+}
+
+//
+
 function storageRead( o )
 {
-  try
-  {
+  let self = this;
 
-    if( _.strIs( arguments[ 0 ] ) )
-    o = { storageDir : arguments[ 0 ] };
-    o = _.routineOptions( storageRead, o );
+  if( _.strIs( arguments[ 0 ] ) )
+  o = { storageDir : arguments[ 0 ] };
+  o = _.routineOptions( storageRead, o );
 
-    if( o.storageDir === null )
-    o.storageDir = _.censor.storageDir;
-    if( o.profileDir === null )
-    o.profileDir = _.censor.profileDir;
-    if( o.storageTerminal === null )
-    o.storageTerminal = _.censor.arrangedStorageTerminal;
-    let storageName = _.path.join( o.storageDir, o.profileDir, o.storageTerminal );
+  self._storageFromDefaults( o );
 
-    let storagePath = _.fileProvider.configUserPath( storageName );
-
-    if( !_.fileProvider.fileExists( storagePath ) )
-    return '';
-
-    return _.fileProvider.fileRead( storagePath );
-  }
-  catch( err )
-  {
-    throw _.err( err, `\nFailed to read storage::${storageName}` );
-  }
+  return _.fileProvider.storageRead( o );
 }
 
 storageRead.defaults =
+{
+  storageDir : null,
+}
+
+//
+
+function storageReset( o )
+{
+  let self = this;
+
+  if( _.strIs( arguments[ 0 ] ) )
+  o = { storageDir : arguments[ 0 ] };
+  o = _.routineOptions( storageReset, o );
+
+  self._storageFromDefaults( o );
+
+  return _.fileProvider.storageReset( o );
+}
+
+storageReset.defaults =
+{
+  storageDir : null,
+  verbosity : 0,
+}
+
+//
+
+function storageLog( o )
+{
+  let self = this;
+
+  if( _.strIs( arguments[ 0 ] ) )
+  o = { storageDir : arguments[ 0 ] };
+  o = _.routineOptions( storageLog, o );
+  self._storageFromDefaults( o );
+
+  if( o.logger === null )
+  o.logger = _global_.logger;
+
+  let o2 = _.mapOnly( o, _.censor.storageRead.defaults );
+  let read = _.censor.storageRead( o2 );
+
+  o.logger.log( _.toJs( read ) );
+
+}
+
+storageLog.defaults =
+{
+  storageDir : null,
+  logger : null,
+}
+
+//
+
+function _profileFromDefaults( o )
+{
+
+  if( o.storageDir === null )
+  o.storageDir = _.censor.storageDir;
+  if( o.profileDir === null )
+  o.profileDir = _.censor.storageProfileDir;
+
+  _.assert( _.strIs( o.storageDir ), 'Expects defined {- o.storageDir -}' );
+  _.assert( _.strIs( o.profileDir ), 'Expects defined {- o.profileDir -}' );
+
+  return o;
+}
+
+//
+
+function profileReset( o )
+{
+  let self = this;
+
+  if( _.strIs( arguments[ 0 ] ) )
+  o = { storageDir : arguments[ 0 ] };
+  o = _.routineOptions( profileReset, o );
+
+  self._profileFromDefaults( o );
+
+  return _.fileProvider.storageProfileReset( o );
+}
+
+profileReset.defaults =
+{
+  storageDir : null,
+  profileDir : null,
+  verbosity : 0,
+}
+
+//
+
+function _configFromDefaults( o )
+{
+
+  if( o.storageDir === null )
+  o.storageDir = _.censor.storageDir;
+  if( o.profileDir === null )
+  o.profileDir = _.censor.storageProfileDir;
+  if( o.storageTerminal === null )
+  o.storageTerminal = _.censor.storageConfigTerminal;
+
+  _.assert( _.strIs( o.storageDir ), 'Expects defined {- o.storageDir -}' );
+  _.assert( _.strIs( o.profileDir ), 'Expects defined {- o.profileDir -}' );
+  _.assert( _.strIs( o.storageTerminal ), 'Expects defined {- o.storageTerminal -}' );
+
+  return o;
+}
+
+//
+
+function configRead( o )
+{
+  let self = this;
+
+  if( _.strIs( arguments[ 0 ] ) )
+  o = { storageDir : arguments[ 0 ] };
+  o = _.routineOptions( configRead, o );
+
+  self._configFromDefaults( o );
+
+  return _.fileProvider.storageTerminalRead( o );
+}
+
+configRead.defaults =
 {
   storageDir : null,
   profileDir : null,
@@ -951,50 +1063,29 @@ storageRead.defaults =
 
 //
 
-function storageOpen( o )
+function configOpen( o )
 {
-  try
+  let self = this;
+
+  if( _.strIs( arguments[ 0 ] ) )
+  o = { storageDir : arguments[ 0 ] };
+  o = _.routineOptions( configOpen, o );
+
+  self._configFromDefaults( o );
+
+  o.onStorageConstruct = onStorageConstruct;
+
+  return _.fileProvider.storageTerminalOpen( o );
+
+  function onStorageConstruct( o )
   {
-
-    if( _.strIs( arguments[ 0 ] ) )
-    o = { storageName : arguments[ 0 ] };
-    o = _.routineOptions( storageOpen, o );
-
-    if( o.storageDir === null )
-    o.storageDir = _.censor.storageDir;
-    if( o.profileDir === null )
-    o.profileDir = _.censor.profileDir;
-    if( o.storageTerminal === null )
-    o.storageTerminal = _.censor.arrangedStorageTerminal;
-    let storageName = _.path.join( o.storageDir, o.profileDir, o.storageTerminal );
-
-    o.storage = _.fileProvider.configUserRead
-    ({
-      name : storageName,
-      locking : o.locking,
-    });
-
-    if( !o.storage )
-    {
-      o.storage = _.censor.Storage.construct();
-      _.fileProvider.configUserWrite( storageName, o.storage );
-      _.fileProvider.configUserLock( storageName );
-    }
-
-    return o;
-  }
-  catch( err )
-  {
-    if( !o.throwing )
-    return null;
-    throw _.err( err, `\nFailed to open storage::${storageName}` );
+    o.storage = _.censor.Storage.construct();
+    return o.storage;
   }
 }
 
-storageOpen.defaults =
+configOpen.defaults =
 {
-  // storageDir : null,
-  // storageName : null,
   storageDir : null,
   profileDir : null,
   storageTerminal : null,
@@ -1004,93 +1095,227 @@ storageOpen.defaults =
 
 //
 
-function storageClose( o )
+function configClose( o )
 {
+  let self = this;
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routineOptions( storageClose, o );
+  o = _.routineOptions( configClose, o );
 
-  try
-  {
+  self._configFromDefaults( o );
 
-    _.assert( _.mapIs( o.storage ) );
+  _.assert( _.mapIs( o.storage ) );
 
-    if( o.storageDir === null )
-    o.storageDir = _.censor.storageDir;
-    if( o.profileDir === null )
-    o.profileDir = _.censor.profileDir;
-    if( o.storageTerminal === null )
-    o.storageTerminal = _.censor.arrangedStorageTerminal;
-
-    let storageName = _.path.join( o.storageDir, o.profileDir, o.storageTerminal );
-
-    o.storage = _.fileProvider.configUserWrite
-    ({
-      name : storageName,
-      structure : o.storage,
-      unlocking : o.locking,
-    });
-
-    return o;
-  }
-  catch( err )
-  {
-    if( !o.throwing )
-    return null;
-    throw _.err( err, `\nFailed to close storage::${storageName}` );
-  }
+  return _.fileProvider.storageTerminalClose( o );
 }
 
-storageClose.defaults =
+configClose.defaults =
 {
-  ... storageOpen.defaults,
+  ... configOpen.defaults,
   storage : null,
+  onStorageConstruct : null,
 }
 
 //
 
-function storageReset( o )
+function configReset( o )
 {
+  let self = this;
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routineOptions( storageReset, o );
+  o = _.routineOptions( configReset, o );
 
-  try
-  {
+  self._configFromDefaults( o );
 
-    if( o.storageDir === null )
-    o.storageDir = _.censor.storageDir;
-    if( o.profileDir === null )
-    o.profileDir = _.censor.profileDir;
-    if( o.storageTerminal === null )
-    o.storageTerminal = _.censor.arrangedStorageTerminal;
-    let storageName = _.path.join( o.storageDir, o.storageTerminal );
-
-    let storagePath = _.fileProvider.configUserPath( storageName );
-
-    if( _.fileProvider.fileExists( storagePath ) )
-    _.fileProvider.fileDelete
-    ({
-      filePath : storagePath,
-      verbosity : o.verbosity ? 3 : 0,
-    });
-
-  }
-  catch( err )
-  {
-    throw _.err( err, `\nFailed to delete storage::${storageName}` );
-  }
-
+  return _.fileProvider.storageTerminalReset( o );
 }
 
-storageReset.defaults =
+configReset.defaults =
 {
   storageDir : null,
   profileDir : null,
   storageTerminal : null,
   verbosity : 0,
+}
+
+//
+
+function configLog( o )
+{
+  let self = this;
+
+  if( _.strIs( arguments[ 0 ] ) )
+  o = { storageDir : arguments[ 0 ] };
+  o = _.routineOptions( configLog, o );
+  self._configFromDefaults( o );
+
+  if( o.logger === null )
+  o.logger = _global_.logger;
+
+  let o2 = _.mapOnly( o, _.censor.configRead.defaults );
+  let read = _.censor.configRead( o2 );
+
+  o.logger.log( _.toJs( read ) );
+
+}
+
+configLog.defaults =
+{
+  storageDir : null,
+  profileDir : null,
+  storageTerminal : null,
+  logger : null,
+}
+
+//
+
+function _arrangementFromDefaults( o )
+{
+
+  if( o.storageDir === null )
+  o.storageDir = _.censor.storageDir;
+  if( o.profileDir === null )
+  o.profileDir = _.censor.storageProfileDir;
+  if( o.storageTerminal === null )
+  o.storageTerminal = _.censor.storageArrangementTerminal;
+
+  _.assert( _.strIs( o.storageDir ), 'Expects defined {- o.storageDir -}' );
+  _.assert( _.strIs( o.profileDir ), 'Expects defined {- o.profileDir -}' );
+  _.assert( _.strIs( o.storageTerminal ), 'Expects defined {- o.storageTerminal -}' );
+
+  return o;
+}
+
+//
+
+function arrangementRead( o )
+{
+  let self = this;
+
+  if( _.strIs( arguments[ 0 ] ) )
+  o = { storageDir : arguments[ 0 ] };
+  o = _.routineOptions( arrangementRead, o );
+
+  self._arrangementFromDefaults( o );
+
+  return _.fileProvider.storageTerminalRead( o );
+}
+
+arrangementRead.defaults =
+{
+  storageDir : null,
+  profileDir : null,
+  storageTerminal : null,
+}
+
+//
+
+function arrangementOpen( o )
+{
+  let self = this;
+
+  if( _.strIs( arguments[ 0 ] ) )
+  o = { storageDir : arguments[ 0 ] };
+  o = _.routineOptions( arrangementOpen, o );
+
+  self._arrangementFromDefaults( o );
+
+  o.onStorageConstruct = onStorageConstruct;
+
+  return _.fileProvider.storageTerminalOpen( o );
+
+  function onStorageConstruct( o )
+  {
+    o.storage = _.censor.Storage.construct();
+    return o.storage;
+  }
+}
+
+arrangementOpen.defaults =
+{
+  storageDir : null,
+  profileDir : null,
+  storageTerminal : null,
+  locking : 1,
+  throwing : 1,
+}
+
+//
+
+function arrangementClose( o )
+{
+  let self = this;
+
+  if( _.strIs( arguments[ 0 ] ) )
+  o = { storageDir : arguments[ 0 ] };
+  o = _.routineOptions( arrangementClose, o );
+
+  self._arrangementFromDefaults( o );
+
+  _.assert( _.mapIs( o.storage ) );
+
+  return _.fileProvider.storageTerminalClose( o );
+}
+
+arrangementClose.defaults =
+{
+  ... arrangementOpen.defaults,
+  storage : null,
+  onStorageConstruct : null,
+}
+
+//
+
+function arrangementReset( o )
+{
+  let self = this;
+
+  if( _.strIs( arguments[ 0 ] ) )
+  o = { storageDir : arguments[ 0 ] };
+  o = _.routineOptions( arrangementReset, o );
+
+  self._arrangementFromDefaults( o );
+
+  return _.fileProvider.storageTerminalReset( o );
+}
+
+arrangementReset.defaults =
+{
+  storageDir : null,
+  profileDir : null,
+  storageTerminal : null,
+  verbosity : 0,
+}
+
+//
+
+function arrangementLog( o )
+{
+  let self = this;
+
+  if( _.strIs( arguments[ 0 ] ) )
+  o = { storageDir : arguments[ 0 ] };
+  o = _.routineOptions( arrangementLog, o );
+  self._arrangementFromDefaults( o );
+
+  if( o.logger === null )
+  o.logger = _global_.logger;
+
+  let o2 = _.mapOnly( o, _.censor.arrangementRead.defaults );
+  let read = _.censor.arrangementRead( o2 );
+
+  o.logger.log( _.toJs( read ) );
+
+}
+
+arrangementLog.defaults =
+{
+  storageDir : null,
+  profileDir : null,
+  storageTerminal : null,
+  logger : null,
 }
 
 // --
@@ -1116,7 +1341,6 @@ function hashMapOutdatedFiles( o )
     {
       result.push( filePath );
     }
-
   }
 
   return result;
@@ -1135,8 +1359,10 @@ hashMapOutdatedFiles.defaults =
 function Init()
 {
 
-  this.configStoragePath = _.path.join( this.storageDir, this.profileDir, this.configStorageTerminal );
-  this.arrangedStoragePath = _.path.join( this.storageDir, this.profileDir, this.arrangedStorageTerminal );
+  this.storagePath = _.path.normalize( this.storageDir );
+  this.storageProfilePath = _.path.join( this.storageDir, this.storageProfileDir );
+  this.storageConfigPath = _.path.join( this.storageDir, this.storageProfileDir, this.storageConfigTerminal );
+  this.storageArrangementPath = _.path.join( this.storageDir, this.storageProfileDir, this.storageArrangementTerminal );
 
 }
 
@@ -1203,10 +1429,27 @@ let Extension =
 
   // storage
 
+  _storageFromDefaults,
   storageRead,
-  storageOpen,
-  storageClose,
   storageReset,
+  storageLog,
+
+  _profileFromDefaults,
+  profileReset,
+
+  _configFromDefaults,
+  configRead,
+  configOpen,
+  configClose,
+  configReset,
+  configLog,
+
+  _arrangementFromDefaults,
+  arrangementRead,
+  arrangementOpen,
+  arrangementClose,
+  arrangementReset,
+  arrangementLog,
 
   // etc
 
@@ -1222,11 +1465,11 @@ let Extension =
   ActionStatus,
   Storage,
   storageDir : '.censor',
-  configStorageTerminal : 'config.yaml',
-  profileDir : 'default',
-  arrangedStorageTerminal : 'arranged.json',
-  configStoragePath : null,
-  arrangedStoragePath : null,
+  storageConfigTerminal : 'config.yaml',
+  storageProfileDir : 'default',
+  storageArrangementTerminal : 'arrangement.json',
+  storageConfigPath : null,
+  storageArrangementPath : null,
 
 }
 
