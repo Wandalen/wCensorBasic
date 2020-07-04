@@ -356,7 +356,9 @@ function fileReplace_body( o )
     ({
       storageDir : o.storageDir,
       profileDir : o.profileDir,
+      storageTerminalPrefix : o.storageTerminalPrefix,
       storageTerminal : o.storageTerminal,
+      storageTerminalPostfix : o.storageTerminalPostfix,
     });
 
     if( o.redoReseting )
@@ -463,7 +465,9 @@ fileReplace_body.defaults =
   logger : 0,
   storageDir : null,
   profileDir : null,
+  storageTerminalPrefix : null,
   storageTerminal : null,
+  storageTerminalPostfix : null,
 }
 
 let fileReplace = _.routineFromPreAndBody( replace_pre, fileReplace_body );
@@ -481,7 +485,9 @@ function filesReplace_body( o )
     ({
       storageDir : o.storageDir,
       profileDir : o.profileDir,
+      storageTerminalPrefix : o.storageTerminalPrefix,
       storageTerminal : o.storageTerminal,
+      storageTerminalPostfix : o.storageTerminalPostfix,
     });
     opened.storage.redo = [];
     _.censor.arrangementClose( opened );
@@ -531,7 +537,7 @@ function filesReplace_body( o )
     o.log += o2.log;
   }
 
-  if( o.verbosity >= 1 )
+  if( o.verbosity )
   {
     let log = ` . Found ${files.length} file(s). Arranged ${o.nparcels} replacement(s) in ${o.nfiles} file(s).`;
     o.log += log;
@@ -544,7 +550,6 @@ function filesReplace_body( o )
 
 filesReplace_body.defaults =
 {
-
   ... fileReplace.defaults,
   verbosity : 3,
   basePath : null,
@@ -572,8 +577,8 @@ function filesHardLink( o )
 
   if( o.withHlink )
   {
-    this._configFromDefaults( o );
-    let storageName = _.path.join( o.storageDir, o.profileDir, o.storageTerminal );
+    let storageName = this._configFromDefaults( o );
+    // let storageName = _.path.join( o.storageDir, o.profileDir, o.storageTerminal );
     let config = _.fileProvider.configUserRead( storageName );
     if( config && config.path && config.path.hlink )
     _.arrayAppendArrayOnce( o.basePath, _.arrayAs( config.path.hlink ) );
@@ -643,9 +648,12 @@ function filesHardLink( o )
 
 filesHardLink.defaults =
 {
-  storageTerminal : null,
-  profileDir : null,
   storageDir : null,
+  profileDir : null,
+  storageTerminalPrefix : null,
+  storageTerminal : null,
+  storageTerminalPostfix : null,
+
   arranging : 0,
   verbosity : 3,
   log : null,
@@ -667,7 +675,9 @@ function status( o )
   ({
     storageDir : o.storageDir,
     profileDir : o.profileDir,
+    storageTerminalPrefix : o.storageTerminalPrefix,
     storageTerminal : o.storageTerminal,
+    storageTerminalPostfix : o.storageTerminalPostfix,
   });
 
   let result = Object.create( null );
@@ -733,9 +743,12 @@ function status( o )
 
 status.defaults =
 {
-  storageTerminal : null,
-  profileDir : null,
   storageDir : null,
+  profileDir : null,
+  storageTerminalPrefix : null,
+  storageTerminal : null,
+  storageTerminalPostfix : null,
+
   verbosity : 3,
   withUndo : 1,
   withRedo : 1,
@@ -773,13 +786,14 @@ function do_body( o )
     }
 
     self._arrangementFromDefaults( o );
-    let storageName = _.path.join( o.storageDir, o.profileDir, o.storageTerminal );
 
     let opened = _.censor.arrangementOpen
     ({
       storageDir : o.storageDir,
       profileDir : o.profileDir,
+      storageTerminalPrefix : o.storageTerminalPrefix,
       storageTerminal : o.storageTerminal,
+      storageTerminalPostfix : o.storageTerminalPostfix,
     });
 
     if( !opened.storage || !opened.storage[ o.mode ].length )
@@ -875,14 +889,19 @@ function do_body( o )
 
 do_body.defaults =
 {
+
   ... _.mapBut( actionDo.defaults, [ 'action' ] ),
-  // storageName : null,
-  storageDir : null,
-  profileDir : null,
-  storageTerminal : null,
+
   depth : 0,
   verbosity : 3,
   logger : 1,
+
+  storageDir : null,
+  profileDir : null,
+  storageTerminalPrefix : null,
+  storageTerminal : null,
+  storageTerminalPostfix : null,
+
 }
 
 //
@@ -909,9 +928,12 @@ function _storageFromDefaults( o )
   if( o.storageDir === null )
   o.storageDir = _.censor.storageDir;
 
+  _.assert( _.mapIs( o ) );
   _.assert( _.strIs( o.storageDir ), 'Expects defined {- o.storageDir -}' );
 
-  return o;
+  let storageName = _.path.normalize( o.storageDir );
+
+  return storageName;
 }
 
 //
@@ -972,6 +994,15 @@ function storageLog( o )
   let o2 = _.mapOnly( o, _.censor.storageRead.defaults );
   let read = _.censor.storageRead( o2 );
 
+  if( !o.verbosity )
+  return;
+
+  if( o.verbosity <= 1 )
+  {
+    o.logger.log( _.toJs( _.mapKeys( read ) ) );
+    return;
+  }
+
   o.logger.log( _.toJs( read ) );
 
 }
@@ -980,6 +1011,7 @@ storageLog.defaults =
 {
   storageDir : null,
   logger : null,
+  verbosity : 3,
 }
 
 //
@@ -992,10 +1024,34 @@ function _profileFromDefaults( o )
   if( o.profileDir === null )
   o.profileDir = _.censor.storageProfileDir;
 
+  _.assert( _.mapIs( o ) );
   _.assert( _.strIs( o.storageDir ), 'Expects defined {- o.storageDir -}' );
   _.assert( _.strIs( o.profileDir ), 'Expects defined {- o.profileDir -}' );
 
-  return o;
+  let storageName = _.path.join( o.storageDir, o.profileDir );
+
+  return storageName;
+}
+
+//
+
+function profileRead( o )
+{
+  let self = this;
+
+  if( _.strIs( arguments[ 0 ] ) )
+  o = { storageDir : arguments[ 0 ] };
+  o = _.routineOptions( profileRead, o );
+
+  self._profileFromDefaults( o );
+
+  return _.fileProvider.storageProfileRead( o );
+}
+
+profileRead.defaults =
+{
+  storageDir : null,
+  profileDir : null,
 }
 
 //
@@ -1022,6 +1078,44 @@ profileReset.defaults =
 
 //
 
+function profileLog( o )
+{
+  let self = this;
+
+  if( _.strIs( arguments[ 0 ] ) )
+  o = { storageDir : arguments[ 0 ] };
+  o = _.routineOptions( profileLog, o );
+  self._profileFromDefaults( o );
+
+  if( o.logger === null )
+  o.logger = _global_.logger;
+
+  let o2 = _.mapOnly( o, _.censor.profileRead.defaults );
+  let read = _.censor.profileRead( o2 );
+
+  if( !o.verbosity )
+  return;
+
+  if( o.verbosity <= 1 )
+  {
+    o.logger.log( _.toJs( _.mapKeys( read ) ) );
+    return;
+  }
+
+  o.logger.log( _.toJs( read ) );
+
+}
+
+profileLog.defaults =
+{
+  storageDir : null,
+  profileDir : null,
+  logger : null,
+  verbosity : 3,
+}
+
+//
+
 function _configFromDefaults( o )
 {
 
@@ -1032,11 +1126,14 @@ function _configFromDefaults( o )
   if( o.storageTerminal === null )
   o.storageTerminal = _.censor.storageConfigTerminal;
 
+  _.assert( _.mapIs( o ) );
   _.assert( _.strIs( o.storageDir ), 'Expects defined {- o.storageDir -}' );
   _.assert( _.strIs( o.profileDir ), 'Expects defined {- o.profileDir -}' );
   _.assert( _.strIs( o.storageTerminal ), 'Expects defined {- o.storageTerminal -}' );
 
-  return o;
+  let storageName = _.path.join( o.storageDir, o.profileDir, o.storageTerminal );
+
+  return storageName;
 }
 
 //
@@ -1086,11 +1183,11 @@ function configOpen( o )
 
 configOpen.defaults =
 {
+  locking : 1,
+  throwing : 1,
   storageDir : null,
   profileDir : null,
   storageTerminal : null,
-  locking : 1,
-  throwing : 1,
 }
 
 //
@@ -1167,6 +1264,7 @@ configLog.defaults =
   profileDir : null,
   storageTerminal : null,
   logger : null,
+  verbosity : 3,
 }
 
 //
@@ -1178,14 +1276,28 @@ function _arrangementFromDefaults( o )
   o.storageDir = _.censor.storageDir;
   if( o.profileDir === null )
   o.profileDir = _.censor.storageProfileDir;
+  if( o.storageTerminalPrefix === null )
+  o.storageTerminalPrefix = _.censor.storageArrangementPrefix;
   if( o.storageTerminal === null )
   o.storageTerminal = _.censor.storageArrangementTerminal;
+  if( o.storageTerminalPostfix === null )
+  o.storageTerminalPostfix = _.censor.storageArrangementPostfix;
 
+  _.assert( _.mapIs( o ) );
   _.assert( _.strIs( o.storageDir ), 'Expects defined {- o.storageDir -}' );
   _.assert( _.strIs( o.profileDir ), 'Expects defined {- o.profileDir -}' );
+  _.assert( _.strIs( o.storageTerminalPrefix ), 'Expects defined {- o.storageTerminalPrefix -}' );
   _.assert( _.strIs( o.storageTerminal ), 'Expects defined {- o.storageTerminal -}' );
+  _.assert( _.strIs( o.storageTerminalPostfix ), 'Expects defined {- o.storageTerminalPostfix -}' );
 
-  return o;
+  let storageName = _.path.join
+  (
+    o.storageDir,
+    o.profileDir,
+    o.storageTerminalPrefix + o.storageTerminal + o.storageTerminalPostfix,
+  );
+
+  return storageName;
 }
 
 //
@@ -1207,7 +1319,9 @@ arrangementRead.defaults =
 {
   storageDir : null,
   profileDir : null,
+  storageTerminalPrefix : null,
   storageTerminal : null,
+  storageTerminalPostfix : null,
 }
 
 //
@@ -1237,7 +1351,9 @@ arrangementOpen.defaults =
 {
   storageDir : null,
   profileDir : null,
+  storageTerminalPrefix : null,
   storageTerminal : null,
+  storageTerminalPostfix : null,
   locking : 1,
   throwing : 1,
 }
@@ -1285,7 +1401,9 @@ arrangementReset.defaults =
 {
   storageDir : null,
   profileDir : null,
+  storageTerminalPrefix : null,
   storageTerminal : null,
+  storageTerminalPostfix : null,
   verbosity : 0,
 }
 
@@ -1314,8 +1432,11 @@ arrangementLog.defaults =
 {
   storageDir : null,
   profileDir : null,
+  storageTerminalPrefix : null,
   storageTerminal : null,
+  storageTerminalPostfix : null,
   logger : null,
+  verbosity : 3,
 }
 
 // --
@@ -1362,7 +1483,12 @@ function Init()
   this.storagePath = _.path.normalize( this.storageDir );
   this.storageProfilePath = _.path.join( this.storageDir, this.storageProfileDir );
   this.storageConfigPath = _.path.join( this.storageDir, this.storageProfileDir, this.storageConfigTerminal );
-  this.storageArrangementPath = _.path.join( this.storageDir, this.storageProfileDir, this.storageArrangementTerminal );
+  this.storageArrangementPath = _.path.join
+  (
+    this.storageDir,
+    this.storageProfileDir,
+    this.storageArrangementPrefix + this.storageArrangementTerminal + this.storageArrangementPostfix,
+  );
 
 }
 
@@ -1435,7 +1561,9 @@ let Extension =
   storageLog,
 
   _profileFromDefaults,
+  profileRead,
   profileReset,
+  profileLog,
 
   _configFromDefaults,
   configRead,
@@ -1464,11 +1592,16 @@ let Extension =
   Action,
   ActionStatus,
   Storage,
+
   storageDir : '.censor',
-  storageConfigTerminal : 'config.yaml',
+  storagePath : null,
   storageProfileDir : 'default',
-  storageArrangementTerminal : 'arrangement.json',
+  storageProfilePath : null,
+  storageConfigTerminal : 'config.yaml',
   storageConfigPath : null,
+  storageArrangementPrefix : 'arrangement.',
+  storageArrangementTerminal : 'default',
+  storageArrangementPostfix : '.json',
   storageArrangementPath : null,
 
 }
