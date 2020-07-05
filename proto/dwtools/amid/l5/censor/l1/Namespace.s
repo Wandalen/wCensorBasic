@@ -361,7 +361,7 @@ function fileReplace_body( o )
       storageTerminalPostfix : o.storageTerminalPostfix,
     });
 
-    if( o.redoReseting )
+    if( o.resetting )
     opened.storage.redo = [];
 
     let tab = '     ';
@@ -395,7 +395,7 @@ function fileReplace_body( o )
     delete action.parameters.dry;
     delete action.parameters.logger;
     delete action.parameters.onTokenize;
-    delete action.parameters.redoReseting;
+    delete action.parameters.resetting;
 
     if( o.verbosity >= 2 )
     o.log = action.redoDescription2;
@@ -459,7 +459,7 @@ fileReplace_body.defaults =
   sub : null,
   nearestLines : 3,
   arranging : 1, /* qqq : implement and cover for routine filesReplace */
-  redoReseting : 1, /* qqq : cover for routine filesReplace */
+  resetting : 0, /* qqq : cover for routine filesReplace */
   gray : 0,
   verbosity : 0,
   logger : 0,
@@ -479,7 +479,7 @@ function filesReplace_body( o )
 
   o  =_.routineOptions( filesReplace, arguments );
 
-  if( o.redoReseting )
+  if( o.resetting )
   {
     let opened = _.censor.arrangementOpen
     ({
@@ -526,7 +526,7 @@ function filesReplace_body( o )
     let o2 = _.mapOnly( o, _.censor.fileReplace.defaults );
     o2.verbosity = o2.verbosity - 1 >= 0 ? o2.verbosity - 1 : 0;
     o2.filePath = files[ f ].absolute;
-    o2.redoReseting = 0;
+    o2.resetting = 0;
     _.censor.fileReplace( o2 );
     _.assert( _.intIs( o2.parcels.length ) );
     o.files.push( o2 );
