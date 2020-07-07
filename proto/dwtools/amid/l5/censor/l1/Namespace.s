@@ -577,7 +577,7 @@ function filesHardLink( o )
 
   if( o.withHlink )
   {
-    let storageName = this._configFromDefaults( o );
+    let storageName = this._configNameMapFromDefaults( o );
     // let storageName = _.path.join( o.storageDir, o.profileDir, o.storageTerminal );
     let config = _.fileProvider.configUserRead( storageName );
     if( config && config.path && config.path.hlink )
@@ -785,7 +785,7 @@ function do_body( o )
       up = true;
     }
 
-    self._arrangementFromDefaults( o );
+    self._arrangementNameMapFromDefaults( o );
 
     let opened = _.censor.arrangementOpen
     ({
@@ -922,7 +922,7 @@ undo.defaults.mode = 'undo';
 // storage
 // --
 
-function _storageFromDefaults( o )
+function _storageNameMapFromDefaults( o )
 {
 
   if( o.storageDir === null )
@@ -938,6 +938,28 @@ function _storageFromDefaults( o )
 
 //
 
+function storageNameMapFrom( o )
+{
+  let self = this;
+
+  o = _.routineOptions( storageNameMapFrom, o );
+  self._storageNameMapFromDefaults( o );
+
+  _.fileProvider.storageProfileNameMapFrom( o );
+
+  return o;
+}
+
+storageNameMapFrom.defaults =
+{
+  storageName : null,
+  storagePath : null,
+  storageDir : null,
+  profileDir : null,
+}
+
+//
+
 function storageRead( o )
 {
   let self = this;
@@ -946,7 +968,7 @@ function storageRead( o )
   o = { storageDir : arguments[ 0 ] };
   o = _.routineOptions( storageRead, o );
 
-  self._storageFromDefaults( o );
+  self._storageNameMapFromDefaults( o );
 
   return _.fileProvider.storageRead( o );
 }
@@ -966,7 +988,7 @@ function storageReset( o )
   o = { storageDir : arguments[ 0 ] };
   o = _.routineOptions( storageReset, o );
 
-  self._storageFromDefaults( o );
+  self._storageNameMapFromDefaults( o );
 
   return _.fileProvider.storageReset( o );
 }
@@ -986,7 +1008,7 @@ function storageLog( o )
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
   o = _.routineOptions( storageLog, o );
-  self._storageFromDefaults( o );
+  self._storageNameMapFromDefaults( o );
 
   if( o.logger === null )
   o.logger = _global_.logger;
@@ -1016,7 +1038,7 @@ storageLog.defaults =
 
 //
 
-function _profileFromDefaults( o )
+function _profileNameMapFromDefaults( o )
 {
 
   if( o.storageDir === null )
@@ -1035,6 +1057,28 @@ function _profileFromDefaults( o )
 
 //
 
+function profileNameMapFrom( o )
+{
+  let self = this;
+
+  o = _.routineOptions( profileNameMapFrom, o );
+  self._profileNameMapFromDefaults( o );
+
+  _.fileProvider.storageProfileNameMapFrom( o );
+
+  return o;
+}
+
+profileNameMapFrom.defaults =
+{
+  storageName : null,
+  storagePath : null,
+  storageDir : null,
+  profileDir : null,
+}
+
+//
+
 function profileRead( o )
 {
   let self = this;
@@ -1043,15 +1087,16 @@ function profileRead( o )
   o = { storageDir : arguments[ 0 ] };
   o = _.routineOptions( profileRead, o );
 
-  self._profileFromDefaults( o );
+  self._profileNameMapFromDefaults( o );
 
   return _.fileProvider.storageProfileRead( o );
 }
 
 profileRead.defaults =
 {
-  storageDir : null,
-  profileDir : null,
+  ... profileNameMapFrom.defaults,
+  // storageDir : null,
+  // profileDir : null,
 }
 
 //
@@ -1064,15 +1109,16 @@ function profileReset( o )
   o = { storageDir : arguments[ 0 ] };
   o = _.routineOptions( profileReset, o );
 
-  self._profileFromDefaults( o );
+  self._profileNameMapFromDefaults( o );
 
   return _.fileProvider.storageProfileReset( o );
 }
 
 profileReset.defaults =
 {
-  storageDir : null,
-  profileDir : null,
+  ... profileNameMapFrom.defaults,
+  // storageDir : null,
+  // profileDir : null,
   verbosity : 0,
 }
 
@@ -1085,7 +1131,7 @@ function profileLog( o )
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
   o = _.routineOptions( profileLog, o );
-  self._profileFromDefaults( o );
+  self._profileNameMapFromDefaults( o );
 
   if( o.logger === null )
   o.logger = _global_.logger;
@@ -1108,15 +1154,16 @@ function profileLog( o )
 
 profileLog.defaults =
 {
-  storageDir : null,
-  profileDir : null,
+  ... profileNameMapFrom.defaults,
+  // storageDir : null,
+  // profileDir : null,
   logger : null,
   verbosity : 3,
 }
 
 //
 
-function _configFromDefaults( o )
+function _configNameMapFromDefaults( o )
 {
 
   if( o.storageDir === null )
@@ -1125,15 +1172,54 @@ function _configFromDefaults( o )
   o.profileDir = _.censor.storageProfileDir;
   if( o.storageTerminal === null )
   o.storageTerminal = _.censor.storageConfigTerminal;
+  if( o.storageTerminalPrefix === null )
+  o.storageTerminalPrefix = '';
+  if( o.storageTerminalPostfix === null )
+  o.storageTerminalPostfix = '';
 
   _.assert( _.mapIs( o ) );
   _.assert( _.strIs( o.storageDir ), 'Expects defined {- o.storageDir -}' );
   _.assert( _.strIs( o.profileDir ), 'Expects defined {- o.profileDir -}' );
+  _.assert( _.strIs( o.storageTerminalPrefix ), 'Expects defined {- o.storageTerminalPrefix -}' );
   _.assert( _.strIs( o.storageTerminal ), 'Expects defined {- o.storageTerminal -}' );
+  _.assert( _.strIs( o.storageTerminalPostfix ), 'Expects defined {- o.storageTerminalPostfix -}' );
 
-  let storageName = _.path.join( o.storageDir, o.profileDir, o.storageTerminal );
+  let storageName = _.path.join
+  (
+    o.storageDir,
+    o.profileDir,
+    o.storageTerminalPrefix + o.storageTerminal + o.storageTerminalPostfix,
+  );
 
   return storageName;
+}
+
+//
+
+function configNameMapFrom( o )
+{
+  let self = this;
+
+  o = _.routineOptions( configNameMapFrom, o );
+  self._configNameMapFromDefaults( o );
+
+  _.fileProvider.storageTerminalNameMapFrom( o );
+
+  // delete o.storageTerminalPrefix;
+  // delete o.storageTerminalPostfix;
+
+  return o;
+}
+
+configNameMapFrom.defaults =
+{
+  storageName : null,
+  storagePath : null,
+  storageDir : null,
+  profileDir : null,
+  storageTerminalPrefix : null,
+  storageTerminal : null,
+  storageTerminalPostfix : null,
 }
 
 //
@@ -1146,16 +1232,17 @@ function configRead( o )
   o = { storageDir : arguments[ 0 ] };
   o = _.routineOptions( configRead, o );
 
-  self._configFromDefaults( o );
+  self._configNameMapFromDefaults( o );
 
   return _.fileProvider.storageTerminalRead( o );
 }
 
 configRead.defaults =
 {
-  storageDir : null,
-  profileDir : null,
-  storageTerminal : null,
+  ... configNameMapFrom.defaults,
+  // storageDir : null,
+  // profileDir : null,
+  // storageTerminal : null,
 }
 
 //
@@ -1168,7 +1255,7 @@ function configOpen( o )
   o = { storageDir : arguments[ 0 ] };
   o = _.routineOptions( configOpen, o );
 
-  self._configFromDefaults( o );
+  self._configNameMapFromDefaults( o );
 
   o.onStorageConstruct = onStorageConstruct;
 
@@ -1176,7 +1263,7 @@ function configOpen( o )
 
   function onStorageConstruct( o )
   {
-    o.storage = _.censor.Storage.construct();
+    o.storage = _.censor.Config.construct();
     return o.storage;
   }
 }
@@ -1185,9 +1272,12 @@ configOpen.defaults =
 {
   locking : 1,
   throwing : 1,
-  storageDir : null,
-  profileDir : null,
-  storageTerminal : null,
+  ... configNameMapFrom.defaults,
+  // storageDir : null,
+  // profileDir : null,
+  // storageTerminal : null,
+  // storageName : null,
+  // storagePath : null,
 }
 
 //
@@ -1200,7 +1290,7 @@ function configClose( o )
   o = { storageDir : arguments[ 0 ] };
   o = _.routineOptions( configClose, o );
 
-  self._configFromDefaults( o );
+  self._configNameMapFromDefaults( o );
 
   _.assert( _.mapIs( o.storage ) );
 
@@ -1224,16 +1314,19 @@ function configReset( o )
   o = { storageDir : arguments[ 0 ] };
   o = _.routineOptions( configReset, o );
 
-  self._configFromDefaults( o );
+  self._configNameMapFromDefaults( o );
 
   return _.fileProvider.storageTerminalReset( o );
 }
 
 configReset.defaults =
 {
-  storageDir : null,
-  profileDir : null,
-  storageTerminal : null,
+  ... configNameMapFrom.defaults,
+  // storageName : null,
+  // storagePath : null,
+  // storageDir : null,
+  // profileDir : null,
+  // storageTerminal : null,
   verbosity : 0,
 }
 
@@ -1246,7 +1339,7 @@ function configLog( o )
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
   o = _.routineOptions( configLog, o );
-  self._configFromDefaults( o );
+  self._configNameMapFromDefaults( o );
 
   if( o.logger === null )
   o.logger = _global_.logger;
@@ -1260,16 +1353,104 @@ function configLog( o )
 
 configLog.defaults =
 {
-  storageDir : null,
-  profileDir : null,
-  storageTerminal : null,
+  ... configNameMapFrom.defaults,
+  // storageName : null,
+  // storagePath : null,
+  // storageDir : null,
+  // profileDir : null,
+  // storageTerminal : null,
   logger : null,
   verbosity : 3,
 }
 
 //
 
-function _arrangementFromDefaults( o )
+function configSet( o )
+{
+  let self = this;
+
+  if( _.strIs( arguments[ 0 ] ) )
+  o = { storageDir : arguments[ 0 ] };
+  o = _.routineOptions( configSet, o );
+  self._configNameMapFromDefaults( o );
+
+  // if( o.logger === null )
+  // o.logger = _global_.logger;
+
+  let o2 = _.mapOnly( o, _.censor.configOpen.defaults );
+  let opened = _.censor.configOpen( o2 );
+
+  _.assert( _.mapIs( o.set ) );
+  for( let key in o.set )
+  _.selectSet
+  ({
+    src : opened.storage,
+    selector : key,
+    set : o.set[ key ],
+  });
+
+  _.censor.configClose( opened );
+
+  return opened.storage;
+}
+
+configSet.defaults =
+{
+  ... configNameMapFrom.defaults,
+  locking : 1,
+  // logger : null,
+  // verbosity : 3,
+  set : null,
+}
+
+//
+
+function configDel( o )
+{
+  let self = this;
+
+  if( _.strIs( arguments[ 0 ] ) )
+  o = { storageDir : arguments[ 0 ] };
+  o = _.routineOptions( configDel, o );
+  self._configNameMapFromDefaults( o );
+
+  // if( o.logger === null )
+  // o.logger = _global_.logger;
+
+  let o2 = _.mapOnly( o, _.censor.configOpen.defaults );
+  let opened = _.censor.configOpen( o2 );
+
+  o.del = _.arrayAs( o.del );
+
+  _.assert( _.strsAreAll( o.del ) );
+
+  debugger;
+  for( let d = 0 ; d < o.del.length ; d++ )
+  _.selectSet
+  ({
+    src : opened.storage,
+    selector : o.del[ d ],
+    set : undefined,
+  });
+  debugger;
+
+  _.censor.configClose( opened );
+
+  return opened.storage;
+}
+
+configDel.defaults =
+{
+  ... configNameMapFrom.defaults,
+  locking : 1,
+  // logger : null,
+  // verbosity : 3,
+  del : null,
+}
+
+//
+
+function _arrangementNameMapFromDefaults( o )
 {
 
   if( o.storageDir === null )
@@ -1302,6 +1483,31 @@ function _arrangementFromDefaults( o )
 
 //
 
+function arrangementNameMapFrom( o )
+{
+  let self = this;
+
+  o = _.routineOptions( arrangementNameMapFrom, o );
+  self._arrangementNameMapFromDefaults( o );
+
+  _.fileProvider.storageTerminalNameMapFrom( o );
+
+  return o;
+}
+
+arrangementNameMapFrom.defaults =
+{
+  storageName : null,
+  storagePath : null,
+  storageDir : null,
+  profileDir : null,
+  storageTerminalPrefix : null,
+  storageTerminal : null,
+  storageTerminalPostfix : null,
+}
+
+//
+
 function arrangementRead( o )
 {
   let self = this;
@@ -1310,18 +1516,21 @@ function arrangementRead( o )
   o = { storageDir : arguments[ 0 ] };
   o = _.routineOptions( arrangementRead, o );
 
-  self._arrangementFromDefaults( o );
+  self._arrangementNameMapFromDefaults( o );
 
   return _.fileProvider.storageTerminalRead( o );
 }
 
 arrangementRead.defaults =
 {
-  storageDir : null,
-  profileDir : null,
-  storageTerminalPrefix : null,
-  storageTerminal : null,
-  storageTerminalPostfix : null,
+  ... arrangementNameMapFrom.defaults,
+  // storageName : null,
+  // storagePath : null,
+  // storageDir : null,
+  // profileDir : null,
+  // storageTerminalPrefix : null,
+  // storageTerminal : null,
+  // storageTerminalPostfix : null,
 }
 
 //
@@ -1334,7 +1543,7 @@ function arrangementOpen( o )
   o = { storageDir : arguments[ 0 ] };
   o = _.routineOptions( arrangementOpen, o );
 
-  self._arrangementFromDefaults( o );
+  self._arrangementNameMapFromDefaults( o );
 
   o.onStorageConstruct = onStorageConstruct;
 
@@ -1342,18 +1551,21 @@ function arrangementOpen( o )
 
   function onStorageConstruct( o )
   {
-    o.storage = _.censor.Storage.construct();
+    o.storage = _.censor.Arrangement.construct();
     return o.storage;
   }
 }
 
 arrangementOpen.defaults =
 {
-  storageDir : null,
-  profileDir : null,
-  storageTerminalPrefix : null,
-  storageTerminal : null,
-  storageTerminalPostfix : null,
+  ... arrangementNameMapFrom.defaults,
+  // storageName : null,
+  // storagePath : null,
+  // storageDir : null,
+  // profileDir : null,
+  // storageTerminalPrefix : null,
+  // storageTerminal : null,
+  // storageTerminalPostfix : null,
   locking : 1,
   throwing : 1,
 }
@@ -1368,7 +1580,7 @@ function arrangementClose( o )
   o = { storageDir : arguments[ 0 ] };
   o = _.routineOptions( arrangementClose, o );
 
-  self._arrangementFromDefaults( o );
+  self._arrangementNameMapFromDefaults( o );
 
   _.assert( _.mapIs( o.storage ) );
 
@@ -1392,19 +1604,21 @@ function arrangementReset( o )
   o = { storageDir : arguments[ 0 ] };
   o = _.routineOptions( arrangementReset, o );
 
-  self._arrangementFromDefaults( o );
+  self._arrangementNameMapFromDefaults( o );
 
   return _.fileProvider.storageTerminalReset( o );
 }
 
 arrangementReset.defaults =
 {
-  storageDir : null,
-  profileDir : null,
-  storageTerminalPrefix : null,
-  storageTerminal : null,
-  storageTerminalPostfix : null,
+  ... arrangementNameMapFrom.defaults,
+  // storageDir : null,
+  // profileDir : null,
+  // storageTerminalPrefix : null,
+  // storageTerminal : null,
+  // storageTerminalPostfix : null,
   verbosity : 0,
+  /* qqq xxx : add option logger */
 }
 
 //
@@ -1416,7 +1630,7 @@ function arrangementLog( o )
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
   o = _.routineOptions( arrangementLog, o );
-  self._arrangementFromDefaults( o );
+  self._arrangementNameMapFromDefaults( o );
 
   if( o.logger === null )
   o.logger = _global_.logger;
@@ -1430,11 +1644,12 @@ function arrangementLog( o )
 
 arrangementLog.defaults =
 {
-  storageDir : null,
-  profileDir : null,
-  storageTerminalPrefix : null,
-  storageTerminal : null,
-  storageTerminalPostfix : null,
+  ... arrangementNameMapFrom.defaults,
+  // storageDir : null,
+  // profileDir : null,
+  // storageTerminalPrefix : null,
+  // storageTerminal : null,
+  // storageTerminalPostfix : null,
   logger : null,
   verbosity : 3,
 }
@@ -1520,10 +1735,17 @@ let ActionStatus = _.blueprint.define
   outdated : null,
 });
 
-let Storage = _.blueprint.define
+let Arrangement = _.blueprint.define
 ({
   redo : _.define.shallow([]),
   undo : _.define.shallow([]),
+});
+
+let Config = _.blueprint.define
+({
+  about : _.define.shallow({}),
+  path : _.define.shallow({}),
+  extendable : _.trait.extendable(),
 });
 
 // --
@@ -1555,24 +1777,30 @@ let Extension =
 
   // storage
 
-  _storageFromDefaults,
+  _storageNameMapFromDefaults,
+  storageNameMapFrom,
   storageRead,
   storageReset,
   storageLog,
 
-  _profileFromDefaults,
+  _profileNameMapFromDefaults,
+  profileNameMapFrom,
   profileRead,
   profileReset,
   profileLog,
 
-  _configFromDefaults,
+  _configNameMapFromDefaults,
+  configNameMapFrom,
   configRead,
   configOpen,
   configClose,
   configReset,
   configLog,
+  configSet,
+  configDel,
 
-  _arrangementFromDefaults,
+  _arrangementNameMapFromDefaults,
+  arrangementNameMapFrom,
   arrangementRead,
   arrangementOpen,
   arrangementClose,
@@ -1591,7 +1819,8 @@ let Extension =
 
   Action,
   ActionStatus,
-  Storage,
+  Arrangement,
+  Config,
 
   storageDir : '.censor',
   storagePath : null,
