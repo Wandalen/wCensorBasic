@@ -1354,13 +1354,57 @@ function configLog( o )
 configLog.defaults =
 {
   ... configNameMapFrom.defaults,
-  // storageName : null,
-  // storagePath : null,
-  // storageDir : null,
-  // profileDir : null,
-  // storageTerminal : null,
   logger : null,
   verbosity : 3,
+}
+
+//
+
+function configGet( o )
+{
+  let self = this;
+  let result = [];
+
+  if( _.strIs( arguments[ 0 ] ) )
+  o = { storageDir : arguments[ 0 ] };
+  o = _.routineOptions( configGet, o );
+  self._configNameMapFromDefaults( o );
+
+  let o2 = _.mapOnly( o, _.censor.configOpen.defaults );
+  let opened = _.censor.configOpen( o2 );
+
+  o.selector = _.arrayAs( o.selector );
+
+  _.assert( _.strsAreAll( o.selector ) );
+
+  debugger;
+
+  if( o.selector.length )
+  {
+    for( let d = 0 ; d < o.selector.length ; d++ )
+    result[ d ] = _.select
+    ({
+      src : opened.storage,
+      selector : o.selector[ d ],
+    });
+  }
+  else
+  {
+  }
+
+  _.censor.configClose( opened );
+
+  if( result.length === 1 )
+  result = result[ 0 ];
+
+  return result;
+}
+
+configGet.defaults =
+{
+  ... configNameMapFrom.defaults,
+  locking : 1,
+  selector : null,
 }
 
 //
@@ -1373,9 +1417,6 @@ function configSet( o )
   o = { storageDir : arguments[ 0 ] };
   o = _.routineOptions( configSet, o );
   self._configNameMapFromDefaults( o );
-
-  // if( o.logger === null )
-  // o.logger = _global_.logger;
 
   let o2 = _.mapOnly( o, _.censor.configOpen.defaults );
   let opened = _.censor.configOpen( o2 );
@@ -1398,8 +1439,6 @@ configSet.defaults =
 {
   ... configNameMapFrom.defaults,
   locking : 1,
-  // logger : null,
-  // verbosity : 3,
   set : null,
 }
 
@@ -1414,25 +1453,30 @@ function configDel( o )
   o = _.routineOptions( configDel, o );
   self._configNameMapFromDefaults( o );
 
-  // if( o.logger === null )
-  // o.logger = _global_.logger;
-
   let o2 = _.mapOnly( o, _.censor.configOpen.defaults );
   let opened = _.censor.configOpen( o2 );
 
-  o.del = _.arrayAs( o.del );
+  o.selector = _.arrayAs( o.selector );
 
-  _.assert( _.strsAreAll( o.del ) );
+  _.assert( _.strsAreAll( o.selector ) );
 
-  debugger;
-  for( let d = 0 ; d < o.del.length ; d++ )
-  _.selectSet
-  ({
-    src : opened.storage,
-    selector : o.del[ d ],
-    set : undefined,
-  });
-  debugger;
+  if( o.selector.length )
+  {
+    for( let d = 0 ; d < o.selector.length ; d++ )
+    _.selectSet
+    ({
+      src : opened.storage,
+      selector : o.selector[ d ],
+      set : undefined,
+    });
+  }
+  else
+  {
+    if( opened.storage )
+    _.mapDelete( opened.storage );
+    else
+    opened.storage = Object.create( null );
+  }
 
   _.censor.configClose( opened );
 
@@ -1443,9 +1487,7 @@ configDel.defaults =
 {
   ... configNameMapFrom.defaults,
   locking : 1,
-  // logger : null,
-  // verbosity : 3,
-  del : null,
+  selector : null,
 }
 
 //
@@ -1796,6 +1838,7 @@ let Extension =
   configClose,
   configReset,
   configLog,
+  configGet,
   configSet,
   configDel,
 
