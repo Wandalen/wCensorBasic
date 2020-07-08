@@ -310,7 +310,7 @@ function replace_pre( routine, args )
   _.assert( args.length === 1 || args.length === 3 );
   _.assert( _.strDefined( o.filePath ) );
   _.assert( _.strDefined( o.ins ) );
-  _.assert( _.strDefined( o.sub ) );
+  _.assert( _.strIs( o.sub ) );
 
   if( _.boolLikeTrue( o.logger ) )
   o.logger = _.LoggerPrime();
@@ -980,20 +980,20 @@ storageRead.defaults =
 
 //
 
-function storageReset( o )
+function storageDel( o )
 {
   let self = this;
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routineOptions( storageReset, o );
+  o = _.routineOptions( storageDel, o );
 
   self._storageNameMapFromDefaults( o );
 
-  return _.fileProvider.storageReset( o );
+  return _.fileProvider.storageDel( o );
 }
 
-storageReset.defaults =
+storageDel.defaults =
 {
   storageDir : null,
   verbosity : 0,
@@ -1101,20 +1101,20 @@ profileRead.defaults =
 
 //
 
-function profileReset( o )
+function profileDel( o )
 {
   let self = this;
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routineOptions( profileReset, o );
+  o = _.routineOptions( profileDel, o );
 
   self._profileNameMapFromDefaults( o );
 
-  return _.fileProvider.storageProfileReset( o );
+  return _.fileProvider.storageProfileDel( o );
 }
 
-profileReset.defaults =
+profileDel.defaults =
 {
   ... profileNameMapFrom.defaults,
   // storageDir : null,
@@ -1306,20 +1306,20 @@ configClose.defaults =
 
 //
 
-function configReset( o )
+function configDel( o )
 {
   let self = this;
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routineOptions( configReset, o );
+  o = _.routineOptions( configDel, o );
 
   self._configNameMapFromDefaults( o );
 
-  return _.fileProvider.storageTerminalReset( o );
+  return _.fileProvider.storageTerminalDel( o );
 }
 
-configReset.defaults =
+configDel.defaults =
 {
   ... configNameMapFrom.defaults,
   // storageName : null,
@@ -1638,20 +1638,20 @@ arrangementClose.defaults =
 
 //
 
-function arrangementReset( o )
+function arrangementDel( o )
 {
   let self = this;
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routineOptions( arrangementReset, o );
+  o = _.routineOptions( arrangementDel, o );
 
   self._arrangementNameMapFromDefaults( o );
 
-  return _.fileProvider.storageTerminalReset( o );
+  return _.fileProvider.storageTerminalDel( o );
 }
 
-arrangementReset.defaults =
+arrangementDel.defaults =
 {
   ... arrangementNameMapFrom.defaults,
   // storageDir : null,
@@ -1822,13 +1822,13 @@ let Extension =
   _storageNameMapFromDefaults,
   storageNameMapFrom,
   storageRead,
-  storageReset,
+  storageDel,
   storageLog,
 
   _profileNameMapFromDefaults,
   profileNameMapFrom,
   profileRead,
-  profileReset,
+  profileDel,
   profileLog,
 
   _configNameMapFromDefaults,
@@ -1836,7 +1836,7 @@ let Extension =
   configRead,
   configOpen,
   configClose,
-  configReset,
+  configDel,
   configLog,
   configGet,
   configSet,
@@ -1847,7 +1847,7 @@ let Extension =
   arrangementRead,
   arrangementOpen,
   arrangementClose,
-  arrangementReset,
+  arrangementDel,
   arrangementLog,
 
   // etc
@@ -1886,4 +1886,4 @@ _.censor.Init();
 if( typeof module !== 'undefined' )
 module[ 'exports' ] = _global_.wTools;
 
-} )();
+})();
