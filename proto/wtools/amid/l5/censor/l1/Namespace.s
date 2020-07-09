@@ -1404,13 +1404,13 @@ filesHardLink.defaults =
 
 //
 
-function appInstall( o )
+function entryAdd( o )
 {
 
   if( !_.mapIs( o ) )
   o = { appPath : arguments[ 0 ] }
 
-  _.routineOptions( appInstall, o );
+  _.routineOptions( entryAdd, o );
 
   if( o.platform === 'multiple' )
   o.platform = [ 'windows', 'posix' ];
@@ -1421,28 +1421,68 @@ function appInstall( o )
 
   o.platform.forEach( ( platform ) => installFor( platform ) );
 
-  if( o.binPath === null )
+  if( o.entryDirPath === null )
   {
     let config = this.configOpen({ locking : 0 });
     if( config && config.path && config.path.bin )
-    o.binPath = config.path.bin;
+    o.entryDirPath = config.path.bin;
   }
 
-  _.sure( _.strDefined( o.binPath ), `Neither {-o.binPath-} is defined nor config has defined path::bin` );
-  _.sure( _.fileProvider.dirIs( o.binPath ), `Not a dir : ${o.binPath}` );
+  if( o.name === null )
+  {
+    o.name = _.path.name( o.appPath );
+  }
+
+  o.appPath = _.path.join( o.entryDirPath, o.appPath );
+
+  _.sure( _.strDefined( o.entryDirPath ), `Neither {-o.entryDirPath-} is defined nor config has defined path::bin` );
+  _.sure( _.fileProvider.dirIs( o.entryDirPath ), `Not a dir : ${o.entryDirPath}` );
+  _.sure
+  (
+    o.allowingMissed || ( _.fileProvider.exists( o.appPath ) && !_.fileProvider.isDir( o.appPath ) ),
+    `Does not exist file : ${o.appPath}`,
+  );
+
+  let appPath = o.appPath;
+  if( o.relative )
+  appPath = _.path.relative( o.entryDirPath, o.appPath );
+
+  appPath = _.path.nativize( appPath );
+
+  let shellFilePosix =
+`
+#!/bin/bash
+dirPath=$( cd "$(dirname "\${BASH_SOURCE[0]}")" ; pwd -P )
+node \${dirPath}/${appPath} "$@"
+`
+
+  let shellFileWindows =
+`
+@echo off
+node %~dp0${appPath} %*
+`
 
   function installFor( platform )
   {
-
+    let entryTerminalPath = _.path.join( o.entryDirPath, _.path.name( o.appPath ) );
+    if( platform === 'windows' )
+    entryTerminalPath += '.bat';
+    let shellFile = shellFilePosix;
+    if( platform === 'windows' )
+    shellFile = shellFileWindows;
+    _.fileProvider.fileWrite( entryTerminalPath, shellFile );
   }
 
 }
 
-appInstall.defaults =
+entryAdd.defaults =
 {
-  binPath : null,
+  entryDirPath : null,
   appPath : null,
+  name : null,
   platform : null,
+  relative : 1,
+  allowingMissed : 0,
 }
 
 // --
@@ -1845,7 +1885,7 @@ let Extension =
   filesReplace,
 
   filesHardLink,
-  appInstall,
+  entryAdd,
 
   // do
 
