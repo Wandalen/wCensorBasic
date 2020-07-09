@@ -377,27 +377,6 @@ configClose.defaults =
 
 //
 
-function configDel( o )
-{
-  let self = this;
-
-  if( _.strIs( arguments[ 0 ] ) )
-  o = { storageDir : arguments[ 0 ] };
-  o = _.routineOptions( configDel, o );
-
-  self._configNameMapFromDefaults( o );
-
-  return _.fileProvider.storageTerminalDel( o );
-}
-
-configDel.defaults =
-{
-  ... configNameMapFrom.defaults,
-  verbosity : 0,
-}
-
-//
-
 function configLog( o )
 {
   let self = this;
@@ -520,7 +499,6 @@ function configDel( o )
   self._configNameMapFromDefaults( o );
 
   let o2 = _.mapOnly( o, _.censor.configOpen.defaults );
-  let opened = _.censor.configOpen( o2 );
 
   o.selector = _.arrayAs( o.selector );
 
@@ -528,6 +506,7 @@ function configDel( o )
 
   if( o.selector.length )
   {
+    let opened = _.censor.configOpen( o2 );
     for( let d = 0 ; d < o.selector.length ; d++ )
     _.selectSet
     ({
@@ -535,18 +514,17 @@ function configDel( o )
       selector : o.selector[ d ],
       set : undefined,
     });
+    _.censor.configClose( opened );
+    return opened.storage;
   }
   else
   {
-    if( opened.storage )
-    _.mapDelete( opened.storage );
-    else
-    opened.storage = Object.create( null );
+    // if( opened.storage )
+    // _.mapDelete( opened.storage );
+    // else
+    // opened.storage = Object.create( null );
+    _.fileProvider.storageTerminalDel( o );
   }
-
-  _.censor.configClose( opened );
-
-  return opened.storage;
 }
 
 configDel.defaults =
@@ -555,6 +533,27 @@ configDel.defaults =
   locking : 1,
   selector : null,
 }
+
+// //
+//
+// function configDel( o )
+// {
+//   let self = this;
+//
+//   if( _.strIs( arguments[ 0 ] ) )
+//   o = { storageDir : arguments[ 0 ] };
+//   o = _.routineOptions( configDel, o );
+//
+//   self._configNameMapFromDefaults( o );
+//
+//   return _.fileProvider.storageTerminalDel( o );
+// }
+//
+// configDel.defaults =
+// {
+//   ... configNameMapFrom.defaults,
+//   verbosity : 0,
+// }
 
 //
 
@@ -1859,11 +1858,11 @@ let Extension =
   configRead,
   configOpen,
   configClose,
-  configDel,
   configLog,
   configGet,
   configSet,
   configDel,
+  // configDel,
 
   _arrangementNameMapFromDefaults,
   arrangementNameMapFrom,
