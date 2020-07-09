@@ -109,7 +109,7 @@ module:
       entry.proto.no.tests:
         criterion:
           tests: no.tests
-        path: ../proto/dwtools/amid/l5/censor/entry/CensorBasic.s
+        path: ../proto/wtools/amid/l5/censor/entry/CensorBasic.s
       entry.proto.only.tests:
         criterion:
           tests: only.tests
@@ -119,13 +119,13 @@ module:
           debug: debug
           raw: raw
           content: prime
-        path: '{path::out.*=1}/source/dwtools/amid/l5/censor/entry/CensorBasic.s'
+        path: '{path::out.*=1}/source/wtools/amid/l5/censor/entry/CensorBasic.s'
       entry.out.raw.debug.release:
         criterion:
           debug: release
           raw: raw
           content: prime
-        path: '{path::out.*=1}/source/dwtools/amid/l5/censor/entry/CensorBasic.s'
+        path: '{path::out.*=1}/source/wtools/amid/l5/censor/entry/CensorBasic.s'
       entry.out.compiled.debug.debug:
         criterion:
           debug: debug
@@ -152,22 +152,22 @@ module:
         path:
           - ../proto
           - ../proto/Integration.test.s
-          - ../proto/dwtools
-          - ../proto/dwtools/Tools.s
-          - ../proto/dwtools/abase
-          - ../proto/dwtools/amid
-          - ../proto/dwtools/amid/l5
-          - ../proto/dwtools/amid/l5/censor
-          - ../proto/dwtools/amid/l5/censor/entry
-          - ../proto/dwtools/amid/l5/censor/entry/CensorBasic.s
-          - ../proto/dwtools/amid/l5/censor/include
-          - ../proto/dwtools/amid/l5/censor/include/Basic.s
-          - ../proto/dwtools/amid/l5/censor/include/Mid.s
-          - ../proto/dwtools/amid/l5/censor/l1
-          - ../proto/dwtools/amid/l5/censor/l1/Namespace.s
-          - ../proto/dwtools/amid/l5/censor.test
-          - ../proto/dwtools/amid/l5/censor.test/Censor.test.s
-          - ../proto/dwtools/atop
+          - ../proto/wtools
+          - ../proto/wtools/Tools.s
+          - ../proto/wtools/abase
+          - ../proto/wtools/amid
+          - ../proto/wtools/amid/l5
+          - ../proto/wtools/amid/l5/censor
+          - ../proto/wtools/amid/l5/censor/entry
+          - ../proto/wtools/amid/l5/censor/entry/CensorBasic.s
+          - ../proto/wtools/amid/l5/censor/include
+          - ../proto/wtools/amid/l5/censor/include/Basic.s
+          - ../proto/wtools/amid/l5/censor/include/Mid.s
+          - ../proto/wtools/amid/l5/censor/l1
+          - ../proto/wtools/amid/l5/censor/l1/Namespace.s
+          - ../proto/wtools/amid/l5/censor.test
+          - ../proto/wtools/amid/l5/censor.test/Censor.test.s
+          - ../proto/wtools/atop
     submodule:
       wTools:
         path: 'npm:///wTools'
@@ -900,7 +900,7 @@ module:
       entry.proto.no.tests:
         criterion:
           tests: no.tests
-        path: proto/dwtools/amid/l5/censor/entry/CensorBasic.s
+        path: proto/wtools/amid/l5/censor/entry/CensorBasic.s
       entry.proto.only.tests:
         criterion:
           tests: only.tests
@@ -910,13 +910,13 @@ module:
           debug: debug
           raw: raw
           content: prime
-        path: '{path::out.*=1}/source/dwtools/amid/l5/censor/entry/CensorBasic.s'
+        path: '{path::out.*=1}/source/wtools/amid/l5/censor/entry/CensorBasic.s'
       entry.out.raw.debug.release:
         criterion:
           debug: release
           raw: raw
           content: prime
-        path: '{path::out.*=1}/source/dwtools/amid/l5/censor/entry/CensorBasic.s'
+        path: '{path::out.*=1}/source/wtools/amid/l5/censor/entry/CensorBasic.s'
       entry.out.compiled.debug.debug:
         criterion:
           debug: debug

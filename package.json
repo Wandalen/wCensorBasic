@@ -4,8 +4,8 @@
   "description" : "Tool to edit files massively and with undo",
   "author" : "Kostiantyn Wandalen <wanalen@01.school>",
   "license" : "MIT",
-  "main" : "proto/dwtools/amid/l5/censor/entry/CensorBasic.s",
-  "files" : [ "proto/dwtools/amid/l5/censor", "proto/dwtools/Tools.s" ],
+  "main" : "proto/wtools/amid/l5/censor/entry/CensorBasic.s",
+  "files" : [ "proto/wtools/amid/l5/censor", "proto/wtools/Tools.s" ],
   "scripts" : { "test" : "wtest .run proto", "docgen" : "wdocgen .build proto" },
   "repository" :
   {
