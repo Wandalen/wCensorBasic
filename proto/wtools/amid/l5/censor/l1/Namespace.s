@@ -523,7 +523,7 @@ function configDel( o )
     // _.mapDelete( opened.storage );
     // else
     // opened.storage = Object.create( null );
-    _.fileProvider.storageTerminalDel( o );
+    _.fileProvider.storageTerminalDel( _.mapOnly( o, _.fileProvider.storageTerminalDel.defaults ) );
   }
 }
 
