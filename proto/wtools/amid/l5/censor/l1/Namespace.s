@@ -1310,10 +1310,10 @@ function filesHardLink( o )
 
   o.basePath = _.arrayAs( o.basePath );
 
-  if( o.withHlink )
+  if( o.withConfigPath )
   {
     let storageName = this._configNameMapFromDefaults( o );
-    let config = _.fileProvider.configUserRead( storageName );
+    let config = _.fileProvider.configUserRead( storageName ); /* xxx : replace? */
     if( config && config.path && config.path.hlink )
     _.arrayAppendArrayOnce( o.basePath, _.arrayAs( config.path.hlink ) );
   }
@@ -1356,9 +1356,7 @@ function filesHardLink( o )
     archive.mask = maskAll;
     archive.fileMapAutosaving = 1;
     archive.filesUpdate();
-    debugger;
     counter = archive.filesLinkSame();
-    debugger;
 
   }
 
@@ -1383,19 +1381,11 @@ function filesHardLink( o )
 filesHardLink.defaults =
 {
   ... arrangementNameMapFrom.defaults,
-  // ... configNameMapFrom.defaults,
-  // storageDir : null,
-  // profileDir : null,
-  // storageTerminalPrefix : null,
-  // storageTerminal : null,
-  // storageTerminalPostfix : null,
-  // xxx
-
   arranging : 0,
   verbosity : 3,
   log : null,
   logger : 1,
-  withHlink : 1,
+  withConfigPath : 1,
   basePath : null,
   includingPath : null,
   excludingPath : null
@@ -1403,85 +1393,36 @@ filesHardLink.defaults =
 
 //
 
-function entryAdd( o )
+function systemEntryAdd( o )
 {
 
   if( !_.mapIs( o ) )
   o = { appPath : arguments[ 0 ] }
 
-  _.routineOptions( entryAdd, o );
-
-  if( o.platform === 'multiple' )
-  o.platform = [ 'windows', 'posix' ];
-
-  o.platform = _.arrayAs( o.platform );
-
-  _.assert( _.longHasAll( o.platform, [ 'windows', 'posix' ] ), `Unknown platforms : ${o.platform.join( ' ' )}` );
-
-  o.platform.forEach( ( platform ) => installFor( platform ) );
+  _.routineOptions( systemEntryAdd, o );
 
   if( o.entryDirPath === null )
   {
-    let config = this.configOpen({ locking : 0 });
-    if( config && config.path && config.path.bin )
-    o.entryDirPath = config.path.bin;
+    this._configNameMapFromDefaults( o );
+    let o2 = _.mapOnly( o, this.configOpen.defaults );
+    o2.locking = 0;
+    let opened = this.configOpen( o2 );
+    if( opened.storage && opened.storage.path && opened.storage.path.entry )
+    o.entryDirPath = opened.storage.path.entry;
   }
 
-  if( o.name === null )
-  {
-    o.name = _.path.name( o.appPath );
-  }
 
-  o.appPath = _.path.join( o.entryDirPath, o.appPath );
+  let o3 = _.mapOnly( o, _.process.systemEntryAdd.defaults );
+  let result = _.process.systemEntryAdd( o3 );
+  _.mapExtend( o, o3 );
 
-  _.sure( _.strDefined( o.entryDirPath ), `Neither {-o.entryDirPath-} is defined nor config has defined path::bin` );
-  _.sure( _.fileProvider.dirIs( o.entryDirPath ), `Not a dir : ${o.entryDirPath}` );
-  _.sure
-  (
-    o.allowingMissed || ( _.fileProvider.exists( o.appPath ) && !_.fileProvider.isDir( o.appPath ) ),
-    `Does not exist file : ${o.appPath}`,
-  );
-
-  let appPath = o.appPath;
-  if( o.relative )
-  appPath = _.path.relative( o.entryDirPath, o.appPath );
-
-  appPath = _.path.nativize( appPath );
-
-  let shellFilePosix =
-`
-#!/bin/bash
-dirPath=$( cd "$(dirname "\${BASH_SOURCE[0]}")" ; pwd -P )
-node \${dirPath}/${appPath} "$@"
-`
-
-  let shellFileWindows =
-`
-@echo off
-node %~dp0${appPath} %*
-`
-
-  function installFor( platform )
-  {
-    let entryTerminalPath = _.path.join( o.entryDirPath, _.path.name( o.appPath ) );
-    if( platform === 'windows' )
-    entryTerminalPath += '.bat';
-    let shellFile = shellFilePosix;
-    if( platform === 'windows' )
-    shellFile = shellFileWindows;
-    _.fileProvider.fileWrite( entryTerminalPath, shellFile );
-  }
-
+  return result;
 }
 
-entryAdd.defaults =
+systemEntryAdd.defaults =
 {
-  entryDirPath : null,
-  appPath : null,
-  name : null,
-  platform : null,
-  relative : 1,
-  allowingMissed : 0,
+  ... arrangementNameMapFrom.defaults,
+  ... _.process.systemEntryAdd.defaults,
 }
 
 // --
@@ -1884,7 +1825,7 @@ let Extension =
   filesReplace,
 
   filesHardLink,
-  entryAdd,
+  systemEntryAdd,
 
   // do
 

@@ -13,6 +13,7 @@ if( typeof module !== 'undefined' )
   _.include( 'wStringsExtra' );
   _.include( 'wStringer' );
   _.include( 'wBlueprint' );
+  _.include( 'wProcess' );
   module[ 'exports' ] = _global_.wTools;
 }
 
