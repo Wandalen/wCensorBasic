@@ -1040,7 +1040,7 @@ function replace_pre( routine, args )
   _.assert( arguments.length === 2 );
   _.assert( args.length === 1 || args.length === 3 );
   _.assert( _.strDefined( o.filePath ) );
-  _.assert( _.strDefined( o.ins ) );
+  _.assert( _.strDefined( o.ins ) || _.regexpIs( o.ins ) );
   _.assert( _.strIs( o.sub ) );
 
   if( _.boolLikeTrue( o.logger ) )
@@ -1063,7 +1063,7 @@ function fileReplace_body( o )
   {
 
     let size = _.fileProvider.statRead( o.filePath ).size;
-    let hash = _.fileProvider.hashSzRead( o.filePath );
+    let hash = _.fileProvider.hashSzRead({ filePath : o.filePath, hashFileSizeLimit : o.fileSizeLimit });
     o.src = _.fileProvider.fileRead( o.filePath );
 
     {
@@ -1196,12 +1196,7 @@ fileReplace_body.defaults =
   gray : 0,
   verbosity : 0,
   logger : 0,
-
-  // storageDir : null,
-  // profileDir : null,
-  // storageTerminalPrefix : null,
-  // storageTerminal : null,
-  // storageTerminalPostfix : null,
+  fileSizeLimit : null,
 
 }
 
