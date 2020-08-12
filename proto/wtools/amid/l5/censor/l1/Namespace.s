@@ -1197,6 +1197,7 @@ fileReplace_body.defaults =
   verbosity : 0,
   logger : 0,
   fileSizeLimit : null,
+  session : null
 
 }
 
@@ -1208,6 +1209,9 @@ function filesReplace_body( o )
 {
 
   o  =_.routineOptions( filesReplace, arguments );
+
+  if( o.session )
+  o.storageTerminal = o.session;
 
   if( o.resetting )
   {
