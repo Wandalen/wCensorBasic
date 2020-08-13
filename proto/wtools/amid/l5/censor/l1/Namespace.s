@@ -1431,6 +1431,9 @@ systemEntryAdd.defaults =
 function status( o )
 {
 
+  if( o.session )
+  o.storageTerminal = o.session;
+
   let opened = _.censor.arrangementOpen
   ({
     storageDir : o.storageDir,
@@ -1508,6 +1511,8 @@ status.defaults =
   storageTerminalPrefix : null,
   storageTerminal : null,
   storageTerminalPostfix : null,
+
+  session : null,
 
   verbosity : 3,
   withUndo : 1,
