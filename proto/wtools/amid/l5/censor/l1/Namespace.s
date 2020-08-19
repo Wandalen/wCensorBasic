@@ -1253,6 +1253,8 @@ function filesReplace_body( o )
     revisitingHardLinked : 0,
     resolvingSoftLink : 1,
     revisiting : 0,
+    allowingCycled : 1,
+    allowingMissed : 1,
   });
 
   for( let f = 0 ; f < files.length ; f++ )
