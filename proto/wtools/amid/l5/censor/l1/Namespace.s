@@ -1239,7 +1239,7 @@ function filesReplace_body( o )
     o.verbosity = o.v;
     delete o.v;
   }
-
+  debugger;
   if( o.basePath === null )
   o.basePath = _.path.current();
   let filter = { filePath : o.filePath, basePath : o.basePath };
