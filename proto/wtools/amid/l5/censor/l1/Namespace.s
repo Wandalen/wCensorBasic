@@ -1197,6 +1197,7 @@ fileReplace_body.defaults =
   verbosity : 0,
   logger : 0,
   fileSizeLimit : null,
+  session : null
 
 }
 
@@ -1208,6 +1209,9 @@ function filesReplace_body( o )
 {
 
   o  =_.routineOptions( filesReplace, arguments );
+
+  if( o.session )
+  o.storageTerminal = o.session;
 
   if( o.resetting )
   {
@@ -1429,6 +1433,9 @@ systemEntryAdd.defaults =
 function status( o )
 {
 
+  if( o.session )
+  o.storageTerminal = o.session;
+
   let opened = _.censor.arrangementOpen
   ({
     storageDir : o.storageDir,
@@ -1506,6 +1513,8 @@ status.defaults =
   storageTerminalPrefix : null,
   storageTerminal : null,
   storageTerminalPostfix : null,
+
+  session : null,
 
   verbosity : 3,
   withUndo : 1,
