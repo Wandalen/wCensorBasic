@@ -1197,7 +1197,8 @@ fileReplace_body.defaults =
   verbosity : 0,
   logger : 0,
   fileSizeLimit : null,
-  session : null
+  session : null,
+  usingTextLink : 0,
 
 }
 
@@ -1212,6 +1213,9 @@ function filesReplace_body( o )
 
   if( o.session )
   o.storageTerminal = o.session;
+
+  if( o.usingTextLink )
+  _.fileProvider.fieldPush( 'usingTextLink', 1 );
 
   if( o.resetting )
   {
@@ -1239,7 +1243,7 @@ function filesReplace_body( o )
     o.verbosity = o.v;
     delete o.v;
   }
-  debugger;
+
   if( o.basePath === null )
   o.basePath = _.path.current();
   let filter = { filePath : o.filePath, basePath : o.basePath };
