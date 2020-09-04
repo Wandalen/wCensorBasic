@@ -61,7 +61,6 @@ function fileReplaceBasic( test )
     }
 
     var got = _.censor.fileReplace( options )
-    // console.log( got );
     test.identical( got.parcels.length, 3 )
 
     return null;
@@ -101,7 +100,7 @@ function filesReplaceBasic( test )
     test.case = 'replace in File1.txt and File2.txt';
     var options =
     {
-      filePath : a.abs( '.' ),
+      filePath : a.abs( 'before/**' ),
       ins : 'line',
       sub : 'abc',
     }
