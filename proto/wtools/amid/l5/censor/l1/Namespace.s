@@ -1246,6 +1246,13 @@ function filesReplace_body( o )
 
   if( o.basePath === null )
   o.basePath = _.path.current();
+
+  if( o.usingTextLink )
+  {
+    _.fileProvider.fieldPush( 'resolvingTextLink', 1 );
+    _.fileProvider.fieldPush( 'usingTextLink', 1 );
+  }
+
   let filter = { filePath : o.filePath, basePath : o.basePath };
   let files = _.fileProvider.filesFind
   ({
