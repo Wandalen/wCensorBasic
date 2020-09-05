@@ -37,13 +37,6 @@ function onSuiteEnd()
 // tests
 // --
 
-// function basic( test )
-// {
-
-// }
-
-//
-
 function fileReplaceBasic( test )
 {
   let context = this;
@@ -95,24 +88,67 @@ function filesReplaceBasic( test )
   let a = test.assetFor( 'basic' );
   a.reflect();
 
+  // a.ready.then( ( op ) =>
+  // {
+  //   test.case = 'replace in File1.txt';
+  //   var options =
+  //   {
+  //     filePath : a.abs( 'before/File1.txt' ),
+  //     ins : 'line',
+  //     sub : 'abc',
+  //   }
+
+  //   var got = _.censor.filesReplace( options )
+  //   var files = a.findAll( a.abs( 'before/File1.txt' ) )
+  //   console.log( 'GOT1: ', got );
+  //   console.log( 'FILES1: ', files )
+  //   // test.identical( got.parcels.length, 8 )
+
+  //   return null;
+  // } );
+
+  // /* - */
+
   a.ready.then( ( op ) =>
   {
-    test.case = 'replace in File1.txt and File2.txt';
+    test.case = 'replace in File2.txt';
     var options =
     {
-      filePath : a.abs( 'before/**' ),
+      filePath : a.abs( 'before/File2.txt' ),
       ins : 'line',
       sub : 'abc',
     }
 
     var got = _.censor.filesReplace( options )
-    var files = a.findAll( a.abs( 'before/**' ) )
-    // console.log( 'GOT: ', got );
-    // console.log( 'FILES: ', files )
-    test.identical( got.parcels.length, 8 )
+    console.log( 'PATH: ', a.abs( '.' ) )
+    var files = a.findAll( a.abs( '.' ) )
+    console.log( 'GOT2: ', got );
+    console.log( 'FILES2: ', files )
+    // test.identical( got.parcels.length, 8 )
 
     return null;
   } );
+
+  /* - */
+
+  // a.ready.then( ( op ) =>
+  // {
+  //   test.case = 'replace in File1.txt and File2.txt';
+  //   var options =
+  //   {
+  //     filePath : a.abs( 'before/**' ),
+  //     ins : 'line',
+  //     sub : 'abc',
+  //   }
+
+  //   var got = _.censor.filesReplace( options )
+  //   var files = a.findAll( a.abs( 'before/**' ) )
+  //   console.log( 'GOT12: ', got );
+  //   console.log( 'FILES12: ', files )
+  //   // test.identical( got.parcels.length, 8 )
+
+  //   return null;
+  // } );
 
   //
 
@@ -148,7 +184,6 @@ let Self =
   tests :
   {
 
-    // basic,
     fileReplaceBasic,
     filesReplaceBasic,
 

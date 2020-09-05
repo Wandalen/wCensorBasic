@@ -1214,9 +1214,6 @@ function filesReplace_body( o )
   if( o.session )
   o.storageTerminal = o.session;
 
-  if( o.usingTextLink )
-  _.fileProvider.fieldPush( 'usingTextLink', 1 );
-
   if( o.resetting )
   {
     let opened = _.censor.arrangementOpen
