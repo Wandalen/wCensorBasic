@@ -88,26 +88,26 @@ function filesReplaceBasic( test )
   let a = test.assetFor( 'basic' );
   a.reflect();
 
-  // a.ready.then( ( op ) =>
-  // {
-  //   test.case = 'replace in File1.txt';
-  //   var options =
-  //   {
-  //     filePath : a.abs( 'before/File1.txt' ),
-  //     ins : 'line',
-  //     sub : 'abc',
-  //   }
+  a.ready.then( ( op ) =>
+  {
+    test.case = 'replace in File1.txt';
+    var options =
+    {
+      filePath : a.abs( 'before/File1.txt' ),
+      basePath : a.abs( '.' ),
+      ins : 'line',
+      sub : 'abc',
+    }
 
-  //   var got = _.censor.filesReplace( options )
-  //   var files = a.findAll( a.abs( 'before/File1.txt' ) )
-  //   console.log( 'GOT1: ', got );
-  //   console.log( 'FILES1: ', files )
-  //   // test.identical( got.parcels.length, 8 )
+    var got = _.censor.filesReplace( options );
+    test.identical( got.nfiles, 1 )
+    test.identical( got.nparcels, 3 )
 
-  //   return null;
-  // } );
 
-  // /* - */
+    return null;
+  } );
+
+  /* - */
 
   a.ready.then( ( op ) =>
   {
@@ -115,49 +115,43 @@ function filesReplaceBasic( test )
     var options =
     {
       filePath : a.abs( 'before/File2.txt' ),
+      basePath : a.abs( '.' ),
       ins : 'line',
       sub : 'abc',
     }
 
-    var got = _.censor.filesReplace( options )
-    console.log( 'PATH: ', a.abs( '.' ) )
-    var files = a.findAll( a.abs( '.' ) )
-    console.log( 'GOT2: ', got );
-    console.log( 'FILES2: ', files )
-    // test.identical( got.parcels.length, 8 )
+    var got = _.censor.filesReplace( options );
+    test.identical( got.nfiles, 1 )
+    test.identical( got.nparcels, 5 )
+
 
     return null;
   } );
 
   /* - */
 
-  // a.ready.then( ( op ) =>
-  // {
-  //   test.case = 'replace in File1.txt and File2.txt';
-  //   var options =
-  //   {
-  //     filePath : a.abs( 'before/**' ),
-  //     ins : 'line',
-  //     sub : 'abc',
-  //   }
+  a.ready.then( ( op ) =>
+  {
+    test.case = 'replace in File1.txt and File2.txt';
+    var options =
+    {
+      filePath : a.abs( 'before/**' ),
+      basePath : a.abs( '.' ),
+      ins : 'line',
+      sub : 'abc',
+    }
 
-  //   var got = _.censor.filesReplace( options )
-  //   var files = a.findAll( a.abs( 'before/**' ) )
-  //   console.log( 'GOT12: ', got );
-  //   console.log( 'FILES12: ', files )
-  //   // test.identical( got.parcels.length, 8 )
+    var got = _.censor.filesReplace( options )
+    test.identical( got.nfiles, 2 )
+    test.identical( got.nparcels, 8 )
 
-  //   return null;
-  // } );
+    return null;
+  } );
 
   //
 
   return a.ready;
 }
-
-filesReplaceBasic.experimental = true;
-
-//
 
 // --
 // test suite definition

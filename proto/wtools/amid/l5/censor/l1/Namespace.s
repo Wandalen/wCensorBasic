@@ -1208,8 +1208,7 @@ let fileReplace = _.routineFromPreAndBody( replace_pre, fileReplace_body );
 
 function filesReplace_body( o )
 {
-
-  o  =_.routineOptions( filesReplace, arguments );
+  o =_.routineOptions( filesReplace, arguments );
 
   if( o.session )
   o.storageTerminal = o.session;
