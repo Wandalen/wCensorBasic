@@ -919,7 +919,7 @@ function actionDo( o )
     if( o.throwing )
     {
       _.errAttend( err, 0 );
-      _.errLogEnd( err, 0 );
+      _.errLogged( err, 0 );
       throw err;
     }
 
