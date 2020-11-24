@@ -919,7 +919,7 @@ function actionDo( o )
     if( o.throwing )
     {
       _.errAttend( err, 0 );
-      _.errLogEnd( err, 0 );
+      _.errLogged( err, 0 );
       throw err;
     }
 
@@ -1029,7 +1029,7 @@ actionDo.defaults =
 // operations
 // --
 
-function replace_pre( routine, args )
+function replace_head( routine, args )
 {
   let o = args[ 0 ];
 
@@ -1202,7 +1202,7 @@ fileReplace_body.defaults =
 
 }
 
-let fileReplace = _.routineFromPreAndBody( replace_pre, fileReplace_body );
+let fileReplace = _.routineUnite( replace_head, fileReplace_body );
 
 //
 
@@ -1299,7 +1299,7 @@ filesReplace_body.defaults =
   filePath : null,
 }
 
-let filesReplace = _.routineFromPreAndBody( replace_pre, filesReplace_body );
+let filesReplace = _.routineUnite( replace_head, filesReplace_body );
 
 //
 
@@ -1531,7 +1531,7 @@ status.defaults =
 
 //
 
-function do_pre( routine, args )
+function do_head( routine, args )
 {
   let o = _.routineOptions( routine, args );
   _.assert( _.longHas( [ 'redo', 'undo' ], o.mode ) );
@@ -1681,15 +1681,15 @@ do_body.defaults =
 
 //
 
-let _do = _.routineFromPreAndBody( do_pre, do_body );
+let _do = _.routineUnite( do_head, do_body );
 _do.defaults.depth = 0;
 _do.defaults.mode = 'redo';
 
-let redo = _.routineFromPreAndBody( do_pre, do_body );
+let redo = _.routineUnite( do_head, do_body );
 redo.defaults.depth = 0;
 redo.defaults.mode = 'redo';
 
-let undo = _.routineFromPreAndBody( do_pre, do_body );
+let undo = _.routineUnite( do_head, do_body );
 undo.defaults.depth = 0;
 undo.defaults.mode = 'undo';
 
