@@ -1096,8 +1096,8 @@ function fileReplace_body( o )
     opened.storage.redo = [];
 
     let tab = '     ';
-    let action = this.Action.construct();
-    action.status = this.ActionStatus.construct();
+    let action = this.Action.Make();
+    action.status = this.ActionStatus.Make();
     action.filePath = o.filePath;
     action.hashBefore = { [ action.filePath ] : hash };
 
@@ -1748,7 +1748,7 @@ function Init()
 // relation
 // --
 
-let Action = _.blueprint.define
+let Action = _.Blueprint
 ({
   name : null,
   redoDescription : null,
@@ -1765,20 +1765,20 @@ let Action = _.blueprint.define
   undo : null,
 });
 
-let ActionStatus = _.blueprint.define
+let ActionStatus = _.Blueprint
 ({
   current : null,
   error : null,
   outdated : null,
 });
 
-let Arrangement = _.blueprint.define
+let Arrangement = _.Blueprint
 ({
   redo : _.define.shallow([]),
   undo : _.define.shallow([]),
 });
 
-let Config = _.blueprint.define
+let Config = _.Blueprint
 ({
   about : _.define.shallow({}),
   path : _.define.shallow({}),
