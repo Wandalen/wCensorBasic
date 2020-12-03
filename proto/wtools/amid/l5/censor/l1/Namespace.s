@@ -1547,9 +1547,7 @@ function do_head( routine, args )
 function do_body( o )
 {
   let self = this;
-  let up;
-  let error;
-  let opened;
+  let up, error, opened;
   try
   {
 
