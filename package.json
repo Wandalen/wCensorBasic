@@ -16,7 +16,7 @@
   {
     "url" : "https://github.com/Wandalen/wCensorBasic/issues"
   },
-  "dependencies" : { "wTools" : "alpha", "wFiles" : "alpha", "wfilesarchive" : "alpha" },
+  "dependencies" : { "wTools" : "alpha", "wFiles" : "alpha", "wfilesarchive" : "alpha", "wprocess" : "alpha" },
   "devDependencies" : { "eslint" : "7.1.0", "wcensorbasic" : "file:.", "wTesting" : "alpha" },
   "keywords" : [ "wTools" ]
 }
