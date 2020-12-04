@@ -177,8 +177,10 @@ let Self =
 
   tests :
   {
+
     fileReplaceBasic,
     filesReplaceBasic,
+
   }
 
 }
