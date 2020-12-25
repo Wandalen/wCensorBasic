@@ -1673,7 +1673,7 @@ do_body.defaults =
   storageTerminalPrefix : null,
   storageTerminal : null,
   storageTerminalPostfix : null,
-  usingTextLink : 0,
+  usingTextLink : 0
 
 }
 
