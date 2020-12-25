@@ -651,7 +651,7 @@ function arrangementOpen( o )
 
   function onStorageConstruct( o )
   {
-    o.storage = _.censor.Arrangement.construct();
+    o.storage = _.censor.Arrangement.Make();
     return o.storage;
   }
 }
