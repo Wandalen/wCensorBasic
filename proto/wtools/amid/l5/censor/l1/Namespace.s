@@ -339,7 +339,7 @@ function configOpen( o )
 
   function onStorageConstruct( o )
   {
-    o.storage = _.censor.Config.construct();
+    o.storage = _.censor.Config.Make();
     return o.storage;
   }
 }
