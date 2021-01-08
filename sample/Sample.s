@@ -3,4 +3,5 @@ let _ = require( 'wcensorbasic' );
 
 /**/
 
-_.censor.replace( __filename, '/**/', '/**//**/' );
+var result = _.censor.fileReplace({ filePath : __filename, ins : '/**/', sub : '/**//**/' });
+console.log( result.parcels )
