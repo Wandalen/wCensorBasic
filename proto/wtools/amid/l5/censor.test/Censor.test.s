@@ -153,6 +153,88 @@ function filesReplaceBasic( test )
   return a.ready;
 }
 
+//
+
+function filesHardLink( test )
+{
+  let context = this;
+  let a = test.assetFor( 'hlink' );
+  let file1 = a.abs( 'dir1/File1.txt' );
+  let file2 = a.abs( 'dir1/File2.txt' );
+
+  let file3 = a.abs( 'dir2/-File1.txt' );
+  let file4 = a.abs( 'dir2/-File2.txt' );
+  a.reflect();
+
+  a.ready.then( ( op ) =>
+  {
+    test.case = 'hardlink non-ignored';
+    var options =
+    {
+      basePath : a.abs( '.' )
+    }
+    test.true( !a.fileProvider.isHardLink( file1 ) );
+    test.true( !a.fileProvider.isHardLink( file2 ) );
+    test.true( !a.fileProvider.areHardLinked( file1, file2 ) );
+
+    var got = _.censor.filesHardLink( options );
+
+    test.true( a.fileProvider.isHardLink( file1 ) );
+    test.true( a.fileProvider.isHardLink( file2 ) );
+    test.true( a.fileProvider.areHardLinked( file1, file2 ) );
+
+    return null;
+  } );
+
+  /* */
+
+  a.ready.then( ( op ) =>
+  {
+    test.case = 'hardlink ignored, excludingHyphened : 1';
+    var options =
+    {
+      basePath : a.abs( '.' ),
+      excludingHyphened : 1
+    }
+    test.true( !a.fileProvider.isHardLink( file3 ) );
+    test.true( !a.fileProvider.isHardLink( file4 ) );
+    test.true( !a.fileProvider.areHardLinked( file3, file4 ) );
+
+    var got = _.censor.filesHardLink( options );
+
+    test.true( !a.fileProvider.isHardLink( file3 ) );
+    test.true( !a.fileProvider.isHardLink( file4 ) );
+    test.true( !a.fileProvider.areHardLinked( file3, file4 ) );
+
+    return null;
+  } );
+
+  /* */
+
+  a.ready.then( ( op ) =>
+  {
+    test.case = 'hardlink ignored, excludingHyphened : 0';
+    var options =
+    {
+      basePath : a.abs( '.' ),
+      excludingHyphened : 0
+    }
+    test.true( !a.fileProvider.isHardLink( file3 ) );
+    test.true( !a.fileProvider.isHardLink( file4 ) );
+    test.true( !a.fileProvider.areHardLinked( file3, file4 ) );
+
+    var got = _.censor.filesHardLink( options );
+
+    test.true( a.fileProvider.isHardLink( file3 ) );
+    test.true( a.fileProvider.isHardLink( file4 ) );
+    test.true( a.fileProvider.areHardLinked( file3, file4 ) );
+
+    return null;
+  } );
+
+  return a.ready;
+}
+
 // --
 // test suite definition
 // --
@@ -180,6 +262,8 @@ let Self =
 
     fileReplaceBasic,
     filesReplaceBasic,
+
+    filesHardLink
 
   }
 
