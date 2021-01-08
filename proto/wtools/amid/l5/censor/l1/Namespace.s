@@ -339,7 +339,7 @@ function configOpen( o )
 
   function onStorageConstruct( o )
   {
-    o.storage = _.censor.Config.construct();
+    o.storage = _.censor.Config.Make();
     return o.storage;
   }
 }
@@ -651,7 +651,7 @@ function arrangementOpen( o )
 
   function onStorageConstruct( o )
   {
-    o.storage = _.censor.Arrangement.construct();
+    o.storage = _.censor.Arrangement.Make();
     return o.storage;
   }
 }
@@ -1096,8 +1096,8 @@ function fileReplace_body( o )
     opened.storage.redo = [];
 
     let tab = '     ';
-    let action = this.Action.construct();
-    action.status = this.ActionStatus.construct();
+    let action = this.Action.Make();
+    action.status = this.ActionStatus.Make();
     action.filePath = o.filePath;
     action.hashBefore = { [ action.filePath ] : hash };
 
@@ -1197,7 +1197,8 @@ fileReplace_body.defaults =
   verbosity : 0,
   logger : 0,
   fileSizeLimit : null,
-  session : null
+  session : null,
+  usingTextLink : 0,
 
 }
 
@@ -1207,8 +1208,7 @@ let fileReplace = _.routineUnite( replace_head, fileReplace_body );
 
 function filesReplace_body( o )
 {
-
-  o  =_.routineOptions( filesReplace, arguments );
+  o =_.routineOptions( filesReplace, arguments );
 
   if( o.session )
   o.storageTerminal = o.session;
@@ -1242,6 +1242,13 @@ function filesReplace_body( o )
 
   if( o.basePath === null )
   o.basePath = _.path.current();
+
+  if( o.usingTextLink )
+  {
+    _.fileProvider.fieldPush( 'resolvingTextLink', 1 );
+    _.fileProvider.fieldPush( 'usingTextLink', 1 );
+  }
+
   let filter = { filePath : o.filePath, basePath : o.basePath };
   let files = _.fileProvider.filesFind
   ({
@@ -1540,9 +1547,7 @@ function do_head( routine, args )
 function do_body( o )
 {
   let self = this;
-  let up;
-  let error;
-  let opened;
+  let up, error, opened;
   try
   {
 
@@ -1668,6 +1673,7 @@ do_body.defaults =
   storageTerminalPrefix : null,
   storageTerminal : null,
   storageTerminalPostfix : null,
+  usingTextLink : 0
 
 }
 
@@ -1742,7 +1748,7 @@ function Init()
 // relation
 // --
 
-let Action = _.blueprint.define
+let Action = _.Blueprint
 ({
   name : null,
   redoDescription : null,
@@ -1759,20 +1765,20 @@ let Action = _.blueprint.define
   undo : null,
 });
 
-let ActionStatus = _.blueprint.define
+let ActionStatus = _.Blueprint
 ({
   current : null,
   error : null,
   outdated : null,
 });
 
-let Arrangement = _.blueprint.define
+let Arrangement = _.Blueprint
 ({
   redo : _.define.shallow([]),
   undo : _.define.shallow([]),
 });
 
-let Config = _.blueprint.define
+let Config = _.Blueprint
 ({
   about : _.define.shallow({}),
   path : _.define.shallow({}),
