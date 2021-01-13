@@ -105,7 +105,7 @@ function filesReplaceBasic( test )
 
 
     return null;
-  } );
+  });
 
   /* - */
 
@@ -126,7 +126,7 @@ function filesReplaceBasic( test )
 
 
     return null;
-  } );
+  });
 
   /* - */
 
@@ -146,9 +146,118 @@ function filesReplaceBasic( test )
     test.identical( got.nparcels, 8 )
 
     return null;
-  } );
+  });
 
   //
+
+  return a.ready;
+}
+
+//
+
+function filesHardLink( test )
+{
+  let context = this;
+  let a = test.assetFor( 'hlink2' );
+
+  a.reflect();
+
+  a.ready.then( ( op ) =>
+  {
+    test.case = 'hardlink 3 files, all are identical';
+
+    let file1 = a.abs( 'dir1/File1.txt' );
+    let file2 = a.abs( 'dir1/File2.txt' );
+    let file3 = a.abs( 'dir1/File3.txt' );
+
+    var options =
+    {
+      basePath : a.abs( './dir1' )
+    }
+    test.true( !a.fileProvider.isHardLink( file1 ) );
+    test.true( !a.fileProvider.isHardLink( file2 ) );
+    test.true( !a.fileProvider.isHardLink( file3 ) );
+    test.true( !a.fileProvider.areHardLinked( file1, file2 ) );
+    test.true( !a.fileProvider.areHardLinked( file1, file3 ) );
+    test.true( !a.fileProvider.areHardLinked( file2, file3 ) );
+
+    var got = _.censor.filesHardLink( options );
+
+    test.true( a.fileProvider.isHardLink( file1 ) );
+    test.true( a.fileProvider.isHardLink( file2 ) );
+    test.true( a.fileProvider.isHardLink( file3 ) );
+    test.true( a.fileProvider.areHardLinked( file1, file2 ) );
+    test.true( a.fileProvider.areHardLinked( file1, file3 ) );
+    test.true( a.fileProvider.areHardLinked( file2, file3 ) );
+
+    return null;
+  });
+
+  /* */
+
+  a.ready.then( ( op ) =>
+  {
+    test.case = 'hardlink 3 files, 2 files are identical';
+
+    let file1 = a.abs( 'dir2/File1.txt' );
+    let file2 = a.abs( 'dir2/File2.txt' );
+    let file3 = a.abs( 'dir2/File3.txt' );
+
+    var options =
+    {
+      basePath : a.abs( './dir2' )
+    }
+    test.true( !a.fileProvider.isHardLink( file1 ) );
+    test.true( !a.fileProvider.isHardLink( file2 ) );
+    test.true( !a.fileProvider.isHardLink( file3 ) );
+    test.true( !a.fileProvider.areHardLinked( file1, file2 ) );
+    test.true( !a.fileProvider.areHardLinked( file1, file3 ) );
+    test.true( !a.fileProvider.areHardLinked( file2, file3 ) );
+
+    var got = _.censor.filesHardLink( options );
+
+    test.true( a.fileProvider.isHardLink( file1 ) );
+    test.true( a.fileProvider.isHardLink( file2 ) );
+    test.true( !a.fileProvider.isHardLink( file3 ) );
+    test.true( a.fileProvider.areHardLinked( file1, file2 ) );
+    test.true( !a.fileProvider.areHardLinked( file1, file3 ) );
+    test.true( !a.fileProvider.areHardLinked( file2, file3 ) );
+
+    return null;
+  });
+
+  /* */
+
+  a.ready.then( ( op ) =>
+  {
+    test.case = 'hardlink 3 files, 2 in folder, all identical';
+
+    let file1 = a.abs( 'dir3/dir3.1/File1.txt' );
+    let file2 = a.abs( 'dir3/dir3.1/File2.txt' );
+    let file3 = a.abs( 'dir3/File3.txt' );
+
+    var options =
+    {
+      basePath : a.abs( './dir3' )
+    }
+    test.true( !a.fileProvider.isHardLink( file1 ) );
+    test.true( !a.fileProvider.isHardLink( file2 ) );
+    test.true( !a.fileProvider.isHardLink( file3 ) );
+    test.true( !a.fileProvider.areHardLinked( file1, file2 ) );
+    test.true( !a.fileProvider.areHardLinked( file1, file3 ) );
+    test.true( !a.fileProvider.areHardLinked( file2, file3 ) );
+
+    var got = _.censor.filesHardLink( options );
+
+    test.true( a.fileProvider.isHardLink( file1 ) );
+    test.true( a.fileProvider.isHardLink( file2 ) );
+    test.true( a.fileProvider.isHardLink( file3 ) );
+    test.true( a.fileProvider.areHardLinked( file1, file2 ) );
+    test.true( a.fileProvider.areHardLinked( file1, file3 ) );
+    test.true( a.fileProvider.areHardLinked( file2, file3 ) );
+
+    return null;
+  });
 
   return a.ready;
 }
@@ -184,7 +293,7 @@ function filesHardLinkOptionExcludingHyphened( test )
     test.true( a.fileProvider.areHardLinked( file1, file2 ) );
 
     return null;
-  } );
+  });
 
   /* */
 
@@ -207,7 +316,7 @@ function filesHardLinkOptionExcludingHyphened( test )
     test.true( !a.fileProvider.areHardLinked( file3, file4 ) );
 
     return null;
-  } );
+  });
 
   /* */
 
@@ -230,7 +339,7 @@ function filesHardLinkOptionExcludingHyphened( test )
     test.true( a.fileProvider.areHardLinked( file3, file4 ) );
 
     return null;
-  } );
+  });
 
   return a.ready;
 }
@@ -263,6 +372,7 @@ let Self =
     fileReplaceBasic,
     filesReplaceBasic,
 
+    filesHardLink,
     filesHardLinkOptionExcludingHyphened
 
   }
