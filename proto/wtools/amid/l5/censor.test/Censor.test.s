@@ -155,7 +155,7 @@ function filesReplaceBasic( test )
 
 //
 
-function filesHardLink( test )
+function filesHardLinkOptionExcludingHyphened( test )
 {
   let context = this;
   let a = test.assetFor( 'hlink' );
@@ -263,7 +263,7 @@ let Self =
     fileReplaceBasic,
     filesReplaceBasic,
 
-    filesHardLink
+    filesHardLinkOptionExcludingHyphened
 
   }
 
