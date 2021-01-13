@@ -175,6 +175,41 @@ module:
           - ../proto/wtools/amid/l5/censor.test/_asset/basic/before
           - ../proto/wtools/amid/l5/censor.test/_asset/basic/before/File1.txt
           - ../proto/wtools/amid/l5/censor.test/_asset/basic/before/File2.txt
+          - ../proto/wtools/amid/l5/censor.test/_asset/hlink
+          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir1
+          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir1/File1.txt
+          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir1/File2.txt
+          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir1/File3.txt
+          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir2
+          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir2/File1.txt
+          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir2/File2.txt
+          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir2/File3.txt
+          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir3
+          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir3/File3.txt
+          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir3/dir3.1
+          - >-
+            ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir3/dir3.1/File1.txt
+          - >-
+            ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir3/dir3.1/File2.txt
+          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir4
+          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir4/File3.txt
+          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir4/File4.txt
+          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir4/dir4.1
+          - >-
+            ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir4/dir4.1/File1.txt
+          - >-
+            ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir4/dir4.1/File2.txt
+          - ../proto/wtools/amid/l5/censor.test/_asset/hlinkHyphened
+          - ../proto/wtools/amid/l5/censor.test/_asset/hlinkHyphened/dir1
+          - >-
+            ../proto/wtools/amid/l5/censor.test/_asset/hlinkHyphened/dir1/File1.txt
+          - >-
+            ../proto/wtools/amid/l5/censor.test/_asset/hlinkHyphened/dir1/File2.txt
+          - ../proto/wtools/amid/l5/censor.test/_asset/hlinkHyphened/dir2
+          - >-
+            ../proto/wtools/amid/l5/censor.test/_asset/hlinkHyphened/dir2/-File1.txt
+          - >-
+            ../proto/wtools/amid/l5/censor.test/_asset/hlinkHyphened/dir2/-File2.txt
           - ../proto/wtools/atop
     submodule:
       wTools:
