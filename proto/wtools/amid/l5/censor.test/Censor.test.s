@@ -158,7 +158,7 @@ function filesReplaceBasic( test )
 function filesHardLink( test )
 {
   let context = this;
-  let a = test.assetFor( 'hlink2' );
+  let a = test.assetFor( 'hlink' );
 
   a.reflect();
 
@@ -264,10 +264,93 @@ function filesHardLink( test )
 
 //
 
-function filesHardLinkOptionExcludingHyphened( test )
+function filesHardLinkOptionExcludingPath( test )
 {
   let context = this;
   let a = test.assetFor( 'hlink' );
+
+  a.reflect();
+
+  a.ready.then( ( op ) =>
+  {
+    test.case = 'hardlink 3 files, 1 file in excludingPath';
+
+    let file1 = a.abs( 'dir1/File1.txt' );
+    let file2 = a.abs( 'dir1/File2.txt' );
+    let file3 = a.abs( 'dir1/File3.txt' );
+
+    var options =
+    {
+      basePath : a.abs( './dir1' ),
+      excludingPath : file3
+    }
+    test.true( !a.fileProvider.isHardLink( file1 ) );
+    test.true( !a.fileProvider.isHardLink( file2 ) );
+    test.true( !a.fileProvider.isHardLink( file3 ) );
+    test.true( !a.fileProvider.areHardLinked( file1, file2 ) );
+    test.true( !a.fileProvider.areHardLinked( file1, file3 ) );
+    test.true( !a.fileProvider.areHardLinked( file2, file3 ) );
+
+    var got = _.censor.filesHardLink( options );
+
+    test.true( a.fileProvider.isHardLink( file1 ) );
+    test.true( a.fileProvider.isHardLink( file2 ) );
+    test.true( !a.fileProvider.isHardLink( file3 ) );
+    test.true( a.fileProvider.areHardLinked( file1, file2 ) );
+    test.true( !a.fileProvider.areHardLinked( file1, file3 ) );
+    test.true( !a.fileProvider.areHardLinked( file2, file3 ) );
+
+    return null;
+  });
+
+  /* */
+
+  a.ready.then( ( op ) =>
+  {
+    test.case = 'hardlink 4 files, folder with 2 files in excludingPath';
+
+    let file1 = a.abs( 'dir4/dir4.1/File1.txt' );
+    let file2 = a.abs( 'dir4/dir4.1/File2.txt' );
+    let file3 = a.abs( 'dir4/File3.txt' );
+    let file4 = a.abs( 'dir4/File4.txt' );
+
+    var options =
+    {
+      basePath : a.abs( './dir4' ),
+      excludingPath : a.abs( './dir4/dir4.1' )
+    }
+    test.true( !a.fileProvider.isHardLink( file1 ) );
+    test.true( !a.fileProvider.isHardLink( file2 ) );
+    test.true( !a.fileProvider.isHardLink( file3 ) );
+    test.true( !a.fileProvider.isHardLink( file4 ) );
+    test.true( !a.fileProvider.areHardLinked( file1, file2 ) );
+    test.true( !a.fileProvider.areHardLinked( file1, file3 ) );
+    test.true( !a.fileProvider.areHardLinked( file2, file3 ) );
+    test.true( !a.fileProvider.areHardLinked( file3, file4 ) );
+
+    var got = _.censor.filesHardLink( options );
+
+    test.true( !a.fileProvider.isHardLink( file1 ) );
+    test.true( !a.fileProvider.isHardLink( file2 ) );
+    test.true( a.fileProvider.isHardLink( file3 ) );
+    test.true( a.fileProvider.isHardLink( file4 ) );
+    test.true( !a.fileProvider.areHardLinked( file1, file2 ) );
+    test.true( !a.fileProvider.areHardLinked( file1, file3 ) );
+    test.true( !a.fileProvider.areHardLinked( file2, file3 ) );
+    test.true( a.fileProvider.areHardLinked( file3, file4 ) );
+
+    return null;
+  });
+
+  return a.ready;
+}
+
+//
+
+function filesHardLinkOptionExcludingHyphened( test )
+{
+  let context = this;
+  let a = test.assetFor( 'hlinkHyphened' );
   let file1 = a.abs( 'dir1/File1.txt' );
   let file2 = a.abs( 'dir1/File2.txt' );
 
@@ -373,6 +456,7 @@ let Self =
     filesReplaceBasic,
 
     filesHardLink,
+    filesHardLinkOptionExcludingPath,
     filesHardLinkOptionExcludingHyphened
 
   }
