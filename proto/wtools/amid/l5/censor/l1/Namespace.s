@@ -1339,8 +1339,11 @@ function filesHardLink( o )
     /\.hg$/,
     /\.tmp($|\/)/,
     /\.DS_Store$/,
-    /(^|\/)-/,
+    // /(^|\/)-/,
   ]
+
+  if( o.excludingHyphened )
+  excludeAny.push( /(^|\/)-/ );
 
   let maskAll = _.RegexpObject( excludeAny, 'excludeAny' );
   let counter = 0;
@@ -1396,7 +1399,8 @@ filesHardLink.defaults =
   withConfigPath : 1,
   basePath : null,
   includingPath : null,
-  excludingPath : null
+  excludingPath : null,
+  excludingHyphened : 1
 }
 
 //
