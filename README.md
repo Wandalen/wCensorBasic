@@ -8,7 +8,7 @@ Tool to edit files massively and with undo
 git clone https://github.com/Wandalen/wCensorBasic
 cd wCensorBasic
 npm install
-node sample/Sample.s
+node sample/trivial/Sample.s
 ```
 
 ## To add to your project
