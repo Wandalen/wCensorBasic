@@ -339,7 +339,7 @@ function configOpen( o )
 
   function onStorageConstruct( o )
   {
-    o.storage = _.censor.Config.Make();
+    o.storage = _.censor.Config.make();
     return o.storage;
   }
 }
@@ -651,7 +651,7 @@ function arrangementOpen( o )
 
   function onStorageConstruct( o )
   {
-    o.storage = _.censor.Arrangement.Make();
+    o.storage = _.censor.Arrangement.make();
     return o.storage;
   }
 }
@@ -1096,8 +1096,8 @@ function fileReplace_body( o )
     opened.storage.redo = [];
 
     let tab = '     ';
-    let action = this.Action.Make();
-    action.status = this.ActionStatus.Make();
+    let action = this.Action.make();
+    action.status = this.ActionStatus.make();
     action.filePath = o.filePath;
     action.hashBefore = { [ action.filePath ] : hash };
 
