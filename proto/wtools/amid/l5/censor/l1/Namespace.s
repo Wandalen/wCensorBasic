@@ -109,11 +109,11 @@ function storageLog( o )
 
   if( o.verbosity <= 1 )
   {
-    o.logger.log( _.toJs( _.mapKeys( read ) ) );
+    o.logger.log( _.entity.exportJs( _.mapKeys( read ) ) );
     return;
   }
 
-  o.logger.log( _.toJs( read ) );
+  o.logger.log( _.entity.exportJs( read ) );
 
 }
 
@@ -228,11 +228,11 @@ function profileLog( o )
 
   if( o.verbosity <= 1 )
   {
-    o.logger.log( _.toJs( _.mapKeys( read ) ) );
+    o.logger.log( _.entity.exportJs( _.mapKeys( read ) ) );
     return;
   }
 
-  o.logger.log( _.toJs( read ) );
+  o.logger.log( _.entity.exportJs( read ) );
 
 }
 
@@ -392,7 +392,7 @@ function configLog( o )
   let o2 = _.mapOnly( o, _.censor.configRead.defaults );
   let read = _.censor.configRead( o2 );
 
-  o.logger.log( _.toJs( read ) );
+  o.logger.log( _.entity.exportJs( read ) );
 
 }
 
@@ -726,7 +726,7 @@ function arrangementLog( o )
   let o2 = _.mapOnly( o, _.censor.arrangementRead.defaults );
   let read = _.censor.arrangementRead( o2 );
 
-  o.logger.log( _.toJs( read ) );
+  o.logger.log( _.entity.exportJs( read ) );
 
 }
 
