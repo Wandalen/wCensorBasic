@@ -1202,7 +1202,7 @@ fileReplace_body.defaults =
 
 }
 
-let fileReplace = _.routineUnite( replace_head, fileReplace_body );
+let fileReplace = _.routine.uniteCloning_( replace_head, fileReplace_body );
 
 //
 
@@ -1299,7 +1299,7 @@ filesReplace_body.defaults =
   filePath : null,
 }
 
-let filesReplace = _.routineUnite( replace_head, filesReplace_body );
+let filesReplace = _.routine.uniteCloning_( replace_head, filesReplace_body );
 
 //
 
@@ -1683,15 +1683,15 @@ do_body.defaults =
 
 //
 
-let _do = _.routineUnite( do_head, do_body );
+let _do = _.routine.uniteCloning_( do_head, do_body );
 _do.defaults.depth = 0;
 _do.defaults.mode = 'redo';
 
-let redo = _.routineUnite( do_head, do_body );
+let redo = _.routine.uniteCloning_( do_head, do_body );
 redo.defaults.depth = 0;
 redo.defaults.mode = 'redo';
 
-let undo = _.routineUnite( do_head, do_body );
+let undo = _.routine.uniteCloning_( do_head, do_body );
 undo.defaults.depth = 0;
 undo.defaults.mode = 'undo';
 
