@@ -422,8 +422,6 @@ function configGet( o )
 
   _.assert( _.strsAreAll( o.selector ) );
 
-  debugger;
-
   if( o.selector.length )
   {
     for( let d = 0 ; d < o.selector.length ; d++ )
@@ -1654,11 +1652,9 @@ function do_body( o )
     }
     if( opened )
     {
-      debugger;
       opened.throwing = 0;
       _.censor.arrangementClose( opened )
     }
-    debugger;
     throw _.err( err );
   }
 }
