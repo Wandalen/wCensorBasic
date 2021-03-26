@@ -3,8 +3,8 @@
 
 'use strict';
 
-let _ = _global_.wTools;
-let Self = _.censor = _.censor || Object.create( null );
+const _ = _global_.wTools;
+const Self = _.censor = _.censor || Object.create( null );
 
 // --
 // storage
@@ -101,7 +101,7 @@ function storageLog( o )
   if( o.logger === null )
   o.logger = _global_.logger;
 
-  let o2 = _.mapOnly( o, _.censor.storageRead.defaults );
+  let o2 = _.mapOnly_( null, o, _.censor.storageRead.defaults );
   let read = _.censor.storageRead( o2 );
 
   if( !o.verbosity )
@@ -220,7 +220,7 @@ function profileLog( o )
   if( o.logger === null )
   o.logger = _global_.logger;
 
-  let o2 = _.mapOnly( o, _.censor.profileRead.defaults );
+  let o2 = _.mapOnly_( null, o, _.censor.profileRead.defaults );
   let read = _.censor.profileRead( o2 );
 
   if( !o.verbosity )
@@ -389,7 +389,7 @@ function configLog( o )
   if( o.logger === null )
   o.logger = _global_.logger;
 
-  let o2 = _.mapOnly( o, _.censor.configRead.defaults );
+  let o2 = _.mapOnly_( null, o, _.censor.configRead.defaults );
   let read = _.censor.configRead( o2 );
 
   o.logger.log( _.entity.exportJs( read ) );
@@ -415,7 +415,7 @@ function configGet( o )
   o = _.routineOptions( configGet, o );
   self._configNameMapFromDefaults( o );
 
-  let o2 = _.mapOnly( o, _.censor.configOpen.defaults );
+  let o2 = _.mapOnly_( null, o, _.censor.configOpen.defaults );
   let opened = _.censor.configOpen( o2 );
 
   o.selector = _.arrayAs( o.selector );
@@ -461,7 +461,7 @@ function configSet( o )
   o = _.routineOptions( configSet, o );
   self._configNameMapFromDefaults( o );
 
-  let o2 = _.mapOnly( o, _.censor.configOpen.defaults );
+  let o2 = _.mapOnly_( null, o, _.censor.configOpen.defaults );
   let opened = _.censor.configOpen( o2 );
 
   _.assert( _.mapIs( o.set ) );
@@ -496,7 +496,7 @@ function configDel( o )
   o = _.routineOptions( configDel, o );
   self._configNameMapFromDefaults( o );
 
-  let o2 = _.mapOnly( o, _.censor.configOpen.defaults );
+  let o2 = _.mapOnly_( null, o, _.censor.configOpen.defaults );
 
   o.selector = _.arrayAs( o.selector );
 
@@ -521,7 +521,7 @@ function configDel( o )
     // _.mapDelete( opened.storage );
     // else
     // opened.storage = Object.create( null );
-    _.fileProvider.storageTerminalDel( _.mapOnly( o, _.fileProvider.storageTerminalDel.defaults ) );
+    _.fileProvider.storageTerminalDel( _.mapOnly_( null, o, _.fileProvider.storageTerminalDel.defaults ) );
   }
 }
 
@@ -721,7 +721,7 @@ function arrangementLog( o )
   if( o.logger === null )
   o.logger = _global_.logger;
 
-  let o2 = _.mapOnly( o, _.censor.arrangementRead.defaults );
+  let o2 = _.mapOnly_( null, o, _.censor.arrangementRead.defaults );
   let read = _.censor.arrangementRead( o2 );
 
   o.logger.log( _.entity.exportJs( read ) );
@@ -1065,7 +1065,7 @@ function fileReplace_body( o )
     o.src = _.fileProvider.fileRead( o.filePath );
 
     {
-      let o2 = _.mapOnly( o, _.strSearchLog.defaults );
+      let o2 = _.mapOnly_( null, o, _.strSearchLog.defaults );
       let searched = _.strSearchLog( o2 );
       _.mapExtend( o, searched );
       o.searchLog = o.log;
@@ -1155,7 +1155,7 @@ function fileReplace_body( o )
 
   function redo( op )
   {
-    let _ = _global_.wTools;
+    const _ = _global_.wTools;
 
     let o2 =
     {
@@ -1175,7 +1175,7 @@ function fileReplace_body( o )
 
   function undo( op )
   {
-    let _ = _global_.wTools;
+    const _ = _global_.wTools;
     op.filesUndo();
   }
 
@@ -1264,7 +1264,7 @@ function filesReplace_body( o )
 
   for( let f = 0 ; f < files.length ; f++ )
   {
-    let o2 = _.mapOnly( o, _.censor.fileReplace.defaults );
+    let o2 = _.mapOnly_( null, o, _.censor.fileReplace.defaults );
     o2.verbosity = o2.verbosity - 1 >= 0 ? o2.verbosity - 1 : 0;
     o2.filePath = files[ f ].absolute;
     o2.resetting = 0;
@@ -1414,7 +1414,7 @@ function systemEntryAdd( o )
   if( o.entryDirPath === null )
   {
     this._configNameMapFromDefaults( o );
-    let o2 = _.mapOnly( o, this.configOpen.defaults );
+    let o2 = _.mapOnly_( null, o, this.configOpen.defaults );
     o2.locking = 0;
     let opened = this.configOpen( o2 );
     if( opened.storage && opened.storage.path && opened.storage.path.entry )
@@ -1422,7 +1422,7 @@ function systemEntryAdd( o )
   }
 
 
-  let o3 = _.mapOnly( o, _.process.systemEntryAdd.defaults );
+  let o3 = _.mapOnly_( null, o, _.process.systemEntryAdd.defaults );
   let result = _.process.systemEntryAdd( o3 );
   _.mapExtend( o, o3 );
 
@@ -1474,7 +1474,7 @@ function status( o )
 
     result.redo = _.filter_( null, opened.storage.redo, ( action ) =>
     {
-      let o2 = _.mapOnly( o, _.censor.actionStatus.defaults );
+      let o2 = _.mapOnly_( null, o, _.censor.actionStatus.defaults );
       o2.action = action;
       o2.verbosity = o2.verbosity - 1;
       return _.censor.actionStatus( o2 );
@@ -1482,7 +1482,7 @@ function status( o )
 
     result.undo = _.filter_( null, opened.storage.undo, ( action ) =>
     {
-      let o2 = _.mapOnly( o, _.censor.actionStatus.defaults );
+      let o2 = _.mapOnly_( null, o, _.censor.actionStatus.defaults );
       o2.action = action;
       o2.verbosity = o2.verbosity - 1;
       return _.censor.actionStatus( o2 );
@@ -1591,7 +1591,7 @@ function do_body( o )
     try
     {
 
-      let o2 = _.mapOnly( o, _.censor.actionDo.defaults );
+      let o2 = _.mapOnly_( null, o, _.censor.actionDo.defaults );
       o2.action = doArray[ i ];
       o2.verbosity = o2.verbosity - 1 >= 0 ? o2.verbosity - 1 : 0;
       o2.storage = opened.storage;
@@ -1662,7 +1662,7 @@ function do_body( o )
 do_body.defaults =
 {
 
-  ... _.mapBut( actionDo.defaults, [ 'action' ] ),
+  ... _.mapBut_( null, actionDo.defaults, [ 'action' ] ),
 
   depth : 0,
   verbosity : 3,
