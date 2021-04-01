@@ -58,6 +58,7 @@ function fileReplaceBasic( test )
     var got = _.censor.fileReplace( options )
     test.identical( got.parcels.length, 3 )
 
+    _.censor.profileDel( profile );
     return null;
   } );
 
@@ -78,6 +79,7 @@ function fileReplaceBasic( test )
     var got = _.censor.fileReplace( options )
     test.identical( got.parcels.length, 5 )
 
+    _.censor.profileDel( profile );
     return null;
   } );
 
@@ -109,7 +111,7 @@ function filesReplaceBasic( test )
     test.identical( got.nfiles, 1 )
     test.identical( got.nparcels, 3 )
 
-
+    _.censor.profileDel( profile );
     return null;
   });
 
@@ -132,7 +134,7 @@ function filesReplaceBasic( test )
     test.identical( got.nfiles, 1 )
     test.identical( got.nparcels, 5 )
 
-
+    _.censor.profileDel( profile );
     return null;
   });
 
@@ -155,6 +157,7 @@ function filesReplaceBasic( test )
     test.identical( got.nfiles, 2 )
     test.identical( got.nparcels, 8 )
 
+    _.censor.profileDel( profile );
     return null;
   });
 
@@ -202,6 +205,7 @@ function filesHardLink( test )
     test.true( a.fileProvider.areHardLinked( file1, file3 ) );
     test.true( a.fileProvider.areHardLinked( file2, file3 ) );
 
+    _.censor.profileDel( profile );
     return null;
   });
 
@@ -237,6 +241,7 @@ function filesHardLink( test )
     test.true( !a.fileProvider.areHardLinked( file1, file3 ) );
     test.true( !a.fileProvider.areHardLinked( file2, file3 ) );
 
+    _.censor.profileDel( profile );
     return null;
   });
 
@@ -272,6 +277,7 @@ function filesHardLink( test )
     test.true( a.fileProvider.areHardLinked( file1, file3 ) );
     test.true( a.fileProvider.areHardLinked( file2, file3 ) );
 
+    _.censor.profileDel( profile );
     return null;
   });
 
@@ -318,6 +324,7 @@ function filesHardLinkOptionExcludingPath( test )
     test.true( !a.fileProvider.areHardLinked( file1, file3 ) );
     test.true( !a.fileProvider.areHardLinked( file2, file3 ) );
 
+    _.censor.profileDel( profile );
     return null;
   });
 
@@ -359,6 +366,7 @@ function filesHardLinkOptionExcludingPath( test )
     test.true( !a.fileProvider.areHardLinked( file2, file3 ) );
     test.true( a.fileProvider.areHardLinked( file3, file4 ) );
 
+    _.censor.profileDel( profile );
     return null;
   });
 
@@ -397,6 +405,7 @@ function filesHardLinkOptionExcludingHyphened( test )
     test.true( a.fileProvider.isHardLink( file2 ) );
     test.true( a.fileProvider.areHardLinked( file1, file2 ) );
 
+    _.censor.profileDel( profile );
     return null;
   });
 
@@ -422,6 +431,7 @@ function filesHardLinkOptionExcludingHyphened( test )
     test.true( !a.fileProvider.isHardLink( file4 ) );
     test.true( !a.fileProvider.areHardLinked( file3, file4 ) );
 
+    _.censor.profileDel( profile );
     return null;
   });
 
@@ -447,6 +457,7 @@ function filesHardLinkOptionExcludingHyphened( test )
     test.true( a.fileProvider.isHardLink( file4 ) );
     test.true( a.fileProvider.areHardLinked( file3, file4 ) );
 
+    _.censor.profileDel( profile );
     return null;
   });
 
