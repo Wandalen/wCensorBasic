@@ -46,11 +46,13 @@ function fileReplaceBasic( test )
   a.ready.then( ( op ) =>
   {
     test.case = 'replace in File1.txt';
+    let profile = `test-${ _.intRandom( 1000000 ) }`;
     var options =
     {
       filePath : a.abs( 'before/File1.txt' ),
       ins : 'line',
       sub : 'abc',
+      profileDir : profile
     }
 
     var got = _.censor.fileReplace( options )
@@ -64,11 +66,13 @@ function fileReplaceBasic( test )
   a.ready.then( ( op ) =>
   {
     test.case = 'replace in File2.txt';
+    let profile = `test-${ _.intRandom( 1000000 ) }`;
     var options =
     {
       filePath : a.abs( 'before/File2.txt' ),
       ins : 'line',
       sub : 'abc',
+      profileDir : profile
     }
 
     var got = _.censor.fileReplace( options )
@@ -91,12 +95,14 @@ function filesReplaceBasic( test )
   a.ready.then( ( op ) =>
   {
     test.case = 'replace in File1.txt';
+    let profile = `test-${ _.intRandom( 1000000 ) }`;
     var options =
     {
       filePath : a.abs( 'before/File1.txt' ),
       basePath : a.abs( '.' ),
       ins : 'line',
       sub : 'abc',
+      profileDir : profile
     }
 
     var got = _.censor.filesReplace( options );
@@ -112,12 +118,14 @@ function filesReplaceBasic( test )
   a.ready.then( ( op ) =>
   {
     test.case = 'replace in File2.txt';
+    let profile = `test-${ _.intRandom( 1000000 ) }`;
     var options =
     {
       filePath : a.abs( 'before/File2.txt' ),
       basePath : a.abs( '.' ),
       ins : 'line',
       sub : 'abc',
+      profileDir : profile
     }
 
     var got = _.censor.filesReplace( options );
@@ -133,12 +141,14 @@ function filesReplaceBasic( test )
   a.ready.then( ( op ) =>
   {
     test.case = 'replace in File1.txt and File2.txt';
+    let profile = `test-${ _.intRandom( 1000000 ) }`;
     var options =
     {
       filePath : a.abs( 'before/**' ),
       basePath : a.abs( '.' ),
       ins : 'line',
       sub : 'abc',
+      profileDir : profile
     }
 
     var got = _.censor.filesReplace( options )
@@ -165,6 +175,7 @@ function filesHardLink( test )
   a.ready.then( ( op ) =>
   {
     test.case = 'hardlink 3 files, all are identical';
+    let profile = `test-${ _.intRandom( 1000000 ) }`;
 
     let file1 = a.abs( 'dir1/File1.txt' );
     let file2 = a.abs( 'dir1/File2.txt' );
@@ -172,7 +183,8 @@ function filesHardLink( test )
 
     var options =
     {
-      basePath : a.abs( './dir1' )
+      basePath : a.abs( './dir1' ),
+      profileDir : profile
     }
     test.true( !a.fileProvider.isHardLink( file1 ) );
     test.true( !a.fileProvider.isHardLink( file2 ) );
@@ -198,6 +210,7 @@ function filesHardLink( test )
   a.ready.then( ( op ) =>
   {
     test.case = 'hardlink 3 files, 2 files are identical';
+    let profile = `test-${ _.intRandom( 1000000 ) }`;
 
     let file1 = a.abs( 'dir2/File1.txt' );
     let file2 = a.abs( 'dir2/File2.txt' );
@@ -205,7 +218,8 @@ function filesHardLink( test )
 
     var options =
     {
-      basePath : a.abs( './dir2' )
+      basePath : a.abs( './dir2' ),
+      profileDir : profile
     }
     test.true( !a.fileProvider.isHardLink( file1 ) );
     test.true( !a.fileProvider.isHardLink( file2 ) );
@@ -231,6 +245,7 @@ function filesHardLink( test )
   a.ready.then( ( op ) =>
   {
     test.case = 'hardlink 3 files, 2 in folder, all identical';
+    let profile = `test-${ _.intRandom( 1000000 ) }`;
 
     let file1 = a.abs( 'dir3/dir3.1/File1.txt' );
     let file2 = a.abs( 'dir3/dir3.1/File2.txt' );
@@ -238,7 +253,8 @@ function filesHardLink( test )
 
     var options =
     {
-      basePath : a.abs( './dir3' )
+      basePath : a.abs( './dir3' ),
+      profileDir : profile
     }
     test.true( !a.fileProvider.isHardLink( file1 ) );
     test.true( !a.fileProvider.isHardLink( file2 ) );
@@ -274,6 +290,7 @@ function filesHardLinkOptionExcludingPath( test )
   a.ready.then( ( op ) =>
   {
     test.case = 'hardlink 3 files, 1 file in excludingPath';
+    let profile = `test-${ _.intRandom( 1000000 ) }`;
 
     let file1 = a.abs( 'dir1/File1.txt' );
     let file2 = a.abs( 'dir1/File2.txt' );
@@ -282,7 +299,8 @@ function filesHardLinkOptionExcludingPath( test )
     var options =
     {
       basePath : a.abs( './dir1' ),
-      excludingPath : file3
+      excludingPath : file3,
+      profileDir : profile
     }
     test.true( !a.fileProvider.isHardLink( file1 ) );
     test.true( !a.fileProvider.isHardLink( file2 ) );
@@ -308,6 +326,7 @@ function filesHardLinkOptionExcludingPath( test )
   a.ready.then( ( op ) =>
   {
     test.case = 'hardlink 4 files, folder with 2 files in excludingPath';
+    let profile = `test-${ _.intRandom( 1000000 ) }`;
 
     let file1 = a.abs( 'dir4/dir4.1/File1.txt' );
     let file2 = a.abs( 'dir4/dir4.1/File2.txt' );
@@ -317,7 +336,8 @@ function filesHardLinkOptionExcludingPath( test )
     var options =
     {
       basePath : a.abs( './dir4' ),
-      excludingPath : a.abs( './dir4/dir4.1' )
+      excludingPath : a.abs( './dir4/dir4.1' ),
+      profileDir : profile
     }
     test.true( !a.fileProvider.isHardLink( file1 ) );
     test.true( !a.fileProvider.isHardLink( file2 ) );
@@ -361,9 +381,11 @@ function filesHardLinkOptionExcludingHyphened( test )
   a.ready.then( ( op ) =>
   {
     test.case = 'hardlink non-ignored';
+    let profile = `test-${ _.intRandom( 1000000 ) }`;
     var options =
     {
-      basePath : a.abs( '.' )
+      basePath : a.abs( '.' ),
+      profileDir : profile
     }
     test.true( !a.fileProvider.isHardLink( file1 ) );
     test.true( !a.fileProvider.isHardLink( file2 ) );
@@ -383,10 +405,12 @@ function filesHardLinkOptionExcludingHyphened( test )
   a.ready.then( ( op ) =>
   {
     test.case = 'hardlink ignored, excludingHyphened : 1';
+    let profile = `test-${ _.intRandom( 1000000 ) }`;
     var options =
     {
       basePath : a.abs( '.' ),
-      excludingHyphened : 1
+      excludingHyphened : 1,
+      profileDir : profile
     }
     test.true( !a.fileProvider.isHardLink( file3 ) );
     test.true( !a.fileProvider.isHardLink( file4 ) );
@@ -406,10 +430,12 @@ function filesHardLinkOptionExcludingHyphened( test )
   a.ready.then( ( op ) =>
   {
     test.case = 'hardlink ignored, excludingHyphened : 0';
+    let profile = `test-${ _.intRandom( 1000000 ) }`;
     var options =
     {
       basePath : a.abs( '.' ),
-      excludingHyphened : 0
+      excludingHyphened : 0,
+      profileDir : profile
     }
     test.true( !a.fileProvider.isHardLink( file3 ) );
     test.true( !a.fileProvider.isHardLink( file4 ) );
