@@ -1316,7 +1316,7 @@ function filesHardLink( o )
 
   o.basePath = _.arrayAs( o.basePath );
 
-  if( o.withConfigPath )
+  if( o.withShared )
   {
     let storageName = this._configNameMapFromDefaults( o );
     let config = _.fileProvider.configUserRead( storageName ); /* xxx : replace? */
@@ -1337,7 +1337,6 @@ function filesHardLink( o )
     /\.hg$/,
     /\.tmp($|\/)/,
     /\.DS_Store$/,
-    // /(^|\/)-/,
   ]
 
   if( o.excludingHyphened )
@@ -1394,7 +1393,7 @@ filesHardLink.defaults =
   verbosity : 3,
   log : null,
   logger : 1,
-  withConfigPath : 1,
+  withShared : 1,
   basePath : null,
   includingPath : null,
   excludingPath : null,
