@@ -2,10 +2,13 @@ format: outwillfile-2.0
 root:
   - wCensorBasic.out
 consistency:
-  ../.ex.will.yml: &ref_0
+  wCensorBasic.out.will.yml: &ref_0
+    hash: a9c13f9a7c964956545527f41d2096e3
+    size: 41302
+  ../.ex.will.yml: &ref_1
     hash: 1f46e4d63e1d42a2bb5666944dfb8b11
     size: 1723
-  ../.im.will.yml: &ref_1
+  ../.im.will.yml: &ref_2
     hash: bcf1aa69dee170c91ddcbaf1858d18eb
     size: 4936
 module:
@@ -16,19 +19,19 @@ module:
       description: Tool to edit files massively and with undo
       enabled: 1
       version: 0.3.0
-      interpreters: &ref_2
+      interpreters:
         - njs >= 10.0.0
         - chrome >= 60.0.0
         - firefox >= 60.0.0
-      keywords: &ref_3
+      keywords:
         - tools
         - wTools
       license: MIT
       author: Kostiantyn Wandalen <wanalen@01.school>
-      contributors: &ref_4
+      contributors:
         - Kostiantyn Wandalen <wanalen@01.school>
       npm.name: wcensorbasic
-      npm.scripts: &ref_5
+      npm.scripts:
         test: wtest .run proto/**
         docgen: wdocgen .build proto
     path:
@@ -741,6 +744,24 @@ module:
           content: prime
         inherit:
           - files.transpile
+      exported.proto.export:
+        opts:
+          filePath: 'reflector::exported.proto.export'
+        criterion:
+          generated: 1
+          content: proto
+          export: 1
+        inherit:
+          - files.reflect
+      exported.files.proto.export:
+        opts:
+          filePath: 'reflector::exported.files.proto.export'
+        criterion:
+          generated: 1
+          content: proto
+          export: 1
+        inherit:
+          - files.reflect
     build:
       proto.export:
         steps:
@@ -829,8 +850,9 @@ module:
           content: proto
           export: 1
     consistency:
-      ../.ex.will.yml: *ref_0
-      ../.im.will.yml: *ref_1
+      wCensorBasic.out.will.yml: *ref_0
+      ../.ex.will.yml: *ref_1
+      ../.im.will.yml: *ref_2
   ../:
     about:
       name: wCensorBasic
@@ -838,13 +860,21 @@ module:
       description: Tool to edit files massively and with undo
       enabled: 1
       version: 0.3.0
-      interpreters: *ref_2
-      keywords: *ref_3
+      interpreters:
+        - njs >= 10.0.0
+        - chrome >= 60.0.0
+        - firefox >= 60.0.0
+      keywords:
+        - tools
+        - wTools
       license: MIT
       author: Kostiantyn Wandalen <wanalen@01.school>
-      contributors: *ref_4
+      contributors:
+        - Kostiantyn Wandalen <wanalen@01.school>
       npm.name: wcensorbasic
-      npm.scripts: *ref_5
+      npm.scripts:
+        test: wtest .run proto/**
+        docgen: wdocgen .build proto
     path:
       module.willfiles:
         criterion:
@@ -1510,3 +1540,6 @@ module:
       ../.im.will.yml:
         hash: bcf1aa69dee170c91ddcbaf1858d18eb
         size: 4936
+      wCensorBasic.out.will.yml:
+        hash: a9c13f9a7c964956545527f41d2096e3
+        size: 41302

@@ -1,10 +1,10 @@
 {
   "name" : "wcensorbasic",
-  "version" : "0.2.102",
+  "version" : "0.2.103",
   "description" : "Tool to edit files massively and with undo",
   "author" : "Kostiantyn Wandalen <wanalen@01.school>",
   "license" : "MIT",
-  "main" : "/pro/module/wCensorBasic/proto/node_modules/wcensorbasic",
+  "main" : "proto/node_modules/wcensorbasic",
   "files" : [ "proto/wtools/amid/l5/censor", "proto/wtools/Tools.s", "proto/node_modules" ],
   "scripts" : { "test" : "wtest .run proto rapidity:-3", "docgen" : "wdocgen .build proto" },
   "repository" :
