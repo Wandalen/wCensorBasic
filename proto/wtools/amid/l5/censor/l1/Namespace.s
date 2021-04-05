@@ -506,11 +506,12 @@ function configDel( o )
   {
     let opened = _.censor.configOpen( o2 );
     for( let d = 0 ; d < o.selector.length ; d++ )
-    _.selectSet
+    _.select
     ({
       src : opened.storage,
       selector : o.selector[ d ],
-      set : undefined,
+      action : _.selector.Action.del,
+      // set : undefined,
     });
     _.censor.configClose( opened );
     return opened.storage;
@@ -523,6 +524,7 @@ function configDel( o )
     // opened.storage = Object.create( null );
     _.fileProvider.storageTerminalDel( _.mapOnly_( null, o, _.fileProvider.storageTerminalDel.defaults ) );
   }
+
 }
 
 configDel.defaults =
@@ -1041,8 +1043,10 @@ function replace_head( routine, args )
   _.assert( _.strDefined( o.ins ) || _.regexpIs( o.ins ) );
   _.assert( _.strIs( o.sub ) );
 
-  if( _.boolLikeTrue( o.logger ) )
-  o.logger = _.LoggerPrime();
+  // if( _.boolLikeTrue( o.logger ) )
+  // o.logger = _.LoggerPrime();
+
+  o.logger = _.logger.from( o.logger );
 
   return o;
 }
@@ -1306,8 +1310,10 @@ function filesHardLink( o )
 
   o = _.routineOptions( filesHardLink, arguments );
 
-  if( _.boolLikeTrue( o.logger ) )
-  o.logger = _.LoggerPrime();
+  // if( _.boolLikeTrue( o.logger ) )
+  // o.logger = _.LoggerPrime();
+
+  o.logger = _.logger.from( o.logger );
 
   let path = _.fileProvider.path;
   let archive = new _.FilesArchive({ fileProvider : _.fileProvider })
@@ -1351,11 +1357,11 @@ function filesHardLink( o )
     /* run */
 
     if( o.verbosity < 2 )
-    archive.verbosity = 0;
+    archive.logger.verbosity = 0;
     else if( o.verbosity === 2 )
-    archive.verbosity = 2;
+    archive.logger.verbosity = 2;
     else
-    archive.verbosity = o.verbosity - 1;
+    archive.logger.verbosity = o.verbosity - 1;
     archive.allowingMissed = 0;
     archive.allowingCycled = 0;
     archive.basePath = o.basePath;
@@ -1537,8 +1543,10 @@ function do_head( routine, args )
   let o = _.routineOptions( routine, args );
   _.assert( _.longHas( [ 'redo', 'undo' ], o.mode ) );
 
-  if( _.boolLikeTrue( o.logger ) )
-  o.logger = _.LoggerPrime();
+  // if( _.boolLikeTrue( o.logger ) )
+  // o.logger = _.LoggerPrime();
+
+  o.logger = _.logger.from( o.logger );
 
   return o;
 }
