@@ -411,7 +411,7 @@ function configGet( o )
   let result = [];
 
   if( _.strIs( arguments[ 0 ] ) )
-  o = { storageDir : arguments[ 0 ] };
+  o = { storageDir : arguments[ 0 ] }; /* xxx : should be selector */
   o = _.routineOptions( configGet, o );
   self._configNameMapFromDefaults( o );
 
@@ -1046,7 +1046,7 @@ function replace_head( routine, args )
   // if( _.boolLikeTrue( o.logger ) )
   // o.logger = _.LoggerPrime();
 
-  o.logger = _.logger.from( o.logger );
+  o.logger = _.logger.maybe( o.logger );
 
   return o;
 }
@@ -1313,7 +1313,7 @@ function filesHardLink( o )
   // if( _.boolLikeTrue( o.logger ) )
   // o.logger = _.LoggerPrime();
 
-  o.logger = _.logger.from( o.logger );
+  o.logger = _.logger.maybe( o.logger );
 
   let path = _.fileProvider.path;
   let archive = new _.FilesArchive({ fileProvider : _.fileProvider })
@@ -1546,7 +1546,7 @@ function do_head( routine, args )
   // if( _.boolLikeTrue( o.logger ) )
   // o.logger = _.LoggerPrime();
 
-  o.logger = _.logger.from( o.logger );
+  o.logger = _.logger.maybe( o.logger );
 
   return o;
 }
