@@ -30,7 +30,7 @@ function storageNameMapFrom( o )
 {
   let self = this;
 
-  o = _.routineOptions( storageNameMapFrom, o );
+  o = _.routine.options_( storageNameMapFrom, o );
   self._storageNameMapFromDefaults( o );
 
   _.fileProvider.storageProfileNameMapFrom( o );
@@ -54,7 +54,7 @@ function storageRead( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routineOptions( storageRead, o );
+  o = _.routine.options_( storageRead, o );
 
   self._storageNameMapFromDefaults( o );
 
@@ -74,7 +74,7 @@ function storageDel( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routineOptions( storageDel, o );
+  o = _.routine.options_( storageDel, o );
 
   self._storageNameMapFromDefaults( o );
 
@@ -95,7 +95,7 @@ function storageLog( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routineOptions( storageLog, o );
+  o = _.routine.options_( storageLog, o );
   self._storageNameMapFromDefaults( o );
 
   if( o.logger === null )
@@ -109,7 +109,7 @@ function storageLog( o )
 
   if( o.verbosity <= 1 )
   {
-    o.logger.log( _.entity.exportJs( _.mapKeys( read ) ) );
+    o.logger.log( _.entity.exportJs( _.props.keys( read ) ) );
     return;
   }
 
@@ -149,7 +149,7 @@ function profileNameMapFrom( o )
 {
   let self = this;
 
-  o = _.routineOptions( profileNameMapFrom, o );
+  o = _.routine.options_( profileNameMapFrom, o );
   self._profileNameMapFromDefaults( o );
 
   _.fileProvider.storageProfileNameMapFrom( o );
@@ -173,7 +173,7 @@ function profileRead( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routineOptions( profileRead, o );
+  o = _.routine.options_( profileRead, o );
 
   self._profileNameMapFromDefaults( o );
 
@@ -193,7 +193,7 @@ function profileDel( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routineOptions( profileDel, o );
+  o = _.routine.options_( profileDel, o );
 
   self._profileNameMapFromDefaults( o );
 
@@ -214,7 +214,7 @@ function profileLog( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routineOptions( profileLog, o );
+  o = _.routine.options_( profileLog, o );
   self._profileNameMapFromDefaults( o );
 
   if( o.logger === null )
@@ -228,7 +228,7 @@ function profileLog( o )
 
   if( o.verbosity <= 1 )
   {
-    o.logger.log( _.entity.exportJs( _.mapKeys( read ) ) );
+    o.logger.log( _.entity.exportJs( _.props.keys( read ) ) );
     return;
   }
 
@@ -282,7 +282,7 @@ function configNameMapFrom( o )
 {
   let self = this;
 
-  o = _.routineOptions( configNameMapFrom, o );
+  o = _.routine.options_( configNameMapFrom, o );
   self._configNameMapFromDefaults( o );
 
   _.fileProvider.storageTerminalNameMapFrom( o );
@@ -309,7 +309,7 @@ function configRead( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routineOptions( configRead, o );
+  o = _.routine.options_( configRead, o || null );
 
   self._configNameMapFromDefaults( o );
 
@@ -329,7 +329,7 @@ function configOpen( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routineOptions( configOpen, o );
+  o = _.routine.options_( configOpen, o );
 
   self._configNameMapFromDefaults( o );
 
@@ -359,7 +359,7 @@ function configClose( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routineOptions( configClose, o );
+  o = _.routine.options_( configClose, o );
 
   self._configNameMapFromDefaults( o );
 
@@ -383,7 +383,7 @@ function configLog( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routineOptions( configLog, o );
+  o = _.routine.options_( configLog, o );
   self._configNameMapFromDefaults( o );
 
   if( o.logger === null )
@@ -412,7 +412,7 @@ function configGet( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] }; /* xxx : should be selector */
-  o = _.routineOptions( configGet, o );
+  o = _.routine.options_( configGet, o );
   self._configNameMapFromDefaults( o );
 
   let o2 = _.mapOnly_( null, o, _.censor.configOpen.defaults );
@@ -458,7 +458,7 @@ function configSet( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routineOptions( configSet, o );
+  o = _.routine.options_( configSet, o );
   self._configNameMapFromDefaults( o );
 
   let o2 = _.mapOnly_( null, o, _.censor.configOpen.defaults );
@@ -493,7 +493,7 @@ function configDel( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routineOptions( configDel, o );
+  o = _.routine.options_( configDel, o );
   self._configNameMapFromDefaults( o );
 
   let o2 = _.mapOnly_( null, o, _.censor.configOpen.defaults );
@@ -542,7 +542,7 @@ configDel.defaults =
 //
 //   if( _.strIs( arguments[ 0 ] ) )
 //   o = { storageDir : arguments[ 0 ] };
-//   o = _.routineOptions( configDel, o );
+//   o = _.routine.options_( configDel, o );
 //
 //   self._configNameMapFromDefaults( o );
 //
@@ -594,7 +594,7 @@ function arrangementNameMapFrom( o )
 {
   let self = this;
 
-  o = _.routineOptions( arrangementNameMapFrom, o );
+  o = _.routine.options_( arrangementNameMapFrom, o );
   self._arrangementNameMapFromDefaults( o );
 
   _.fileProvider.storageTerminalNameMapFrom( o );
@@ -621,7 +621,7 @@ function arrangementRead( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routineOptions( arrangementRead, o );
+  o = _.routine.options_( arrangementRead, o );
 
   self._arrangementNameMapFromDefaults( o );
 
@@ -641,7 +641,7 @@ function arrangementOpen( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routineOptions( arrangementOpen, o );
+  o = _.routine.options_( arrangementOpen, o );
 
   self._arrangementNameMapFromDefaults( o );
 
@@ -671,7 +671,7 @@ function arrangementClose( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routineOptions( arrangementClose, o );
+  o = _.routine.options_( arrangementClose, o );
 
   self._arrangementNameMapFromDefaults( o );
 
@@ -695,7 +695,7 @@ function arrangementDel( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routineOptions( arrangementDel, o );
+  o = _.routine.options_( arrangementDel, o );
 
   self._arrangementNameMapFromDefaults( o );
 
@@ -717,7 +717,7 @@ function arrangementLog( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routineOptions( arrangementLog, o );
+  o = _.routine.options_( arrangementLog, o );
   self._arrangementNameMapFromDefaults( o );
 
   if( o.logger === null )
@@ -756,7 +756,7 @@ function actionStatus( o )
 {
   let result;
 
-  o = _.routineOptions( actionStatus, o );
+  o = _.routine.options_( actionStatus, o );
 
   _.assert( _.censor.actionIs( o.action ) );
 
@@ -809,7 +809,7 @@ function actionDo( o )
   try
   {
 
-    o = _.routineOptions( actionDo, arguments );
+    o = _.routine.options_( actionDo, arguments );
 
     if( o.logger )
     {
@@ -939,12 +939,12 @@ function actionDo( o )
     if( o.mode === 'redo' )
     {
       _.assert( o.action.status.current === null || o.action.status.current === 'undo', () => `${o.action.name} is already done` );
-      _.assert( _.lengthOf( o.action.hashBefore ) >= 1 );
+      _.assert( _.entity.lengthOf( o.action.hashBefore ) >= 1 );
     }
     else
     {
       _.assert( o.action.status.current === 'redo', () => `${o.action.name} is not yet done to undo` );
-      _.assert( _.lengthOf( o.action.hashAfter ) >= 1 );
+      _.assert( _.entity.lengthOf( o.action.hashAfter ) >= 1 );
     }
   }
 
@@ -986,9 +986,9 @@ function actionDo( o )
     _.assert( o.action.dataMapBefore === null );
 
     if( !o.dataMap )
-    o.dataMap = _.fileProvider.filesRead({ filePath : _.mapKeys( o.action.hashBefore ), encoding : 'utf8' }).dataMap;
+    o.dataMap = _.fileProvider.filesRead({ filePath : _.props.keys( o.action.hashBefore ), encoding : 'utf8' }).dataMap;
 
-    _.assert( _.lengthOf( o.dataMap ) >= 1 );
+    _.assert( _.entity.lengthOf( o.dataMap ) >= 1 );
 
     o.action.dataMapBefore = o.dataMap;
 
@@ -998,7 +998,7 @@ function actionDo( o )
 
   function hashAfterUpdate()
   {
-    let dataMap = _.fileProvider.filesRead({ filePath : _.mapKeys( o.action.hashBefore ), encoding : 'buffer.raw' }).dataMap;
+    let dataMap = _.fileProvider.filesRead({ filePath : _.props.keys( o.action.hashBefore ), encoding : 'buffer.raw' }).dataMap;
 
     o.action.hashAfter = o.action.hashAfter || Object.create( null );
 
@@ -1034,9 +1034,14 @@ function replace_head( routine, args )
   let o = args[ 0 ];
 
   if( args.length > 1 )
-  o = { filePath : args[ 0 ], ins : args[ 1 ], sub : args[ 2 ] }
+  {
+    if( args.length === 3 )
+    o = { filePath : args[ 0 ], ins : args[ 1 ], sub : args[ 2 ] }
+    else
+    o = { filePath : args[ 0 ] }
+  }
 
-  _.routineOptions( routine, o );
+  _.routine.options_( routine, o );
   _.assert( arguments.length === 2 );
   _.assert( args.length === 1 || args.length === 3 );
   _.assert( _.strDefined( o.filePath ) );
@@ -1057,7 +1062,7 @@ function fileReplace_body( o )
 {
   let opened;
 
-  _.assertRoutineOptions( fileReplace_body, arguments );
+  _.routine.assertOptions( fileReplace_body, arguments );
   _.assert( _.strDefined( o.filePath ) );
   _.assert( !!o.arranging, 'not implemented' );
 
@@ -1071,7 +1076,7 @@ function fileReplace_body( o )
     {
       let o2 = _.mapOnly_( null, o, _.strSearchLog.defaults );
       let searched = _.strSearchLog( o2 );
-      _.mapExtend( o, searched );
+      _.props.extend( o, searched );
       o.searchLog = o.log;
       delete o.log;
       delete o.src;
@@ -1121,7 +1126,7 @@ function fileReplace_body( o )
 
     action.redo = _.routineSourceGet( redo );
     action.undo = _.routineSourceGet( undo );
-    action.parameters = _.mapExtend( null, o );
+    action.parameters = _.props.extend( null, o );
 
     delete action.parameters.arranging;
     delete action.parameters.determiningLineNumber;
@@ -1204,13 +1209,13 @@ fileReplace_body.defaults =
 
 }
 
-let fileReplace = _.routine.uniteCloning_( replace_head, fileReplace_body );
+let fileReplace = _.routine.uniteCloning_replaceByUnite( replace_head, fileReplace_body );
 
 //
 
 function filesReplace_body( o )
 {
-  o =_.routineOptions( filesReplace, arguments );
+  o =_.routine.options_( filesReplace, arguments );
 
   if( o.session )
   o.storageTerminal = o.session;
@@ -1301,14 +1306,14 @@ filesReplace_body.defaults =
   filePath : null,
 }
 
-let filesReplace = _.routine.uniteCloning_( replace_head, filesReplace_body );
+let filesReplace = _.routine.uniteCloning_replaceByUnite( replace_head, filesReplace_body );
 
 //
 
 function filesHardLink( o )
 {
 
-  o = _.routineOptions( filesHardLink, arguments );
+  o = _.routine.options_( filesHardLink, arguments );
 
   // if( _.boolLikeTrue( o.logger ) )
   // o.logger = _.LoggerPrime();
@@ -1414,7 +1419,7 @@ function systemEntryAdd( o )
   if( !_.mapIs( o ) )
   o = { appPath : arguments[ 0 ] }
 
-  _.routineOptions( systemEntryAdd, o );
+  _.routine.options_( systemEntryAdd, o );
 
   if( o.entryDirPath === null )
   {
@@ -1429,7 +1434,7 @@ function systemEntryAdd( o )
 
   let o3 = _.mapOnly_( null, o, _.process.systemEntryAdd.defaults );
   let result = _.process.systemEntryAdd( o3 );
-  _.mapExtend( o, o3 );
+  _.props.extend( o, o3 );
 
   return result;
 }
@@ -1462,7 +1467,7 @@ function status( o )
   let result = Object.create( null );
   let errors;
 
-  o = _.routineOptions( status, o );
+  o = _.routine.options_( status, o );
 
   if( o.withErrors )
   {
@@ -1540,7 +1545,7 @@ status.defaults =
 
 function do_head( routine, args )
 {
-  let o = _.routineOptions( routine, args );
+  let o = _.routine.options_( routine, args );
   _.assert( _.longHas( [ 'redo', 'undo' ], o.mode ) );
 
   // if( _.boolLikeTrue( o.logger ) )
@@ -1686,15 +1691,15 @@ do_body.defaults =
 
 //
 
-let _do = _.routine.uniteCloning_( do_head, do_body );
+let _do = _.routine.uniteCloning_replaceByUnite( do_head, do_body );
 _do.defaults.depth = 0;
 _do.defaults.mode = 'redo';
 
-let redo = _.routine.uniteCloning_( do_head, do_body );
+let redo = _.routine.uniteCloning_replaceByUnite( do_head, do_body );
 redo.defaults.depth = 0;
 redo.defaults.mode = 'redo';
 
-let undo = _.routine.uniteCloning_( do_head, do_body );
+let undo = _.routine.uniteCloning_replaceByUnite( do_head, do_body );
 undo.defaults.depth = 0;
 undo.defaults.mode = 'undo';
 
@@ -1881,7 +1886,7 @@ let Extension =
 
 }
 
-_.mapExtend( Self, Extension );
+_.props.extend( Self, Extension );
 _.censor.Init();
 
 //
