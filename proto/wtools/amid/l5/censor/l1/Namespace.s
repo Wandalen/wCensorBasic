@@ -641,7 +641,7 @@ function arrangementOpen( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routine.options_( arrangementOpen, o );
+  o = _.routine.optionsWithoutUndefined( arrangementOpen, o );
 
   self._arrangementNameMapFromDefaults( o );
 
@@ -839,6 +839,7 @@ function actionDo( o )
         args : [ `Files are outdated:\n  ${ outdated.join( '  \n' ) }` ],
         reason : 'outdated'
       });
+      debugger; /* eslint-disable-line no-debugger */
       throw _.errBrief( err );
     }
 
@@ -1222,6 +1223,7 @@ function filesReplace_body( o )
 
   if( o.resetting )
   {
+    debugger;
     let opened = _.censor.arrangementOpen
     ({
       storageDir : o.storageDir,
@@ -1307,6 +1309,9 @@ filesReplace_body.defaults =
 }
 
 let filesReplace = _.routine.uniteCloning_replaceByUnite( replace_head, filesReplace_body );
+
+_.assert( filesReplace_body.defaults.resetting === 0 );
+_.assert( filesReplace.defaults.resetting === 0 );
 
 //
 
