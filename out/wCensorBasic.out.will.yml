@@ -2,12 +2,9 @@ format: outwillfile-2.0
 root:
   - wCensorBasic.out
 consistency:
-  ../.ex.will.yml: &ref_0
-    hash: 1f46e4d63e1d42a2bb5666944dfb8b11
-    size: 1723
-  ../.im.will.yml: &ref_1
-    hash: a1e5022e0f6307f1bb37612a4e7e990a
-    size: 4886
+  ../will.yml: &ref_0
+    hash: a4e240d4da9bfea1683d19517b187bd5
+    size: 6369
 module:
   wCensorBasic.out:
     about:
@@ -16,19 +13,19 @@ module:
       description: Tool to edit files massively and with undo
       enabled: 1
       version: 0.3.0
-      interpreters: &ref_2
+      license: MIT
+      npm.name: wcensorbasic
+      author: Kostiantyn Wandalen <wanalen@01.school>
+      keywords: &ref_1
+        - tools
+        - wTools
+      contributors: &ref_2
+        - Kostiantyn Wandalen <wanalen@01.school>
+      interpreters: &ref_3
         - njs >= 10.0.0
         - chrome >= 60.0.0
         - firefox >= 60.0.0
-      keywords: &ref_3
-        - tools
-        - wTools
-      license: MIT
-      author: Kostiantyn Wandalen <wanalen@01.school>
-      contributors: &ref_4
-        - Kostiantyn Wandalen <wanalen@01.school>
-      npm.name: wcensorbasic
-      npm.scripts: &ref_5
+      npm.scripts: &ref_4
         test: wtest .run proto/**
         docgen: wdocgen .build proto
     path:
@@ -43,15 +40,11 @@ module:
       module.original.willfiles:
         criterion:
           predefined: 1
-        path:
-          - ../.ex.will.yml
-          - ../.im.will.yml
+        path: ../will.yml
       module.peer.willfiles:
         criterion:
           predefined: 1
-        path:
-          - ../.ex.will.yml
-          - ../.im.will.yml
+        path: ../will.yml
       module.peer.in:
         criterion:
           predefined: 1
@@ -224,7 +217,7 @@ module:
         path: 'npm:///wFiles'
         autoExporting: 0
         enabled: 0
-      wFilesArchive:
+      wfilesarchive:
         path: 'npm:///wfilesarchive'
         autoExporting: 0
         enabled: 0
@@ -233,7 +226,7 @@ module:
         autoExporting: 0
         enabled: 0
         criterion:
-          debug: 1
+          development: 1
     reflector:
       reflect.proto.debug.raw:
         src:
@@ -829,8 +822,7 @@ module:
           content: proto
           export: 1
     consistency:
-      ../.ex.will.yml: *ref_0
-      ../.im.will.yml: *ref_1
+      ../will.yml: *ref_0
   ../:
     about:
       name: wCensorBasic
@@ -838,26 +830,22 @@ module:
       description: Tool to edit files massively and with undo
       enabled: 1
       version: 0.3.0
-      interpreters: *ref_2
-      keywords: *ref_3
       license: MIT
-      author: Kostiantyn Wandalen <wanalen@01.school>
-      contributors: *ref_4
       npm.name: wcensorbasic
-      npm.scripts: *ref_5
+      author: Kostiantyn Wandalen <wanalen@01.school>
+      keywords: *ref_1
+      contributors: *ref_2
+      interpreters: *ref_3
+      npm.scripts: *ref_4
     path:
       module.willfiles:
         criterion:
           predefined: 1
-        path:
-          - .ex.will.yml
-          - .im.will.yml
+        path: will.yml
       module.original.willfiles:
         criterion:
           predefined: 1
-        path:
-          - .ex.will.yml
-          - .im.will.yml
+        path: will.yml
       module.peer.willfiles:
         criterion:
           predefined: 1
@@ -963,7 +951,7 @@ module:
         path: 'npm:///wFiles'
         autoExporting: 0
         enabled: 0
-      wFilesArchive:
+      wfilesarchive:
         path: 'npm:///wfilesarchive'
         autoExporting: 0
         enabled: 0
@@ -972,7 +960,7 @@ module:
         autoExporting: 0
         enabled: 0
         criterion:
-          debug: 1
+          development: 1
     reflector:
       reflect.proto.debug.raw:
         src:
@@ -1504,9 +1492,6 @@ module:
           - 'build::release'
           - 'build::npm'
     consistency:
-      ../.ex.will.yml:
-        hash: 1f46e4d63e1d42a2bb5666944dfb8b11
-        size: 1723
-      ../.im.will.yml:
-        hash: a1e5022e0f6307f1bb37612a4e7e990a
-        size: 4886
+      ../will.yml:
+        hash: a4e240d4da9bfea1683d19517b187bd5
+        size: 6369
