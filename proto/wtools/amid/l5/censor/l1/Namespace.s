@@ -418,7 +418,7 @@ function configGet( o )
   let o2 = _.mapOnly_( null, o, _.censor.configOpen.defaults );
   let opened = _.censor.configOpen( o2 );
 
-  o.selector = _.arrayAs( o.selector );
+  o.selector = _.array.as( o.selector );
 
   _.assert( _.strsAreAll( o.selector ) );
 
@@ -498,7 +498,7 @@ function configDel( o )
 
   let o2 = _.mapOnly_( null, o, _.censor.configOpen.defaults );
 
-  o.selector = _.arrayAs( o.selector );
+  o.selector = _.array.as( o.selector );
 
   _.assert( _.strsAreAll( o.selector ) );
 
@@ -1330,14 +1330,14 @@ function filesHardLink( o )
 
   /* basePath */
 
-  o.basePath = _.arrayAs( o.basePath );
+  o.basePath = _.array.as( o.basePath );
 
   if( o.withShared )
   {
     let storageName = this._configNameMapFromDefaults( o );
     let config = _.fileProvider.configUserRead( storageName ); /* xxx : replace? */
     if( config && config.path && config.path.hlink )
-    _.arrayAppendArrayOnce( o.basePath, _.arrayAs( config.path.hlink ) );
+    _.arrayAppendArrayOnce( o.basePath, _.array.as( config.path.hlink ) );
   }
 
   _.assert( o.basePath.length >= 1 );
