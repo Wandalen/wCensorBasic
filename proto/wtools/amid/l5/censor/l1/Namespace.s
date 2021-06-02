@@ -1225,7 +1225,6 @@ function filesReplace_body( o )
 
   if( o.resetting )
   {
-    debugger;
     let opened = _.censor.arrangementOpen
     ({
       storageDir : o.storageDir,
