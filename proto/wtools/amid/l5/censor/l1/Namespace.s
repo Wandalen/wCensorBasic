@@ -695,6 +695,8 @@ function arrangementDel( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
+  if( !arguments.length )
+  o = Object.create( null );
   o = _.routine.options_( arrangementDel, o );
 
   self._arrangementNameMapFromDefaults( o );
