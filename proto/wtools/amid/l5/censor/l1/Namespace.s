@@ -4,7 +4,7 @@
 'use strict';
 
 const _ = _global_.wTools;
-const Self = _.censor = _.censor || Object.create( null );
+_.censor = _.censor || Object.create( null );
 
 // --
 // storage
@@ -1891,7 +1891,7 @@ let Extension =
 
 }
 
-_.props.extend( Self, Extension );
+/* _.props.extend */Object.assign( _.censor, Extension );
 _.censor.Init();
 
 //
