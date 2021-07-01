@@ -1,22 +1,37 @@
 {
-  "name" : "wcensorbasic",
-  "version" : "0.2.128",
-  "description" : "Tool to edit files massively and with undo",
-  "author" : "Kostiantyn Wandalen <wanalen@01.school>",
-  "license" : "MIT",
-  "main" : "proto/node_modules/wcensorbasic",
-  "files" : [ "proto/wtools/amid/l5/censor", "proto/node_modules", "proto/node_modules/Tools", "proto/node_modules/wcensorbasic" ],
-  "scripts" : { "test" : "wtest .run proto rapidity:-3", "docgen" : "wdocgen .build proto" },
-  "repository" :
-  {
-    "type" : "git",
-    "url" : "https://github.com/Wandalen/wCensorBasic.git"
+  "name": "wcensorbasic",
+  "version": "0.2.129",
+  "description": "Tool to edit files massively and with undo",
+  "author": "Kostiantyn Wandalen <wanalen@01.school>",
+  "license": "MIT",
+  "main": "proto/node_modules/wcensorbasic",
+  "files": [
+    "proto/wtools/amid/l5/censor",
+    "proto/node_modules",
+    "proto/node_modules/Tools",
+    "proto/node_modules/wcensorbasic"
+  ],
+  "scripts": {
+    "test": "wtest .run proto rapidity:-3",
+    "docgen": "wdocgen .build proto"
   },
-  "bugs" :
-  {
-    "url" : "https://github.com/Wandalen/wCensorBasic/issues"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Wandalen/wCensorBasic.git"
   },
-  "dependencies" : { "wTools" : "", "wFiles" : "", "wfilesarchive" : "" },
-  "devDependencies" : { "wTesting" : "", "eslint" : "7.1.0" },
-  "keywords" : [ "wTools" ]
+  "bugs": {
+    "url": "https://github.com/Wandalen/wCensorBasic/issues"
+  },
+  "dependencies": {
+    "wTools": "",
+    "wfilesarchive": "",
+    "wFiles": ""
+  },
+  "devDependencies": {
+    "wTesting": "",
+    "eslint": "7.1.0"
+  },
+  "keywords": [
+    "wTools"
+  ]
 }
