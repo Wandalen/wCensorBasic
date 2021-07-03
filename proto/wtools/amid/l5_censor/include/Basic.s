@@ -4,10 +4,11 @@
 'use strict';
 
 /* censor */
+// zzz
 
 if( typeof module !== 'undefined' )
 {
-  const _ = require( '../../../../../node_modules/Tools' );
+  const _ = require( '../../../../node_modules/Tools' );
   _.include( 'wFiles' );
   _.include( 'wFilesArchive' );
   _.include( 'wStringsExtra' );

@@ -5,7 +5,7 @@
 
 if( typeof module !== 'undefined' )
 {
-  const _ = require( '../censor/entry/CensorBasic.s' );
+  const _ = require( '../l5_censor/entry/CensorBasic.s' );
   _.include( 'wTesting' );
 }
 

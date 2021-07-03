@@ -1453,10 +1453,10 @@ _.assert( fileRename.defaults !== _link_body.defaults );
 
 //
 
-function listingReorder( o )
+function listingReorder_body( o )
 {
 
-  _.routine.options( listingReorder, o );
+  // _.routine.options( listingReorder, o );
 
   let regexp = /^(\d+)_(.+)$/;
   let names = _.fileProvider.dirRead( o.dirPath );
@@ -1491,7 +1491,7 @@ function listingReorder( o )
 
 }
 
-listingReorder.defaults =
+listingReorder_body.defaults =
 {
   ... arrangementNameMapFrom.defaults,
   verbosity : null,
@@ -1500,9 +1500,11 @@ listingReorder.defaults =
   step : 10,
 }
 
+let listingReorder = _.routine.unite( null, listingReorder_body );
+
 //
 
-let listingSqueeze = _.routine.extendCloning( null, listingReorder );
+let listingSqueeze = _.routine.uniteCloning( null, listingReorder_body );
 listingSqueeze.defaults.first = 1;
 listingSqueeze.defaults.step = 1;
 

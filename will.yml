@@ -129,7 +129,7 @@ path:
       raw: compiled
       content: prime
   entry.proto.no.tests:
-    path: proto/wtools/amid/l5/censor/entry/CensorBasic.s
+    path: proto/wtools/amid/l5_censor/entry/CensorBasic.s
     criterion:
       tests: no.tests
   entry.proto.only.tests:
@@ -137,7 +137,7 @@ path:
     criterion:
       tests: only.tests
   entry.out.raw.debug:
-    path: '{path::out.*=1}/source/wtools/amid/l5/censor/entry/CensorBasic.s'
+    path: '{path::out.*=1}/source/wtools/amid/l5_censor/entry/CensorBasic.s'
     criterion:
       debug:
         - debug
@@ -153,7 +153,7 @@ path:
       raw: compiled
       content: prime
   npm.proto.entry:
-    - proto/wtools/amid/l5/censor/entry/CensorBasic.s
+    - proto/wtools/amid/l5_censor/entry/CensorBasic.s
     - proto/node_modules/wcensorbasic
 reflector:
   reflect.proto:
