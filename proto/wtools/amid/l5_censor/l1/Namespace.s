@@ -1397,11 +1397,17 @@ function _link_body( o )
     let dstPath = op.action.filePath[ 0 ];
     let srcPath = op.action.filePath[ 1 ];
 
-    if( _.fileProvider.fileExists( dstPath ) )
-    throw _.err( `File ${dstPath} already exists!` );
+    if( srcPath === dstPath )
+    return;
 
     if( !_.fileProvider.fileExists( srcPath ) )
     throw _.err( `File ${srcPath} does not exist!` );
+
+    if( srcPath === dstPath )
+    return;
+
+    if( _.fileProvider.fileExists( dstPath ) )
+    throw _.err( `File ${dstPath} already exists!` );
 
     _.fileProvider[ op.action.parameters.linkingAction ]( dstPath, srcPath );
   }
@@ -1414,11 +1420,14 @@ function _link_body( o )
     let dstPath = op.action.filePath[ 1 ];
     let srcPath = op.action.filePath[ 0 ];
 
-    if( _.fileProvider.fileExists( dstPath ) )
-    throw _.err( `File ${dstPath} already exists!` );
-
     if( !_.fileProvider.fileExists( srcPath ) )
     throw _.err( `File ${srcPath} does not exist!` );
+
+    if( srcPath === dstPath )
+    return;
+
+    if( _.fileProvider.fileExists( dstPath ) )
+    throw _.err( `File ${dstPath} already exists!` );
 
     _.fileProvider[ op.action.parameters.linkingAction ]( dstPath, srcPath );
   }
@@ -1453,8 +1462,6 @@ _.assert( fileRename.defaults !== _link_body.defaults );
 function listingReorder_body( o )
 {
 
-  // _.routine.options( listingReorder, o );
-
   let regexp = /^(\d+)_(.+)$/;
   let names = _.fileProvider.dirRead( o.dirPath );
   let listing = [];
@@ -1474,9 +1481,16 @@ function listingReorder_body( o )
   let cardinal = o.first;
   listing.forEach( ( e ) =>
   {
+    let srcPath = _.path.join( o.dirPath, e.name );
+    let dstPath = _.path.join( o.dirPath, nameFor( cardinal, e ) );
+    if( srcPath === dstPath )
+    {
+      cardinal += o.step;
+      return;
+    }
     let o2 = _.mapOnly_( null, o, this.fileRename.defaults );
-    o2.srcPath = _.path.join( o.dirPath, e.name );
-    o2.dstPath = _.path.join( o.dirPath, nameFor( cardinal, e ) );
+    o2.srcPath = srcPath;
+    o2.dstPath = dstPath;
     _.censor.fileRename( o2 );
     cardinal += o.step;
   });
@@ -2085,7 +2099,7 @@ let Extension =
 
 }
 
-/* _.props.extend */Object.assign( _.censor, Extension );
+Object.assign( _.censor, Extension );
 _.censor.Init();
 
 //

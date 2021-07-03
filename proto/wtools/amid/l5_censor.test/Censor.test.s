@@ -208,6 +208,37 @@ function renameBasic( test )
 
   /* */
 
+  test.case = 'to itself ';
+
+  _.censor.profileDel( profileDir );
+  a.reflect();
+  a.fileProvider.fileWrite( a.abs( 'File1.txt' ), 'File1.txt' );
+
+  var expected = { 'File1.txt' : 'File1.txt' };
+  var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
+  test.identical( extract.filesTree, expected );
+
+  var got = _.censor.fileRename
+  ({
+    dstPath : a.abs( 'File1.txt'),
+    srcPath : a.abs( 'File1.txt' ),
+    profileDir,
+  });
+
+  _.censor.do({ profileDir });
+
+  var expected = { 'File1.txt' : 'File1.txt' };
+  var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
+  test.identical( extract.filesTree, expected );
+
+  _.censor.undo({ profileDir });
+
+  var expected = { 'File1.txt' : 'File1.txt' };
+  var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
+  test.identical( extract.filesTree, expected );
+
+  /* */
+
   test.case = 'several files';
 
   _.censor.profileDel( profileDir );
@@ -305,6 +336,51 @@ function listingReorder( test )
     '5_F0.txt' : '5_F0.txt',
     '_3_F1.txt' : '_3_F1.txt',
   };
+  var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
+  test.identical( extract.filesTree, expected );
+
+  /* */
+
+  _.censor.profileDel( profileDir );
+}
+
+//
+
+function listingReorderPartiallyOrdered( test )
+{
+  let context = this;
+  let a = test.assetFor( 'listingReorderPartiallyOrdered' );
+  let profileDir = `test-${ _.intRandom( 1000000 ) }`;
+  profileDir = null;
+
+  /* */
+
+  test.case = 'basic';
+
+  _.censor.profileDel( profileDir );
+  a.reflect();
+
+  var expected =
+  { '10_F1.txt' : '10_F1.txt', '20_F2.txt' : '20_F2.txt', '31_F3.txt' : '31_F3.txt' }
+  var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
+  test.identical( extract.filesTree, expected );
+
+  var got = _.censor.listingReorder
+  ({
+    dirPath : a.abs( '.' ),
+    profileDir,
+  });
+  _.censor.do({ profileDir });
+
+  var expected =
+  { '10_F1.txt' : '10_F1.txt', '20_F2.txt' : '20_F2.txt', '30_F3.txt' : '31_F3.txt' }
+  var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
+  test.identical( extract.filesTree, expected );
+
+  _.censor.undo({ profileDir });
+
+  var expected =
+  { '10_F1.txt' : '10_F1.txt', '20_F2.txt' : '20_F2.txt', '31_F3.txt' : '31_F3.txt' }
   var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
   test.identical( extract.filesTree, expected );
 
@@ -704,6 +780,7 @@ const Proto =
 
     renameBasic,
     listingReorder,
+    listingReorderPartiallyOrdered,
     listingSqueeze,
 
     filesHardLink,
