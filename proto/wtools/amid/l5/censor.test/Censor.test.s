@@ -161,9 +161,219 @@ function filesReplaceBasic( test )
     return null;
   });
 
-  //
+  /* */
 
   return a.ready;
+}
+
+//
+
+function renameBasic( test )
+{
+  let context = this;
+  let a = test.assetFor( false );
+  let profileDir = `test-${ _.intRandom( 1000000 ) }`;
+  profileDir = null;
+
+  /* */
+
+  test.case = 'single file';
+
+  _.censor.profileDel( profileDir );
+  a.reflect();
+  a.fileProvider.fileWrite( a.abs( 'File1.txt' ), 'File1.txt' );
+
+  var expected = { 'File1.txt' : 'File1.txt' };
+  var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
+  test.identical( extract.filesTree, expected );
+
+  var got = _.censor.fileRename
+  ({
+    dstPath : a.abs( 'File2.txt'),
+    srcPath : a.abs( 'File1.txt' ),
+    profileDir,
+  });
+
+  _.censor.do({ profileDir });
+
+  var expected = { 'File2.txt' : 'File1.txt' };
+  var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
+  test.identical( extract.filesTree, expected );
+
+  _.censor.undo({ profileDir });
+
+  var expected = { 'File1.txt' : 'File1.txt' };
+  var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
+  test.identical( extract.filesTree, expected );
+
+  /* */
+
+  test.case = 'several files';
+
+  _.censor.profileDel( profileDir );
+  a.reflect();
+  a.fileProvider.fileWrite( a.abs( 'File1.txt' ), 'File1.txt' );
+  a.fileProvider.fileWrite( a.abs( 'File2.txt' ), 'File2.txt' );
+
+  var expected = { 'File1.txt' : 'File1.txt', 'File2.txt' : 'File2.txt' };
+  var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
+  test.identical( extract.filesTree, expected );
+
+  var got = _.censor.fileRename
+  ({
+    dstPath : a.abs( 'File3.txt'),
+    srcPath : a.abs( 'File2.txt' ),
+    profileDir,
+  });
+
+  var got = _.censor.fileRename
+  ({
+    dstPath : a.abs( 'File2.txt'),
+    srcPath : a.abs( 'File1.txt' ),
+    profileDir,
+  });
+
+  _.censor.do({ profileDir });
+
+  var expected = { 'File2.txt' : 'File1.txt', 'File3.txt' : 'File2.txt' };
+  var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
+  test.identical( extract.filesTree, expected );
+
+  _.censor.undo({ profileDir });
+
+  var expected = { 'File1.txt' : 'File1.txt', 'File2.txt' : 'File2.txt' };
+  var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
+  test.identical( extract.filesTree, expected );
+
+  /* */
+
+  _.censor.profileDel( profileDir );
+}
+
+//
+
+function listingReorder( test )
+{
+  let context = this;
+  let a = test.assetFor( 'listingSqueeze' );
+  let profileDir = `test-${ _.intRandom( 1000000 ) }`;
+  profileDir = null;
+
+  /* */
+
+  test.case = 'basic';
+
+  _.censor.profileDel( profileDir );
+  a.reflect();
+
+  var expected =
+  {
+    '11_F3.txt' : '11_F3.txt',
+    '3_F1.txt' : '3_F1.txt',
+    '3_F2.txt' : '3_F2.txt',
+    '5_F0.txt' : '5_F0.txt',
+    '_3_F1.txt' : '_3_F1.txt',
+  };
+  var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
+  test.identical( extract.filesTree, expected );
+
+  var got = _.censor.listingReorder
+  ({
+    dirPath : a.abs( '.' ),
+    profileDir,
+  });
+  _.censor.do({ profileDir });
+
+  var expected =
+  {
+    '10_F1.txt' : '3_F1.txt',
+    '20_F2.txt' : '3_F2.txt',
+    '30_F0.txt' : '5_F0.txt',
+    '40_F3.txt' : '11_F3.txt',
+    '_3_F1.txt' : '_3_F1.txt',
+  };
+  var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
+  test.identical( extract.filesTree, expected );
+
+  _.censor.undo({ profileDir });
+
+  var expected =
+  {
+    '11_F3.txt' : '11_F3.txt',
+    '3_F1.txt' : '3_F1.txt',
+    '3_F2.txt' : '3_F2.txt',
+    '5_F0.txt' : '5_F0.txt',
+    '_3_F1.txt' : '_3_F1.txt',
+  };
+  var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
+  test.identical( extract.filesTree, expected );
+
+  /* */
+
+  _.censor.profileDel( profileDir );
+}
+
+//
+
+function listingSqueeze( test )
+{
+  let context = this;
+  let a = test.assetFor( 'listingSqueeze' );
+  let profileDir = `test-${ _.intRandom( 1000000 ) }`;
+  profileDir = null;
+
+  /* */
+
+  test.case = 'basic';
+
+  _.censor.profileDel( profileDir );
+  a.reflect();
+
+  var expected =
+  {
+    '11_F3.txt' : '11_F3.txt',
+    '3_F1.txt' : '3_F1.txt',
+    '3_F2.txt' : '3_F2.txt',
+    '5_F0.txt' : '5_F0.txt',
+    '_3_F1.txt' : '_3_F1.txt',
+  };
+  var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
+  test.identical( extract.filesTree, expected );
+
+  var got = _.censor.listingSqueeze
+  ({
+    dirPath : a.abs( '.' ),
+    profileDir,
+  });
+  _.censor.do({ profileDir });
+
+  var expected =
+  {
+    '1_F1.txt' : '3_F1.txt',
+    '2_F2.txt' : '3_F2.txt',
+    '3_F0.txt' : '5_F0.txt',
+    '4_F3.txt' : '11_F3.txt',
+    '_3_F1.txt' : '_3_F1.txt',
+  };
+  var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
+  test.identical( extract.filesTree, expected );
+
+  _.censor.undo({ profileDir });
+
+  var expected =
+  {
+    '11_F3.txt' : '11_F3.txt',
+    '3_F1.txt' : '3_F1.txt',
+    '3_F2.txt' : '3_F2.txt',
+    '5_F0.txt' : '5_F0.txt',
+    '_3_F1.txt' : '_3_F1.txt',
+  };
+  var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
+  test.identical( extract.filesTree, expected );
+
+  /* */
+
+  _.censor.profileDel( profileDir );
 }
 
 //
@@ -492,9 +702,13 @@ const Proto =
     fileReplaceBasic,
     filesReplaceBasic,
 
+    renameBasic,
+    listingReorder,
+    listingSqueeze,
+
     filesHardLink,
     filesHardLinkOptionExcludingPath,
-    filesHardLinkOptionExcludingHyphened
+    filesHardLinkOptionExcludingHyphened,
 
   }
 

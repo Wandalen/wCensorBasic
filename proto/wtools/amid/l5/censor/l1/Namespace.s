@@ -30,7 +30,7 @@ function storageNameMapFrom( o )
 {
   let self = this;
 
-  o = _.routine.options_( storageNameMapFrom, o );
+  o = _.routine.options( storageNameMapFrom, o );
   self._storageNameMapFromDefaults( o );
 
   _.fileProvider.storageProfileNameMapFrom( o );
@@ -54,7 +54,7 @@ function storageRead( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routine.options_( storageRead, o );
+  o = _.routine.options( storageRead, o );
 
   self._storageNameMapFromDefaults( o );
 
@@ -74,7 +74,7 @@ function storageDel( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routine.options_( storageDel, o );
+  o = _.routine.options( storageDel, o );
 
   self._storageNameMapFromDefaults( o );
 
@@ -95,7 +95,7 @@ function storageLog( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routine.options_( storageLog, o );
+  o = _.routine.options( storageLog, o );
   self._storageNameMapFromDefaults( o );
 
   if( o.logger === null )
@@ -149,7 +149,7 @@ function profileNameMapFrom( o )
 {
   let self = this;
 
-  o = _.routine.options_( profileNameMapFrom, o );
+  o = _.routine.options( profileNameMapFrom, o );
   self._profileNameMapFromDefaults( o );
 
   _.fileProvider.storageProfileNameMapFrom( o );
@@ -173,7 +173,7 @@ function profileRead( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routine.options_( profileRead, o );
+  o = _.routine.options( profileRead, o );
 
   self._profileNameMapFromDefaults( o );
 
@@ -193,7 +193,7 @@ function profileDel( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routine.options_( profileDel, o );
+  o = _.routine.options( profileDel, o );
 
   self._profileNameMapFromDefaults( o );
 
@@ -214,7 +214,7 @@ function profileLog( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routine.options_( profileLog, o );
+  o = _.routine.options( profileLog, o );
   self._profileNameMapFromDefaults( o );
 
   if( o.logger === null )
@@ -282,7 +282,7 @@ function configNameMapFrom( o )
 {
   let self = this;
 
-  o = _.routine.options_( configNameMapFrom, o );
+  o = _.routine.options( configNameMapFrom, o );
   self._configNameMapFromDefaults( o );
 
   _.fileProvider.storageTerminalNameMapFrom( o );
@@ -309,7 +309,7 @@ function configRead( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routine.options_( configRead, o || null );
+  o = _.routine.options( configRead, o || null );
 
   self._configNameMapFromDefaults( o );
 
@@ -329,7 +329,7 @@ function configOpen( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routine.options_( configOpen, o );
+  o = _.routine.options( configOpen, o );
 
   self._configNameMapFromDefaults( o );
 
@@ -359,7 +359,7 @@ function configClose( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routine.options_( configClose, o );
+  o = _.routine.options( configClose, o );
 
   self._configNameMapFromDefaults( o );
 
@@ -383,7 +383,7 @@ function configLog( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routine.options_( configLog, o );
+  o = _.routine.options( configLog, o );
   self._configNameMapFromDefaults( o );
 
   if( o.logger === null )
@@ -412,7 +412,7 @@ function configGet( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] }; /* xxx : should be selector */
-  o = _.routine.options_( configGet, o );
+  o = _.routine.options( configGet, o );
   self._configNameMapFromDefaults( o );
 
   let o2 = _.mapOnly_( null, o, _.censor.configOpen.defaults );
@@ -458,7 +458,7 @@ function configSet( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routine.options_( configSet, o );
+  o = _.routine.options( configSet, o );
   self._configNameMapFromDefaults( o );
 
   let o2 = _.mapOnly_( null, o, _.censor.configOpen.defaults );
@@ -493,7 +493,7 @@ function configDel( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routine.options_( configDel, o );
+  o = _.routine.options( configDel, o );
   self._configNameMapFromDefaults( o );
 
   let o2 = _.mapOnly_( null, o, _.censor.configOpen.defaults );
@@ -534,27 +534,6 @@ configDel.defaults =
   selector : null,
 }
 
-// //
-//
-// function configDel( o )
-// {
-//   let self = this;
-//
-//   if( _.strIs( arguments[ 0 ] ) )
-//   o = { storageDir : arguments[ 0 ] };
-//   o = _.routine.options_( configDel, o );
-//
-//   self._configNameMapFromDefaults( o );
-//
-//   return _.fileProvider.storageTerminalDel( o );
-// }
-//
-// configDel.defaults =
-// {
-//   ... configNameMapFrom.defaults,
-//   verbosity : 0,
-// }
-
 //
 
 function _arrangementNameMapFromDefaults( o )
@@ -594,7 +573,7 @@ function arrangementNameMapFrom( o )
 {
   let self = this;
 
-  o = _.routine.options_( arrangementNameMapFrom, o );
+  o = _.routine.options( arrangementNameMapFrom, o );
   self._arrangementNameMapFromDefaults( o );
 
   _.fileProvider.storageTerminalNameMapFrom( o );
@@ -621,7 +600,7 @@ function arrangementRead( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routine.options_( arrangementRead, o );
+  o = _.routine.options( arrangementRead, o );
 
   self._arrangementNameMapFromDefaults( o );
 
@@ -671,7 +650,7 @@ function arrangementClose( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routine.options_( arrangementClose, o );
+  o = _.routine.options( arrangementClose, o );
 
   self._arrangementNameMapFromDefaults( o );
 
@@ -697,7 +676,7 @@ function arrangementDel( o )
   o = { storageDir : arguments[ 0 ] };
   if( !arguments.length )
   o = Object.create( null );
-  o = _.routine.options_( arrangementDel, o );
+  o = _.routine.options( arrangementDel, o );
 
   self._arrangementNameMapFromDefaults( o );
 
@@ -719,7 +698,7 @@ function arrangementLog( o )
 
   if( _.strIs( arguments[ 0 ] ) )
   o = { storageDir : arguments[ 0 ] };
-  o = _.routine.options_( arrangementLog, o );
+  o = _.routine.options( arrangementLog, o );
   self._arrangementNameMapFromDefaults( o );
 
   if( o.logger === null )
@@ -758,7 +737,7 @@ function actionStatus( o )
 {
   let result;
 
-  o = _.routine.options_( actionStatus, o );
+  o = _.routine.options( actionStatus, o );
 
   _.assert( _.censor.actionIs( o.action ) );
 
@@ -811,7 +790,7 @@ function actionDo( o )
   try
   {
 
-    o = _.routine.options_( actionDo, arguments );
+    o = _.routine.options( actionDo, arguments );
 
     if( o.logger )
     {
@@ -991,7 +970,7 @@ function actionDo( o )
     if( !o.dataMap )
     o.dataMap = _.fileProvider.filesRead({ filePath : _.props.keys( o.action.hashBefore ), encoding : 'utf8' }).dataMap;
 
-    _.assert( _.entity.lengthOf( o.dataMap ) >= 1 );
+    // _.assert( _.entity.lengthOf( o.dataMap ) >= 1 );
 
     o.action.dataMapBefore = o.dataMap;
 
@@ -1044,15 +1023,12 @@ function replace_head( routine, args )
     o = { filePath : args[ 0 ] }
   }
 
-  _.routine.options_( routine, o );
+  _.routine.options( routine, o );
   _.assert( arguments.length === 2 );
   _.assert( args.length === 1 || args.length === 3 );
   _.assert( _.strDefined( o.filePath ) );
   _.assert( _.strDefined( o.ins ) || _.regexpIs( o.ins ) );
   _.assert( _.strIs( o.sub ) );
-
-  // if( _.boolLikeTrue( o.logger ) )
-  // o.logger = _.LoggerPrime();
 
   o.logger = _.logger.maybe( o.logger );
 
@@ -1204,7 +1180,7 @@ fileReplace_body.defaults =
   arranging : 1, /* qqq : implement and cover for routine filesReplace */
   resetting : 0, /* qqq : cover for routine filesReplace */
   gray : 0,
-  verbosity : 0,
+  verbosity : 0, /* qqq : repalce with logger */
   logger : 0,
   fileSizeLimit : null,
   session : null,
@@ -1212,13 +1188,13 @@ fileReplace_body.defaults =
 
 }
 
-let fileReplace = _.routine.uniteCloning_replaceByUnite( replace_head, fileReplace_body );
+let fileReplace = _.routine.unite( replace_head, fileReplace_body );
 
 //
 
 function filesReplace_body( o )
 {
-  o =_.routine.options_( filesReplace, arguments );
+  o =_.routine.options( filesReplace, arguments );
 
   if( o.session )
   o.storageTerminal = o.session;
@@ -1304,25 +1280,242 @@ function filesReplace_body( o )
 filesReplace_body.defaults =
 {
   ... fileReplace.defaults,
-  verbosity : 3,
+  verbosity : 3, /* qqq : repalce with logger */
   basePath : null,
   filePath : null,
 }
 
-let filesReplace = _.routine.uniteCloning_replaceByUnite( replace_head, filesReplace_body );
+let filesReplace = _.routine.unite( replace_head, filesReplace_body );
 
 _.assert( filesReplace_body.defaults.resetting === 0 );
 _.assert( filesReplace.defaults.resetting === 0 );
 
 //
 
+function _link_head( routine, args )
+{
+  let o = args[ 0 ];
+
+  if( args.length > 1 )
+  {
+    o = { dstPath : args[ 0 ], srcPath : args[ 1 ] }
+  }
+
+  _.routine.options( routine, o );
+  _.assert( arguments.length === 2 );
+  _.assert( args.length === 1 );
+  _.assert( _.strDefined( o.srcPath ) );
+  _.assert( _.strDefined( o.dstPath ) );
+
+  o.logger = _.logger.maybe( o.logger );
+
+  return o;
+}
+
+//
+
+function _link_body( o )
+{
+  let arrangement;
+
+  _.routine.assertOptions( _link_body, arguments );
+  _.assert( _.strDefined( o.srcPath ) );
+  _.assert( _.strDefined( o.dstPath ) );
+  _.assert( !!o.arranging, 'not implemented' );
+  _.assert( o.linkingAction === 'fileRename' );
+
+  try
+  {
+
+    let srcStat = _.fileProvider.statRead( o.srcPath );
+    let dstStat = _.fileProvider.statRead( o.dstPath );
+
+    arrangement = _.censor.arrangementOpen
+    ({
+      storageDir : o.storageDir,
+      profileDir : o.profileDir,
+      storageTerminalPrefix : o.storageTerminalPrefix,
+      storageTerminal : o.storageTerminal,
+      storageTerminalPostfix : o.storageTerminalPostfix,
+    });
+
+    if( o.resetting )
+    arrangement.storage.redo = [];
+
+    let tab = '     ';
+    let action = this.Action.make();
+    action.status = this.ActionStatus.make();
+    action.filePath = [ o.dstPath, o.srcPath ];
+    action.hashBefore = {};
+    action.hashAfter = {};
+
+    let mtr = _.path.moveTextualReport( o.dstPath, o.srcPath );
+    action.name = `action::${o.linkingAction}`;
+
+    action.redoDescription = ` + ${mtr}`;
+    action.redoDescription2 = action.redoDescription;
+
+    action.undoDescription = ` + undo ${o.linkingAction} ${mtr}`;
+    action.undoDescription2 = action.undoDescription;
+
+    action.redo = _.routineSourceGet( renameRedo );
+    action.undo = _.routineSourceGet( renameUndo );
+
+    action.parameters = _.props.extend( null, o );
+    delete action.parameters.arranging;
+    delete action.parameters.resetting;
+    delete action.parameters.logger;
+
+    if( o.verbosity >= 2 )
+    o.log = action.redoDescription2;
+    else if( o.verbosity )
+    o.log = action.redoDescription;
+
+    arrangement.storage.redo.push( action );
+
+    _.censor.arrangementClose( arrangement );
+
+    if( o.logger )
+    o.logger.log( o.log );
+
+  }
+  catch( err )
+  {
+    err = _.err( err );
+    if( arrangement )
+    _.censor.arrangementClose( arrangement );
+    throw err;
+  }
+
+  return o;
+
+  /* */
+
+  function renameRedo( op )
+  {
+    const _ = _global_.wTools;
+    let dstPath = op.action.filePath[ 0 ];
+    let srcPath = op.action.filePath[ 1 ];
+
+    if( _.fileProvider.fileExists( dstPath ) )
+    {
+      debugger;
+      throw _.err( `File ${dstPath} already exists!` );
+    }
+
+    if( !_.fileProvider.fileExists( srcPath ) )
+    throw _.err( `File ${srcPath} does not exist!` );
+
+    _.fileProvider[ op.action.parameters.linkingAction ]( dstPath, srcPath );
+  }
+
+  /* */
+
+  function renameUndo( op )
+  {
+    const _ = _global_.wTools;
+    let dstPath = op.action.filePath[ 1 ];
+    let srcPath = op.action.filePath[ 0 ];
+
+    if( _.fileProvider.fileExists( dstPath ) )
+    throw _.err( `File ${dstPath} already exists!` );
+
+    if( !_.fileProvider.fileExists( srcPath ) )
+    throw _.err( `File ${srcPath} does not exist!` );
+
+    _.fileProvider[ op.action.parameters.linkingAction ]( dstPath, srcPath );
+  }
+
+  /* */
+
+}
+
+_link_body.defaults =
+{
+  ... arrangementNameMapFrom.defaults,
+
+  dstPath : null,
+  srcPath : null,
+
+  arranging : 1, /* qqq : implement and cover */
+  resetting : 0, /* qqq : cover for routine filesReplace */
+
+  logger : 0,
+  session : null,
+  linkingAction : 'fileRename',
+
+}
+
+let fileRename = _.routine.uniteCloning( _link_head, _link_body );
+fileRename.defaults.linkingAction = 'fileRename';
+_.assert( fileRename.defaults === fileRename.body.defaults );
+_.assert( fileRename.defaults !== _link_body.defaults );
+
+//
+
+function listingReorder( o )
+{
+
+  _.routine.options( listingReorder, o );
+
+  let regexp = /^(\d+)_(.+)$/;
+  let names = _.fileProvider.dirRead( o.dirPath );
+  let listing = [];
+
+  names.forEach( ( name ) =>
+  {
+    let parsed = regexp.exec( name );
+    if( !parsed )
+    return;
+    let cardinal = _.number.from( parsed[ 1 ] );
+    if( _.number.defined( cardinal ) )
+    listing.push({ name, cardinal, right : parsed[ 2 ] });
+  });
+
+  listing.sort( ( a, b ) => a.cardinal - b.cardinal );
+
+  let cardinal = o.first;
+  listing.forEach( ( e ) =>
+  {
+    let o2 = _.mapOnly_( null, o, this.fileRename.defaults );
+    o2.srcPath = _.path.join( o.dirPath, e.name );
+    o2.dstPath = _.path.join( o.dirPath, nameFor( cardinal, e ) );
+    _.censor.fileRename( o2 );
+    cardinal += o.step;
+  });
+
+  function nameFor( cardina, e )
+  {
+    return cardinal + '_' + e.right;
+  }
+
+}
+
+listingReorder.defaults =
+{
+  ... arrangementNameMapFrom.defaults,
+  verbosity : null,
+  dirPath : null,
+  first : 10,
+  step : 10,
+}
+
+//
+
+let listingSqueeze = _.routine.extendCloning( null, listingReorder );
+listingSqueeze.defaults.first = 1;
+listingSqueeze.defaults.step = 1;
+
+_.assert( listingSqueeze.defaults !== listingReorder.defaults )
+
+// --
+// instant operation
+// --
+
 function filesHardLink( o )
 {
 
-  o = _.routine.options_( filesHardLink, arguments );
-
-  // if( _.boolLikeTrue( o.logger ) )
-  // o.logger = _.LoggerPrime();
+  o = _.routine.options( filesHardLink, arguments );
 
   o.logger = _.logger.maybe( o.logger );
 
@@ -1398,9 +1591,6 @@ function filesHardLink( o )
     o.logger.log( log );
   }
 
-  // if( o.beeping )
-  // _.diagnosticBeep();
-
 }
 
 filesHardLink.defaults =
@@ -1425,7 +1615,7 @@ function systemEntryAdd( o )
   if( !_.mapIs( o ) )
   o = { appPath : arguments[ 0 ] }
 
-  _.routine.options_( systemEntryAdd, o );
+  _.routine.options( systemEntryAdd, o );
 
   if( o.entryDirPath === null )
   {
@@ -1473,7 +1663,7 @@ function status( o )
   let result = Object.create( null );
   let errors;
 
-  o = _.routine.options_( status, o );
+  o = _.routine.options( status, o );
 
   if( o.withErrors )
   {
@@ -1551,7 +1741,7 @@ status.defaults =
 
 function do_head( routine, args )
 {
-  let o = _.routine.options_( routine, args );
+  let o = _.routine.options( routine, args );
   _.assert( _.longHas( [ 'redo', 'undo' ], o.mode ) );
 
   // if( _.boolLikeTrue( o.logger ) )
@@ -1697,15 +1887,15 @@ do_body.defaults =
 
 //
 
-let _do = _.routine.uniteCloning_replaceByUnite( do_head, do_body );
+let _do = _.routine.uniteCloning( do_head, do_body );
 _do.defaults.depth = 0;
 _do.defaults.mode = 'redo';
 
-let redo = _.routine.uniteCloning_replaceByUnite( do_head, do_body );
+let redo = _.routine.uniteCloning( do_head, do_body );
 redo.defaults.depth = 0;
 redo.defaults.mode = 'redo';
 
-let undo = _.routine.uniteCloning_replaceByUnite( do_head, do_body );
+let undo = _.routine.uniteCloning( do_head, do_body );
 undo.defaults.depth = 0;
 undo.defaults.mode = 'undo';
 
@@ -1833,7 +2023,6 @@ let Extension =
   configGet,
   configSet,
   configDel,
-  // configDel,
 
   _arrangementNameMapFromDefaults,
   arrangementNameMapFrom,
@@ -1853,6 +2042,11 @@ let Extension =
 
   fileReplace,
   filesReplace,
+  fileRename,
+  listingReorder,
+  listingSqueeze,
+
+  // instant operation
 
   filesHardLink,
   systemEntryAdd,
