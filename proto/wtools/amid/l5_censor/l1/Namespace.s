@@ -1398,10 +1398,7 @@ function _link_body( o )
     let srcPath = op.action.filePath[ 1 ];
 
     if( _.fileProvider.fileExists( dstPath ) )
-    {
-      debugger;
-      throw _.err( `File ${dstPath} already exists!` );
-    }
+    throw _.err( `File ${dstPath} already exists!` );
 
     if( !_.fileProvider.fileExists( srcPath ) )
     throw _.err( `File ${srcPath} does not exist!` );
