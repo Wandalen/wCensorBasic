@@ -3,7 +3,7 @@ root:
   - wCensorBasic.out
 consistency:
   ../will.yml: &ref_0
-    hash: a4e240d4da9bfea1683d19517b187bd5
+    hash: 0c43781921453e0d201a9a08ff37c51e
     size: 6369
 module:
   wCensorBasic.out:
@@ -100,7 +100,7 @@ module:
       entry.proto.no.tests:
         criterion:
           tests: no.tests
-        path: ../proto/wtools/amid/l5/censor/entry/CensorBasic.s
+        path: ../proto/wtools/amid/l5_censor/entry/CensorBasic.s
       entry.proto.only.tests:
         criterion:
           tests: only.tests
@@ -110,13 +110,13 @@ module:
           debug: debug
           raw: raw
           content: prime
-        path: '{path::out.*=1}/source/wtools/amid/l5/censor/entry/CensorBasic.s'
+        path: '{path::out.*=1}/source/wtools/amid/l5_censor/entry/CensorBasic.s'
       entry.out.raw.debug.release:
         criterion:
           debug: release
           raw: raw
           content: prime
-        path: '{path::out.*=1}/source/wtools/amid/l5/censor/entry/CensorBasic.s'
+        path: '{path::out.*=1}/source/wtools/amid/l5_censor/entry/CensorBasic.s'
       entry.out.compiled.debug.debug:
         criterion:
           debug: debug
@@ -131,7 +131,7 @@ module:
         path: '{path::out.*=}/source/Index.s'
       npm.proto.entry:
         path:
-          - ../proto/wtools/amid/l5/censor/entry/CensorBasic.s
+          - ../proto/wtools/amid/l5_censor/entry/CensorBasic.s
           - ../proto/node_modules/wcensorbasic
       exported.dir.proto.export:
         criterion:
@@ -153,60 +153,65 @@ module:
           - ../proto/wtools
           - ../proto/wtools/abase
           - ../proto/wtools/amid
-          - ../proto/wtools/amid/l5
-          - ../proto/wtools/amid/l5/censor
-          - ../proto/wtools/amid/l5/censor/entry
-          - ../proto/wtools/amid/l5/censor/entry/CensorBasic.s
-          - ../proto/wtools/amid/l5/censor/include
-          - ../proto/wtools/amid/l5/censor/include/Basic.s
-          - ../proto/wtools/amid/l5/censor/include/Mid.s
-          - ../proto/wtools/amid/l5/censor/l1
-          - ../proto/wtools/amid/l5/censor/l1/Namespace.s
-          - ../proto/wtools/amid/l5/censor.test
-          - ../proto/wtools/amid/l5/censor.test/Censor.test.s
-          - ../proto/wtools/amid/l5/censor.test/_asset
-          - ../proto/wtools/amid/l5/censor.test/_asset/basic
-          - ../proto/wtools/amid/l5/censor.test/_asset/basic/after
-          - ../proto/wtools/amid/l5/censor.test/_asset/basic/after/File1.txt
-          - ../proto/wtools/amid/l5/censor.test/_asset/basic/after/File2.txt
-          - ../proto/wtools/amid/l5/censor.test/_asset/basic/before
-          - ../proto/wtools/amid/l5/censor.test/_asset/basic/before/File1.txt
-          - ../proto/wtools/amid/l5/censor.test/_asset/basic/before/File2.txt
-          - ../proto/wtools/amid/l5/censor.test/_asset/hlink
-          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir1
-          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir1/File1.txt
-          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir1/File2.txt
-          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir1/File3.txt
-          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir2
-          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir2/File1.txt
-          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir2/File2.txt
-          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir2/File3.txt
-          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir3
-          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir3/File3.txt
-          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir3/dir3.1
+          - ../proto/wtools/amid/l5_censor
+          - ../proto/wtools/amid/l5_censor/entry
+          - ../proto/wtools/amid/l5_censor/entry/CensorBasic.s
+          - ../proto/wtools/amid/l5_censor/include
+          - ../proto/wtools/amid/l5_censor/include/Basic.s
+          - ../proto/wtools/amid/l5_censor/include/Mid.s
+          - ../proto/wtools/amid/l5_censor/l1
+          - ../proto/wtools/amid/l5_censor/l1/Namespace.s
+          - ../proto/wtools/amid/l5_censor.test
+          - ../proto/wtools/amid/l5_censor.test/Censor.test.s
+          - ../proto/wtools/amid/l5_censor.test/_asset
+          - ../proto/wtools/amid/l5_censor.test/_asset/basic
+          - ../proto/wtools/amid/l5_censor.test/_asset/basic/after
+          - ../proto/wtools/amid/l5_censor.test/_asset/basic/after/File1.txt
+          - ../proto/wtools/amid/l5_censor.test/_asset/basic/after/File2.txt
+          - ../proto/wtools/amid/l5_censor.test/_asset/basic/before
+          - ../proto/wtools/amid/l5_censor.test/_asset/basic/before/File1.txt
+          - ../proto/wtools/amid/l5_censor.test/_asset/basic/before/File2.txt
+          - ../proto/wtools/amid/l5_censor.test/_asset/hlink
+          - ../proto/wtools/amid/l5_censor.test/_asset/hlink/dir1
+          - ../proto/wtools/amid/l5_censor.test/_asset/hlink/dir1/File1.txt
+          - ../proto/wtools/amid/l5_censor.test/_asset/hlink/dir1/File2.txt
+          - ../proto/wtools/amid/l5_censor.test/_asset/hlink/dir1/File3.txt
+          - ../proto/wtools/amid/l5_censor.test/_asset/hlink/dir2
+          - ../proto/wtools/amid/l5_censor.test/_asset/hlink/dir2/File1.txt
+          - ../proto/wtools/amid/l5_censor.test/_asset/hlink/dir2/File2.txt
+          - ../proto/wtools/amid/l5_censor.test/_asset/hlink/dir2/File3.txt
+          - ../proto/wtools/amid/l5_censor.test/_asset/hlink/dir3
+          - ../proto/wtools/amid/l5_censor.test/_asset/hlink/dir3/File3.txt
+          - ../proto/wtools/amid/l5_censor.test/_asset/hlink/dir3/dir3.1
           - >-
-            ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir3/dir3.1/File1.txt
+            ../proto/wtools/amid/l5_censor.test/_asset/hlink/dir3/dir3.1/File1.txt
           - >-
-            ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir3/dir3.1/File2.txt
-          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir4
-          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir4/File3.txt
-          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir4/File4.txt
-          - ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir4/dir4.1
+            ../proto/wtools/amid/l5_censor.test/_asset/hlink/dir3/dir3.1/File2.txt
+          - ../proto/wtools/amid/l5_censor.test/_asset/hlink/dir4
+          - ../proto/wtools/amid/l5_censor.test/_asset/hlink/dir4/File3.txt
+          - ../proto/wtools/amid/l5_censor.test/_asset/hlink/dir4/File4.txt
+          - ../proto/wtools/amid/l5_censor.test/_asset/hlink/dir4/dir4.1
           - >-
-            ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir4/dir4.1/File1.txt
+            ../proto/wtools/amid/l5_censor.test/_asset/hlink/dir4/dir4.1/File1.txt
           - >-
-            ../proto/wtools/amid/l5/censor.test/_asset/hlink/dir4/dir4.1/File2.txt
-          - ../proto/wtools/amid/l5/censor.test/_asset/hlinkHyphened
-          - ../proto/wtools/amid/l5/censor.test/_asset/hlinkHyphened/dir1
+            ../proto/wtools/amid/l5_censor.test/_asset/hlink/dir4/dir4.1/File2.txt
+          - ../proto/wtools/amid/l5_censor.test/_asset/hlinkHyphened
+          - ../proto/wtools/amid/l5_censor.test/_asset/hlinkHyphened/dir1
           - >-
-            ../proto/wtools/amid/l5/censor.test/_asset/hlinkHyphened/dir1/File1.txt
+            ../proto/wtools/amid/l5_censor.test/_asset/hlinkHyphened/dir1/File1.txt
           - >-
-            ../proto/wtools/amid/l5/censor.test/_asset/hlinkHyphened/dir1/File2.txt
-          - ../proto/wtools/amid/l5/censor.test/_asset/hlinkHyphened/dir2
+            ../proto/wtools/amid/l5_censor.test/_asset/hlinkHyphened/dir1/File2.txt
+          - ../proto/wtools/amid/l5_censor.test/_asset/hlinkHyphened/dir2
           - >-
-            ../proto/wtools/amid/l5/censor.test/_asset/hlinkHyphened/dir2/-File1.txt
+            ../proto/wtools/amid/l5_censor.test/_asset/hlinkHyphened/dir2/-File1.txt
           - >-
-            ../proto/wtools/amid/l5/censor.test/_asset/hlinkHyphened/dir2/-File2.txt
+            ../proto/wtools/amid/l5_censor.test/_asset/hlinkHyphened/dir2/-File2.txt
+          - ../proto/wtools/amid/l5_censor.test/_asset/listingSqueeze
+          - ../proto/wtools/amid/l5_censor.test/_asset/listingSqueeze/11_F3.txt
+          - ../proto/wtools/amid/l5_censor.test/_asset/listingSqueeze/3_F1.txt
+          - ../proto/wtools/amid/l5_censor.test/_asset/listingSqueeze/3_F2.txt
+          - ../proto/wtools/amid/l5_censor.test/_asset/listingSqueeze/5_F0.txt
+          - ../proto/wtools/amid/l5_censor.test/_asset/listingSqueeze/_3_F1.txt
           - ../proto/wtools/atop
     submodule:
       wTools:
@@ -909,7 +914,7 @@ module:
       entry.proto.no.tests:
         criterion:
           tests: no.tests
-        path: proto/wtools/amid/l5/censor/entry/CensorBasic.s
+        path: proto/wtools/amid/l5_censor/entry/CensorBasic.s
       entry.proto.only.tests:
         criterion:
           tests: only.tests
@@ -919,13 +924,13 @@ module:
           debug: debug
           raw: raw
           content: prime
-        path: '{path::out.*=1}/source/wtools/amid/l5/censor/entry/CensorBasic.s'
+        path: '{path::out.*=1}/source/wtools/amid/l5_censor/entry/CensorBasic.s'
       entry.out.raw.debug.release:
         criterion:
           debug: release
           raw: raw
           content: prime
-        path: '{path::out.*=1}/source/wtools/amid/l5/censor/entry/CensorBasic.s'
+        path: '{path::out.*=1}/source/wtools/amid/l5_censor/entry/CensorBasic.s'
       entry.out.compiled.debug.debug:
         criterion:
           debug: debug
@@ -940,7 +945,7 @@ module:
         path: '{path::out.*=}/source/Index.s'
       npm.proto.entry:
         path:
-          - proto/wtools/amid/l5/censor/entry/CensorBasic.s
+          - proto/wtools/amid/l5_censor/entry/CensorBasic.s
           - proto/node_modules/wcensorbasic
     submodule:
       wTools:
@@ -1493,5 +1498,5 @@ module:
           - 'build::npm'
     consistency:
       ../will.yml:
-        hash: a4e240d4da9bfea1683d19517b187bd5
+        hash: 0c43781921453e0d201a9a08ff37c51e
         size: 6369
