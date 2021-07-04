@@ -206,6 +206,14 @@ module:
             ../proto/wtools/amid/l5_censor.test/_asset/hlinkHyphened/dir2/-File1.txt
           - >-
             ../proto/wtools/amid/l5_censor.test/_asset/hlinkHyphened/dir2/-File2.txt
+          - >-
+            ../proto/wtools/amid/l5_censor.test/_asset/listingReorderPartiallyOrdered
+          - >-
+            ../proto/wtools/amid/l5_censor.test/_asset/listingReorderPartiallyOrdered/10_F1.txt
+          - >-
+            ../proto/wtools/amid/l5_censor.test/_asset/listingReorderPartiallyOrdered/20_F2.txt
+          - >-
+            ../proto/wtools/amid/l5_censor.test/_asset/listingReorderPartiallyOrdered/31_F3.txt
           - ../proto/wtools/amid/l5_censor.test/_asset/listingSqueeze
           - ../proto/wtools/amid/l5_censor.test/_asset/listingSqueeze/11_F3.txt
           - ../proto/wtools/amid/l5_censor.test/_asset/listingSqueeze/3_F1.txt
