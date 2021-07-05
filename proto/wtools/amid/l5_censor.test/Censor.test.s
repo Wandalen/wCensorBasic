@@ -668,9 +668,11 @@ function filesHardLinkOptionExcludingHyphened( test )
   let file1 = a.abs( 'dir1/File1.txt' );
   let file2 = a.abs( 'dir1/File2.txt' );
 
+  a.reflect();
   let file3 = a.abs( 'dir2/-File1.txt' );
   let file4 = a.abs( 'dir2/-File2.txt' );
-  a.reflect();
+  a.fileProvider.fileWrite( file3, 'file' )
+  a.fileProvider.fileWrite( file4, 'file' )
 
   a.ready.then( ( op ) =>
   {
