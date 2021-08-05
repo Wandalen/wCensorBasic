@@ -192,7 +192,7 @@ function profileDel( o )
   let self = this;
 
   if( _.strIs( arguments[ 0 ] ) )
-  o = { storageDir : arguments[ 0 ] };
+  o = { profileDir : arguments[ 0 ] };
   o = _.routine.options( profileDel, o );
 
   self._profileNameMapFromDefaults( o );
