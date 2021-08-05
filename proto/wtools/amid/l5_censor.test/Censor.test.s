@@ -429,7 +429,6 @@ function listingReorderPartiallyOrdered( test )
   let context = this;
   let a = test.assetFor( 'listingReorderPartiallyOrdered' );
   let profileDir = `test-${ _.intRandom( 1000000 ) }`;
-  profileDir = null;
 
   /* */
 
