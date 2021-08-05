@@ -288,73 +288,73 @@ function renameBasic( test )
 
   /* */
 
-  // test.case = 'to itself ';
-  //
-  // _.censor.profileDel( profileDir );
-  // a.reflect();
-  // a.fileProvider.fileWrite( a.abs( 'File1.txt' ), 'File1.txt' );
-  //
-  // var expected = { 'File1.txt' : 'File1.txt' };
-  // var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
-  // test.identical( extract.filesTree, expected );
-  //
-  // var got = _.censor.fileRename
-  // ({
-  //   dstPath : a.abs( 'File1.txt'),
-  //   srcPath : a.abs( 'File1.txt' ),
-  //   profileDir,
-  // });
-  //
-  // _.censor.do({ profileDir });
-  //
-  // var expected = { 'File1.txt' : 'File1.txt' };
-  // var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
-  // test.identical( extract.filesTree, expected );
-  //
-  // _.censor.undo({ profileDir });
-  //
-  // var expected = { 'File1.txt' : 'File1.txt' };
-  // var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
-  // test.identical( extract.filesTree, expected );
-  //
-  // /* */
-  //
-  // test.case = 'several files';
-  //
-  // _.censor.profileDel( profileDir );
-  // a.reflect();
-  // a.fileProvider.fileWrite( a.abs( 'File1.txt' ), 'File1.txt' );
-  // a.fileProvider.fileWrite( a.abs( 'File2.txt' ), 'File2.txt' );
-  //
-  // var expected = { 'File1.txt' : 'File1.txt', 'File2.txt' : 'File2.txt' };
-  // var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
-  // test.identical( extract.filesTree, expected );
-  //
-  // var got = _.censor.fileRename
-  // ({
-  //   dstPath : a.abs( 'File3.txt'),
-  //   srcPath : a.abs( 'File2.txt' ),
-  //   profileDir,
-  // });
-  //
-  // var got = _.censor.fileRename
-  // ({
-  //   dstPath : a.abs( 'File2.txt'),
-  //   srcPath : a.abs( 'File1.txt' ),
-  //   profileDir,
-  // });
-  //
-  // _.censor.do({ profileDir });
-  //
-  // var expected = { 'File2.txt' : 'File1.txt', 'File3.txt' : 'File2.txt' };
-  // var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
-  // test.identical( extract.filesTree, expected );
-  //
-  // _.censor.undo({ profileDir });
-  //
-  // var expected = { 'File1.txt' : 'File1.txt', 'File2.txt' : 'File2.txt' };
-  // var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
-  // test.identical( extract.filesTree, expected );
+  test.case = 'to itself ';
+
+  _.censor.profileDel( profileDir );
+  a.reflect();
+  a.fileProvider.fileWrite( a.abs( 'File1.txt' ), 'File1.txt' );
+
+  var expected = { 'File1.txt' : 'File1.txt' };
+  var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
+  test.identical( extract.filesTree, expected );
+
+  var got = _.censor.fileRename
+  ({
+    dstPath : a.abs( 'File1.txt'),
+    srcPath : a.abs( 'File1.txt' ),
+    profileDir,
+  });
+
+  _.censor.do({ profileDir });
+
+  var expected = { 'File1.txt' : 'File1.txt' };
+  var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
+  test.identical( extract.filesTree, expected );
+
+  _.censor.undo({ profileDir });
+
+  var expected = { 'File1.txt' : 'File1.txt' };
+  var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
+  test.identical( extract.filesTree, expected );
+
+  /* */
+
+  test.case = 'several files';
+
+  _.censor.profileDel( profileDir );
+  a.reflect();
+  a.fileProvider.fileWrite( a.abs( 'File1.txt' ), 'File1.txt' );
+  a.fileProvider.fileWrite( a.abs( 'File2.txt' ), 'File2.txt' );
+
+  var expected = { 'File1.txt' : 'File1.txt', 'File2.txt' : 'File2.txt' };
+  var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
+  test.identical( extract.filesTree, expected );
+
+  var got = _.censor.fileRename
+  ({
+    dstPath : a.abs( 'File3.txt'),
+    srcPath : a.abs( 'File2.txt' ),
+    profileDir,
+  });
+
+  var got = _.censor.fileRename
+  ({
+    dstPath : a.abs( 'File2.txt'),
+    srcPath : a.abs( 'File1.txt' ),
+    profileDir,
+  });
+
+  _.censor.do({ profileDir });
+
+  var expected = { 'File2.txt' : 'File1.txt', 'File3.txt' : 'File2.txt' };
+  var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
+  test.identical( extract.filesTree, expected );
+
+  _.censor.undo({ profileDir });
+
+  var expected = { 'File1.txt' : 'File1.txt', 'File2.txt' : 'File2.txt' };
+  var extract = a.fileProvider.filesExtract( a.abs( '.' ) );
+  test.identical( extract.filesTree, expected );
 
   /* */
 
@@ -365,10 +365,8 @@ function renameBasic( test )
 
 function listingReorder( test )
 {
-  let context = this;
-  let a = test.assetFor( 'listingSqueeze' );
-  let profileDir = `test-${ _.intRandom( 1000000 ) }`;
-  profileDir = null;
+  const a = test.assetFor( 'listingSqueeze' );
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
 
   /* */
 
