@@ -760,6 +760,34 @@ identityNew.defaults =
 
 //
 
+function identityGet( o )
+{
+  let self = this;
+
+  _.assert( arguments.length === 1, 'Expects exactly one argument' );
+
+  if( _.strIs( arguments[ 0 ] ) )
+  o = { profileDir : arguments[ 0 ] };
+  _.routine.options( identityGet, o );
+
+  self._configNameMapFromDefaults( o );
+
+  if( o.selector === null )
+  o.selector = '';
+  _.assert( _.str.is( o.selector ) );
+  o.selector = `identity/${ o.selector }`;
+
+  return self.configGet( o );
+}
+
+identityGet.defaults =
+{
+  ... configNameMapFrom.defaults,
+  selector : null,
+};
+
+//
+
 function identityDel( o )
 {
   let self = this;
@@ -2114,6 +2142,7 @@ let Extension =
   arrangementLog,
 
   identityNew,
+  identityGet,
   identityDel,
 
   // action
