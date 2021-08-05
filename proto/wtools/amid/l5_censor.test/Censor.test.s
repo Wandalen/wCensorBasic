@@ -473,7 +473,6 @@ function listingSqueeze( test )
   let context = this;
   let a = test.assetFor( 'listingSqueeze' );
   let profileDir = `test-${ _.intRandom( 1000000 ) }`;
-  profileDir = null;
 
   /* */
 
