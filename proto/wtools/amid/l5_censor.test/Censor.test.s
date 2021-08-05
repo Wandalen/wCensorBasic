@@ -301,6 +301,93 @@ function configRead( test )
 
 //
 
+function configReadWithOptionsMap( test )
+{
+  const a = test.assetFor( 'basic' );
+
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+  const absoluteProfileDir = a.abs( a.path.dirUserHome(), _.censor.storageDir, profileDir );
+
+  /* */
+
+  test.case = 'no profile dir';
+  test.false( a.fileProvider.fileExists( absoluteProfileDir ) );
+  var files = a.find( absoluteProfileDir );
+  test.identical( files, [] );
+  var got = _.censor.configRead({ profileDir });
+  test.identical( got, null );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'profile dir with only config';
+  _.censor.configSet({ profileDir, set : { about : { name : profileDir } } });
+  test.true( a.fileProvider.fileExists( absoluteProfileDir ) );
+  var files = a.find( absoluteProfileDir );
+  test.identical( files, [ '.', './config.yaml' ] );
+  var got = _.censor.configRead({ profileDir });
+  test.identical( got, { about : { name : profileDir }, path : {} } );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'profile dir with only arrangement';
+  a.reflect();
+  var options =
+  {
+    filePath : a.abs( 'before/File1.txt' ),
+    ins : 'line',
+    sub : 'abc',
+    profileDir,
+  };
+  _.censor.fileReplace( options );
+  test.true( a.fileProvider.fileExists( absoluteProfileDir ) );
+  var files = a.find( absoluteProfileDir );
+  test.identical( files, [ '.', './arrangement.default.json' ] );
+  var got = _.censor.configRead({ profileDir });
+  test.identical( got, null );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'profile dir with external terminal file';
+  a.fileProvider.fileWrite( a.abs( absoluteProfileDir, 'file' ), 'file' );
+  test.true( a.fileProvider.fileExists( absoluteProfileDir ) );
+  var files = a.find( absoluteProfileDir );
+  test.identical( files, [ '.', './file' ] );
+  var got = _.censor.configRead({ profileDir });
+  test.identical( got, null );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'profile dir with external directory';
+  a.fileProvider.dirMake( a.abs( absoluteProfileDir, 'dir' ) );
+  test.true( a.fileProvider.fileExists( absoluteProfileDir ) );
+  var files = a.find( absoluteProfileDir );
+  test.identical( files, [ '.', './dir' ] );
+  var got = _.censor.configRead({ profileDir });
+  test.identical( got, null );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'profile dir with external directory and files in root and nested directories';
+  a.fileProvider.dirMake( a.abs( absoluteProfileDir, 'dir' ) );
+  a.fileProvider.fileWrite( a.abs( absoluteProfileDir, 'file' ), 'file' );
+  a.fileProvider.fileWrite( a.abs( absoluteProfileDir, 'dir/file' ), 'file' );
+  test.true( a.fileProvider.fileExists( absoluteProfileDir ) );
+  var files = a.find( absoluteProfileDir );
+  test.identical( files, [ '.', './file', './dir', './dir/file' ] );
+  var got = _.censor.configRead({ profileDir });
+  test.identical( got, null );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'profile dir with config, external directory and files in root and nested directories';
+  a.fileProvider.dirMake( a.abs( absoluteProfileDir, 'dir' ) );
+  a.fileProvider.fileWrite( a.abs( absoluteProfileDir, 'file' ), 'file' );
+  a.fileProvider.fileWrite( a.abs( absoluteProfileDir, 'dir/file' ), 'file' );
+  _.censor.configSet({ profileDir, set : { about : { name : profileDir } } });
+  test.true( a.fileProvider.fileExists( absoluteProfileDir ) );
+  var files = a.find( absoluteProfileDir );
+  test.identical( files, [ '.', './config.yaml', './file', './dir', './dir/file' ] );
+  var got = _.censor.configRead({ profileDir });
+  test.identical( got, { about : { name : profileDir }, path : {} } );
+  _.censor.profileDel( profileDir );
+}
+
+//
+
 function fileReplaceBasic( test )
 {
   let context = this;
@@ -1038,6 +1125,7 @@ const Proto =
     profileDelWithOptionsMap,
 
     configRead,
+    configReadWithOptionsMap,
 
     fileReplaceBasic,
     filesReplaceBasic,
