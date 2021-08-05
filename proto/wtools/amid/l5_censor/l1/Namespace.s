@@ -738,7 +738,7 @@ function identityNew( o )
   o.identity.type = 'general';
   _.assert( _.longHasAny( [ 'general', 'git', 'npm' ], o.identity.type ) );
 
-  const selector = `identity/${ o.identity.name }`
+  const selector = `identity/${ o.identity.name }`;
 
   const o2 = _.mapOnly_( null, o, self.configGet.defaults );
   o2.selector = selector;
@@ -756,6 +756,34 @@ identityNew.defaults =
 {
   ... configNameMapFrom.defaults,
   identity : null,
+};
+
+//
+
+function identityDel( o )
+{
+  let self = this;
+
+  _.assert( arguments.length === 1, 'Expects exactly one argument' );
+
+  if( _.strIs( arguments[ 0 ] ) )
+  o = { profileDir : arguments[ 0 ] };
+  _.routine.options( identityDel, o );
+
+  self._configNameMapFromDefaults( o );
+
+  if( o.selector === null )
+  o.selector = '';
+  _.assert( _.str.is( o.selector ) );
+  o.selector = `identity/${ o.selector }`;
+
+  return self.configDel( o );
+}
+
+identityDel.defaults =
+{
+  ... configNameMapFrom.defaults,
+  selector : null,
 };
 
 // --
@@ -2086,6 +2114,7 @@ let Extension =
   arrangementLog,
 
   identityNew,
+  identityDel,
 
   // action
 
