@@ -40,6 +40,123 @@ function onSuiteEnd()
 // tests
 // --
 
+function identityNew( test )
+{
+  const a = test.assetFor( false );
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+
+  /* */
+
+  test.case = 'add identity to not existed config';
+  var identity = { name : 'user', login : 'userLogin' };
+  var got = _.censor.identityNew({ profileDir, identity });
+  test.identical( got, undefined );
+  var config = _.censor.configRead({ profileDir });
+  test.identical( config.identity, { user : { login : 'userLogin', type : 'general' } } );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'add identity to existed config';
+  _.censor.configSet({ profileDir, set : { about : { name : profileDir } } });
+  var config = _.censor.configRead({ profileDir });
+  test.identical( config, { about : { name : profileDir }, path : {} } );
+  var identity = { name : 'user', login : 'userLogin' };
+  var got = _.censor.identityNew({ profileDir, identity });
+  test.identical( got, undefined );
+  var config = _.censor.configRead({ profileDir });
+  test.identical( config.about, { name : profileDir } );
+  test.identical( config.path, {} );
+  test.identical( config.identity, { user : { login : 'userLogin', type : 'general' } } );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'add several identities to not existed config';
+  var identity = { name : 'user', login : 'userLogin' };
+  _.censor.identityNew({ profileDir, identity });
+  var identity = { name : 'user2', login : 'userLogin2' };
+  _.censor.identityNew({ profileDir, identity });
+  var config = _.censor.configRead({ profileDir });
+  var exp =
+  {
+    user : { login : 'userLogin', type : 'general' },
+    user2 : { login : 'userLogin2', type : 'general' }
+  };
+  test.identical( config.identity, exp );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'add several identities to existed config';
+  _.censor.configSet({ profileDir, set : { about : { name : profileDir } } });
+  var config = _.censor.configRead({ profileDir });
+  test.identical( config, { about : { name : profileDir }, path : {} } );
+  var identity = { name : 'user', login : 'userLogin' };
+  _.censor.identityNew({ profileDir, identity });
+  var identity = { name : 'user2', login : 'userLogin2' };
+  _.censor.identityNew({ profileDir, identity });
+  var config = _.censor.configRead({ profileDir });
+  var exp =
+  {
+    user : { login : 'userLogin', type : 'general' },
+    user2 : { login : 'userLogin2', type : 'general' }
+  };
+  test.identical( config.about, { name : profileDir } );
+  test.identical( config.path, {} );
+  test.identical( config.identity, exp );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'create identity with user defined fields';
+  var identity = { name : 'user', login : 'userLogin', type : 'git', email : 'user@domain.com', token : 'someToken' };
+  _.censor.identityNew({ profileDir, identity });
+  var config = _.censor.configRead({ profileDir });
+  var exp = { user : { login : 'userLogin', type : 'git', email : 'user@domain.com', token : 'someToken' } };
+  test.identical( config.identity, exp );
+  _.censor.profileDel( profileDir );
+
+  /* - */
+
+  if( !Config.debug )
+  return;
+
+  test.case = 'without arguments';
+  test.shouldThrowErrorSync( () => _.censor.identityNew() );
+
+  test.case = 'extra arguments';
+  var o = { profileDir, identity : { name : 'user', login : 'userLogin' } };
+  test.shouldThrowErrorSync( () => _.censor.identityNew( o, o ) );
+
+  test.case = 'wrong type of options map';
+  test.shouldThrowErrorSync( () => _.censor.identityNew( 'wrong' ) );
+
+  test.case = 'unknown option in options map';
+  var o = { profileDir, identity : { name : 'user', login : 'userLogin' }, unknown : 1 };
+  test.shouldThrowErrorSync( () => _.censor.identityNew( o ) );
+
+  test.case = 'wrong type of o.identity';
+  var o = { profileDir, identity : [ { name : 'user', login : 'userLogin' } ] };
+  test.shouldThrowErrorSync( () => _.censor.identityNew( o ) );
+
+  test.case = 'unknown o.identity.type';
+  var o = { profileDir, identity : { name : 'user', login : 'userLogin', type : 'unknown' } };
+  test.shouldThrowErrorSync( () => _.censor.identityNew( o ) );
+
+  test.case = 'o.identity.name is not defined string';
+  var o = { profileDir, identity : { name : '', login : 'userLogin' } };
+  test.shouldThrowErrorSync( () => _.censor.identityNew( o ) );
+  var o = { profileDir, identity : { name : null, login : 'userLogin' } };
+  test.shouldThrowErrorSync( () => _.censor.identityNew( o ) );
+
+  test.case = 'o.identity.login is not defined string';
+  var o = { profileDir, identity : { name : 'user', login : '' } };
+  test.shouldThrowErrorSync( () => _.censor.identityNew( o ) );
+  var o = { profileDir, identity : { name : 'user', login : null } };
+  test.shouldThrowErrorSync( () => _.censor.identityNew( o ) );
+
+  test.case = 'try to create identity with the existed name';
+  var o = { profileDir, identity : { name : 'user', login : 'userLogin' } };
+  _.censor.identityNew( o );
+  var o = { profileDir, identity : { name : 'user', login : 'different' } };
+  test.shouldThrowErrorSync( () => _.censor.identityNew( o ) );
+}
+
+//
+
 function fileReplaceBasic( test )
 {
   let context = this;
@@ -779,6 +896,8 @@ const Proto =
 
   tests :
   {
+
+    identityNew,
 
     fileReplaceBasic,
     filesReplaceBasic,
