@@ -719,6 +719,152 @@ arrangementLog.defaults =
 }
 
 // --
+// identity
+// --
+
+function identityGet( o )
+{
+  const self = this;
+
+  _.assert( arguments.length === 1, 'Expects exactly one argument' );
+
+  if( _.str.is( arguments[ 0 ] ) )
+  o = { profileDir : arguments[ 0 ] };
+  _.routine.options( identityGet, o );
+
+  self._configNameMapFromDefaults( o );
+
+  if( o.selector === null )
+  o.selector = '';
+  _.assert( _.str.is( o.selector ) );
+  o.selector = `identity/${ o.selector }`;
+
+  return self.configGet( o );
+}
+
+identityGet.defaults =
+{
+  ... configNameMapFrom.defaults,
+  selector : null,
+};
+
+//
+
+function identityList( o )
+{
+  const self = this;
+
+  _.assert( arguments.length === 1, 'Expects exactly one argument' );
+
+  if( _.str.is( arguments[ 0 ] ) )
+  o = { profileDir : arguments[ 0 ] };
+  _.map.assertHasOnly( o, identityList.defaults );
+
+  const identities = self.identityGet( o );
+  if( !_.map.is( identities ) )
+  return [];
+  return _.props.keys( identities );
+}
+
+identityList.defaults =
+{
+  ... configNameMapFrom.defaults,
+};
+
+//
+
+function identitySet( o )
+{
+  const self = this;
+
+  _.assert( arguments.length === 1, 'Expects exactly one argument.' );
+  _.routine.options( identitySet, o );
+  _.assert( _.str.defined( o.identityName ), 'Expects identity name {-o.identityName-}.' );
+  _.assert( _.map.is( o.set ), 'Expects map {-o.set-}.' );
+
+  const o2 = _.mapOnly_( null, o, self.configSet.defaults );
+  _.each( o2.set, ( value, key ) =>
+  {
+    o2.set[ `identity/${ o.identityName }/${ key }` ] = value;
+    delete o2.set[ key ];
+  });
+
+  return self.configSet( o2 );
+}
+
+identitySet.defaults =
+{
+  ... configNameMapFrom.defaults,
+  set : null,
+  identityName : null,
+}
+
+//
+
+function identityNew( o )
+{
+  const self = this;
+
+  _.assert( arguments.length === 1, 'Expects exactly single options map {-o-}' );
+  _.routine.options( identityNew, o );
+  _.assert( _.map.is( o.identity ) );
+  _.assert( _.str.defined( o.identity.name ), 'Expects field {-o.identity.name-}.' );
+  _.assert( _.str.defined( o.identity.login ), 'Expects field {-o.identity.login-}.' );
+
+  self._configNameMapFromDefaults( o );
+
+  if( o.identity.type === undefined || o.identity.type === null )
+  o.identity.type = 'general';
+  _.assert( _.longHasAny( [ 'general', 'git', 'npm' ], o.identity.type ) );
+
+  const o2 = _.mapOnly_( null, o, self.identityGet.defaults );
+  o2.selector = o.identity.name;
+  if( self.identityGet( o2 ) !== undefined )
+  throw _.err( `Identity ${ name } already exists. Please, delete existed identity or create new identity with different name` );
+
+  o.identityName = o.identity.name;
+  delete o.identity.name;
+  o.set = o.identity;
+  delete o.identity;
+
+  return self.identitySet( o );
+}
+
+identityNew.defaults =
+{
+  ... configNameMapFrom.defaults,
+  identity : null,
+};
+
+//
+
+function identityDel( o )
+{
+  const self = this;
+
+  _.assert( arguments.length === 1, 'Expects exactly one argument' );
+
+  if( _.str.is( arguments[ 0 ] ) )
+  o = { profileDir : arguments[ 0 ] };
+  _.routine.options( identityDel, o );
+
+  self._configNameMapFromDefaults( o );
+
+  if( o.selector === null )
+  o.selector = '';
+  _.assert( _.str.is( o.selector ) );
+  o.selector = `identity/${ o.selector }`;
+
+  return self.configDel( o );
+}
+
+identityDel.defaults =
+{
+  ... configNameMapFrom.defaults,
+  selector : null,
+};
+
+// --
 // action
 // --
 
@@ -2044,6 +2190,12 @@ let Extension =
   arrangementClose,
   arrangementDel,
   arrangementLog,
+
+  identityGet,
+  identityList,
+  identitySet,
+  identityNew,
+  identityDel,
 
   // action
 
