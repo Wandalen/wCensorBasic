@@ -722,6 +722,44 @@ arrangementLog.defaults =
 // identity
 // --
 
+function identityCopy( o )
+{
+  const self = this;
+
+  _.assert( arguments.length === 1, 'Expects exactly one argument.' );
+  _.routine.options( identityCopy, o );
+  _.assert( _.str.defined( o.identitySrcName ), 'Expects defined option {-o.identitySrcName-}.' );
+  _.assert( _.str.defined( o.identityDstName ), 'Expects defined option {-o.identityDstName-}.' );
+  _.assert( !_.path.isGlob( o.identityDstName ), 'Expects no globs' );
+
+  self._configNameMapFromDefaults( o );
+
+  const o2 = _.mapOnly_( null, o, self.identityGet.defaults );
+  o2.selector = o.identitySrcName;
+  const identity = self.identityGet( o2 );
+  _.assert( _.map.is( identity ), `Selected no identity : ${ o.identitySrcName }. Please, improve selector.` );
+  _.assert
+  (
+    'login' in identity && 'type' in identity,
+    `Selected ${ _.props.keys( identity ).length } identity(s). Please, improve selector.`
+  );
+
+  const o3 = _.mapOnly_( null, o, self.identityNew.defaults );
+  identity.name = o.identityDstName;
+  o3.identity = identity;
+
+  return self.identityNew( o3 );
+}
+
+identityCopy.defaults =
+{
+  ... configNameMapFrom.defaults,
+  identitySrcName : null,
+  identityDstName : null,
+};
+
+//
+
 function identityGet( o )
 {
   const self = this;
@@ -2191,6 +2229,7 @@ let Extension =
   arrangementDel,
   arrangementLog,
 
+  identityCopy,
   identityGet,
   identityList,
   identitySet,
