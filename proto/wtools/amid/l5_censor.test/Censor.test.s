@@ -388,6 +388,97 @@ function configReadWithOptionsMap( test )
 
 //
 
+function identityCopy( test )
+{
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+
+  /* */
+
+  test.case = 'copy identity from existed config, single identity, selector matches identity';
+  var identity = { name : 'user', login : 'userLogin' };
+  _.censor.identityNew({ profileDir, identity });
+  var config = _.censor.configRead({ profileDir });
+  test.identical( config.identity, { user : { login : 'userLogin', type : 'general' } } );
+  var got = _.censor.identityCopy({ profileDir, identitySrcName : 'user', identityDstName : 'user3' });
+  test.identical( got, undefined );
+  var config = _.censor.configRead({ profileDir });
+  test.identical( _.props.keys( config.identity ), [ 'user', 'user3' ] );
+  test.identical( config.identity.user, { login : 'userLogin', type : 'general' } );
+  test.identical( config.identity.user, config.identity.user3 );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'copy identity from existed config, several identities, selector matches identity';
+  var identity = { name : 'user', login : 'userLogin' };
+  _.censor.identityNew({ profileDir, identity });
+  var identity = { name : 'user2', login : 'userLogin2' };
+  _.censor.identityNew({ profileDir, identity });
+  var config = _.censor.configRead({ profileDir });
+  test.identical( _.props.keys( config.identity ), [ 'user', 'user2' ] );
+  var got = _.censor.identityCopy({ profileDir, identitySrcName : 'user', identityDstName : 'user3' });
+  test.identical( got, undefined );
+  var config = _.censor.configRead({ profileDir });
+  test.identical( _.props.keys( config.identity ), [ 'user', 'user2', 'user3' ] );
+  test.identical( config.identity.user, { login : 'userLogin', type : 'general' } );
+  test.identical( config.identity.user2, { login : 'userLogin2', type : 'general' } );
+  test.identical( config.identity.user, config.identity.user3 );
+  _.censor.profileDel( profileDir );
+
+  /* - */
+
+  if( !Config.debug )
+  return;
+
+  test.case = 'without arguments';
+  test.shouldThrowErrorSync( () => _.censor.identityCopy() );
+
+  test.case = 'extra arguments';
+  var o = { profileDir, identitySrcName : 'user', identityDstName : 'user2' };
+  test.shouldThrowErrorSync( () => _.censor.identityCopy( o, o ) );
+
+  test.case = 'wrong type of options map';
+  var o = { profileDir, identitySrcName : 'user', identityDstName : 'user2' };
+  test.shouldThrowErrorSync( () => _.censor.identityCopy([ o ]) );
+
+  test.case = 'unknown option in options map';
+  var o = { profileDir, identitySrcName : 'user', identityDstName : 'user2', unknown : 1 };
+  test.shouldThrowErrorSync( () => _.censor.identityCopy( o ) );
+
+  test.case = 'o.identitySrcName is not defined string';
+  var o = { profileDir, identitySrcName : '', identityDstName : 'user2' };
+  test.shouldThrowErrorSync( () => _.censor.identityCopy( o ) );
+
+  test.case = 'o.identitySrcName is string with glob, get several identities';
+  _.censor.identityNew({ profileDir, identity : { name : 'user', login : 'userLogin' } });
+  _.censor.identityNew({ profileDir, identity : { name : 'user2', login : 'userLogin2' } });
+  var o = { profileDir, identitySrcName : 'user*', identityDstName : 'user3' };
+  test.shouldThrowErrorSync( () => _.censor.identityCopy( o ) );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'o.identityDstName is not defined string';
+  var o = { profileDir, identitySrcName : 'user', identityDstName : '' };
+  test.shouldThrowErrorSync( () => _.censor.identityCopy( o ) );
+
+  test.case = 'o.identityDstName is string with glob';
+  var o = { profileDir, identitySrcName : 'user', identityDstName : 'user2*' };
+  test.shouldThrowErrorSync( () => _.censor.identityCopy( o ) );
+
+  test.case = 'config is not existed';
+  test.shouldThrowErrorSync( () => _.censor.identityCopy({ profileDir, identitySrcName : 'user', identityDstName : 'user3' }) );
+
+  test.case = 'config exists, identities not exist';
+  _.censor.configSet({ profileDir, set : { about : { name : profileDir } } });
+  test.shouldThrowErrorSync( () => _.censor.identityCopy({ profileDir, identitySrcName : 'user', identityDstName : 'user3' }) );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'config exists, identity exists, selector matches not identity';
+  var identity = { name : 'user', login : 'userLogin' };
+  _.censor.identityNew({ profileDir, identity });
+  test.shouldThrowErrorSync( () => _.censor.identityCopy({ profileDir, identitySrcName : 'user2', identityDstName : 'user3' }) );
+  _.censor.profileDel( profileDir );
+}
+
+//
+
 function identityGet( test )
 {
   const profileDir = `test-${ _.intRandom( 1000000 ) }`;
@@ -915,6 +1006,7 @@ function identityNew( test )
   _.censor.identityNew( o );
   var o = { profileDir, identity : { name : 'user', login : 'different' } };
   test.shouldThrowErrorSync( () => _.censor.identityNew( o ) );
+  _.censor.profileDel( profileDir );
 }
 
 
@@ -1841,6 +1933,7 @@ const Proto =
     configRead,
     configReadWithOptionsMap,
 
+    identityCopy,
     identityGet,
     identityList,
     identitySet,
