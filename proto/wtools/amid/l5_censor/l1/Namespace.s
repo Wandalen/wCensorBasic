@@ -1079,7 +1079,6 @@ function onIdentity( identity )
       ],
     });
   }
-  debugger;
   return start
   ({
     execPath :
@@ -1135,6 +1134,59 @@ module.exports = onIdentity;
 }
 
 identityHookCall.defaults =
+{
+  ... configNameMapFrom.defaults,
+  selector : null,
+  type : null,
+};
+
+//
+
+function identityUse( o )
+{
+  const self = this;
+
+  _.assert( arguments.length === 1, 'Expects exactly one argument' );
+  _.routine.options( identityUse, o );
+
+  const typesMap =
+  {
+    git : [ 'git' ],
+    npm : [ 'npm' ],
+    general : [ 'git', 'npm' ],
+  };
+
+  _.assert( o.type in typesMap || o.type === null );
+  _.assert( !_.path.isGlob( o.selector ) );
+
+  self._configNameMapFromDefaults( o );
+
+  const o2 = _.mapOnly_( null, o, self.identityGet.defaults );
+  const identity = self.identityGet( o2 );
+  _.assert( _.map.is( identity ), `Selected no identity : ${ o.identitySrcName }. Please, improve selector.` );
+  _.assert
+  (
+    'login' in identity && 'type' in identity,
+    `Selected ${ _.props.keys( identity ).length } identity(s). Please, improve selector.`
+  );
+  _.assert( identity.type === 'general' || identity.type === o.type || o.type === null );
+
+  /* */
+
+  self.identityDel({ profileDir : o.profileDir, selector : '_previous' });
+  const o3 = _.mapOnly_( null, o, self.identityGet.defaults );
+  o3.selector = '_current';
+  const currentIdentity = self.identityGet( o3 );
+  if( currentIdentity !== undefined )
+  self.identitySet({ profileDir : o.profileDir, identityName : '_previous', set : currentIdentity });
+
+  self.identityDel({ profileDir : o.profileDir, selector : '_current' });
+  self.identitySet({ profileDir : o.profileDir, identityName : '_current', set : identity });
+
+  self.identityHookCall({ profileDir : o.profileDir, selector : '_current', type : o.type || identity.type });
+}
+
+identityUse.defaults =
 {
   ... configNameMapFrom.defaults,
   selector : null,
@@ -2476,6 +2528,7 @@ let Extension =
   identityDel,
   identityHookSet,
   identityHookCall,
+  identityUse,
 
   // action
 
