@@ -1321,6 +1321,87 @@ function identityHookSet( test )
 
 //
 
+function identityHookSetWithOptionDefault( test )
+{
+  const a = test.assetFor( false );
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+  const userProfileDir = a.fileProvider.configUserPath( `.censor/${ profileDir }` );
+  const hook = 'console.log( `hook` );';
+
+  /* */
+
+  test.case = 'set default git hook';
+  var identity = { name : 'user', login : 'userLogin' };
+  _.censor.identityNew({ profileDir, identity });
+  var files = a.find( userProfileDir );
+  test.identical( files, [ '.', './config.yaml' ] );
+  var got = _.censor.identityHookSet({ profileDir, hook, type : 'git', selector : '', default : true });
+  test.identical( got, undefined );
+  var files = a.find( userProfileDir );
+  var exp =
+  [
+    '.',
+    './config.yaml',
+    './hook',
+    './hook/git',
+    './hook/git/GitIdentity.js'
+  ];
+  test.identical( files, exp );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'set default npm hook';
+  var identity = { name : 'user', login : 'userLogin' };
+  _.censor.identityNew({ profileDir, identity });
+  var files = a.find( userProfileDir );
+  test.identical( files, [ '.', './config.yaml' ] );
+  var got = _.censor.identityHookSet({ profileDir, hook, type : 'npm', selector : '', default : true });
+  test.identical( got, undefined );
+  var files = a.find( userProfileDir );
+  var exp =
+  [
+    '.',
+    './config.yaml',
+    './hook',
+    './hook/npm',
+    './hook/npm/NpmIdentity.js'
+  ];
+  test.identical( files, exp );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'set default hooks for general type';
+  var identity = { name : 'user', login : 'userLogin' };
+  _.censor.identityNew({ profileDir, identity });
+  var files = a.find( userProfileDir );
+  test.identical( files, [ '.', './config.yaml' ] );
+  var got = _.censor.identityHookSet({ profileDir, hook, type : 'general', selector : '', default : true });
+  test.identical( got, undefined );
+  var files = a.find( userProfileDir );
+  var exp =
+  [
+    '.',
+    './config.yaml',
+    './hook',
+    './hook/git',
+    './hook/git/GitIdentity.js',
+    './hook/npm',
+    './hook/npm/NpmIdentity.js',
+  ];
+  test.identical( files, exp );
+  _.censor.profileDel( profileDir );
+
+  /* - */
+
+  if( !Config.debug )
+  return;
+
+  test.case = 'default - true, selector - not empty string';
+  _.censor.identityNew({ profileDir, identity : { name : 'user', login : 'userLogin' } });
+  test.shouldThrowErrorSync( () => _.censor.identityHookSet({ profileDir, hook, type : 'git', selector : 'user', default : true }) );
+  _.censor.profileDel( profileDir );
+}
+
+//
+
 function identityHookCallWithDefaultGitHook( test )
 {
   const a = test.assetFor( false );
@@ -2363,6 +2444,7 @@ const Proto =
     identityNew,
     identityDel,
     identityHookSet,
+    identityHookSetWithOptionDefault,
     identityHookCallWithDefaultGitHook,
     identityHookCallWithUserHooks,
 
