@@ -1453,9 +1453,9 @@ module.exports = onIdentity;`;
 
   function requireClean()
   {
-    delete require.cache[ a.abs( userProfileDir, 'hook/git/GitIdentity.user.js' ) ];
-    delete require.cache[ a.abs( userProfileDir, 'hook/npm/NpmIdentity.user.js' ) ];
-    delete require.cache[ a.abs( userProfileDir, 'hook/npm/NpmIdentity.user2.js' ) ];
+    delete require.cache[ a.path.nativize( a.abs( userProfileDir, 'hook/git/GitIdentity.user.js' ) ) ];
+    delete require.cache[ a.path.nativize( a.abs( userProfileDir, 'hook/npm/NpmIdentity.user.js' ) ) ];
+    delete require.cache[ a.path.nativize( a.abs( userProfileDir, 'hook/npm/NpmIdentity.user2.js' ) ) ];
   }
 }
 

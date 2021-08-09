@@ -909,9 +909,6 @@ function identityHookSet( o )
   const self = this;
 
   _.assert( arguments.length === 1, 'Expects exactly one argument' );
-
-  if( _.str.is( arguments[ 0 ] ) )
-  o = { profileDir : arguments[ 0 ] };
   _.routine.options( identityHookSet, o );
 
   self._configNameMapFromDefaults( o );
@@ -926,15 +923,22 @@ function identityHookSet( o )
   _.assert( o.type in typesMap );
   _.assert( !_.path.isGlob( o.selector ) );
 
-  const o2 = _.mapOnly_( null, o, self.identityGet.defaults );
-  const identity = self.identityGet( o2 );
-  _.assert( _.map.is( identity ), `Selected no identity : ${ o.selector }. Please, improve selector.` );
-  _.assert
-  (
-    'login' in identity && 'type' in identity,
-    `Selected ${ _.props.keys( identity ).length } identity(s). Please, improve selector.`
-  );
-  _.assert( identity.type === 'general' || identity.type === o.type );
+  if( o.default )
+  {
+    _.assert( o.selector === '' );
+  }
+  else
+  {
+    const o2 = _.mapOnly_( null, o, self.identityGet.defaults );
+    const identity = self.identityGet( o2 );
+    _.assert( _.map.is( identity ), `Selected no identity : ${ o.selector }. Please, improve selector.` );
+    _.assert
+    (
+      'login' in identity && 'type' in identity,
+      `Selected ${ _.props.keys( identity ).length } identity(s). Please, improve selector.`
+    );
+    _.assert( identity.type === 'general' || identity.type === o.type );
+  }
 
   _.each( typesMap[ o.type ], ( type ) => hookMake( o.hook, type ) );
 
@@ -944,7 +948,7 @@ function identityHookSet( o )
   {
     const name = `${ type.replace( /^\w/, type[ 0 ].toUpperCase() ) }Identity.${ o.selector }.js`;
     const filePath = _.fileProvider.configUserPath( _.path.join( o.storageDir, o.profileDir, self.storageHookDir, type, name ) );
-    _.program.make({ routineCode : data, name, filePath });
+    _.fileProvider.fileWrite({ filePath, data });
     return filePath;
   }
 }
@@ -955,6 +959,96 @@ identityHookSet.defaults =
   hook : null,
   type : null,
   selector : null,
+  default : false,
+};
+
+//
+
+function identityHookCall( o )
+{
+  const self = this;
+
+  _.assert( arguments.length === 1, 'Expects exactly one argument' );
+  _.routine.options( identityHookCall, o );
+
+  const typesMap =
+  {
+    git : [ 'git' ],
+    npm : [ 'npm' ],
+    general : [ 'git', 'npm' ],
+  };
+
+  _.assert( o.type in typesMap );
+  _.assert( !_.path.isGlob( o.selector ) );
+
+  self._configNameMapFromDefaults( o );
+
+  const o2 = _.mapOnly_( null, o, self.identityGet.defaults );
+  const identity = self.identityGet( o2 );
+  _.assert( _.map.is( identity ), `Selected no identity : ${ o.identitySrcName }. Please, improve selector.` );
+  _.assert
+  (
+    'login' in identity && 'type' in identity,
+    `Selected ${ _.props.keys( identity ).length } identity(s). Please, improve selector.`
+  );
+  _.assert( identity.type === 'general' || identity.type === o.type );
+
+  _.each( typesMap[ o.type ], ( type ) =>
+  {
+    const baseName = `${ type.replace( /^\w/, type[ 0 ].toUpperCase() ) }Identity`;
+    const userHookPath = _.path.join( o.storageDir, o.profileDir, self.storageHookDir, type, `${ baseName }.${ o.selector }.js` );
+    let filePath = _.fileProvider.configUserPath( userHookPath );
+
+    if( !_.fileProvider.fileExists( filePath ) )
+    {
+      const userDefaultHookPath = _.path.join( o.storageDir, o.profileDir, self.storageHookDir, type, `${ baseName }.js` );
+      filePath = _.fileProvider.configUserPath( userHookPath );
+      if( !_.fileProvider.fileExists( filePath ) )
+      defaultHookMake( type );
+    }
+
+    hookCall( filePath );
+  });
+
+  /* */
+
+  function hookCall( filePath )
+  {
+    const routine = require( _.path.nativize( filePath ) );
+    _.assert( _.routine.is( routine ) );
+
+    let result = routine.call( _, identity );
+    if( _.promiseIs( result ) )
+    result = _.Consequence.From( result );
+    if( _.consequenceIs( result ) )
+    result = result.deasync().sync();
+    return result;
+  }
+
+  /* */
+
+  function defaultHookMake( type )
+  {
+    _.assert( false, 'not implemented' );
+
+    let hook;
+    if( type === 'git' )
+    hook = '';
+    else if( type === 'npm' )
+    hook = '';
+    const o2 = _.mapOnly_( null, o, self.identityHookSet.defaults );
+    o2.selector = '';
+    o2.hook = hook;
+    o2.default = true;
+    return self.identityHookSet( o2 );
+  }
+}
+
+identityHookCall.defaults =
+{
+  ... configNameMapFrom.defaults,
+  selector : null,
+  type : null,
 };
 
 // --
@@ -2291,6 +2385,7 @@ let Extension =
   identityNew,
   identityDel,
   identityHookSet,
+  identityHookCall,
 
   // action
 
