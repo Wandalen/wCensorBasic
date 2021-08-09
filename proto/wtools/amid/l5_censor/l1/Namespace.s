@@ -946,7 +946,10 @@ function identityHookSet( o )
 
   function hookMake( data, type )
   {
-    const name = `${ type.replace( /^\w/, type[ 0 ].toUpperCase() ) }Identity.${ o.selector }.js`;
+    const baseName = `${ type.replace( /^\w/, type[ 0 ].toUpperCase() ) }Identity`;
+    let name = `${ baseName }.${ o.selector }.js`;
+    if( o.selector === '' )
+    name = `${ baseName }.js`;
     const filePath = _.fileProvider.configUserPath( _.path.join( o.storageDir, o.profileDir, self.storageHookDir, type, name ) );
     _.fileProvider.fileWrite({ filePath, data });
     return filePath;
@@ -1002,7 +1005,7 @@ function identityHookCall( o )
     if( !_.fileProvider.fileExists( filePath ) )
     {
       const userDefaultHookPath = _.path.join( o.storageDir, o.profileDir, self.storageHookDir, type, `${ baseName }.js` );
-      filePath = _.fileProvider.configUserPath( userHookPath );
+      filePath = _.fileProvider.configUserPath( userDefaultHookPath );
       if( !_.fileProvider.fileExists( filePath ) )
       defaultHookMake( type );
     }
@@ -1029,18 +1032,106 @@ function identityHookCall( o )
 
   function defaultHookMake( type )
   {
-    _.assert( false, 'not implemented' );
-
-    let hook;
-    if( type === 'git' )
-    hook = '';
-    else if( type === 'npm' )
-    hook = '';
     const o2 = _.mapOnly_( null, o, self.identityHookSet.defaults );
     o2.selector = '';
-    o2.hook = hook;
     o2.default = true;
+
+    if( type === 'git' )
+    o2.hook = gitHookCodeGet();
+    else
+    {
+      _.assert( 'not covered' );
+      o2.hook = npmHookCodeGet();
+    }
+
     return self.identityHookSet( o2 );
+  }
+
+  /* */
+
+  function gitHookCodeGet()
+  {
+    const code =
+    `
+function onIdentity( identity )
+{
+  const _ = this;
+  const ready = _.take( null );
+  const start = _.process.starter
+  ({
+    currentPath : __dirname,
+    mode : 'shell',
+    outputCollecting : 1,
+    throwingExitCode : 0,
+    inputMirroring : 0,
+    sync : 1,
+    ready,
+  });
+
+  _.assert( _.str.defined( identity.login ) );
+  _.assert( _.str.defined( identity.email ) );
+  const oldName = start( 'git config --global user.name' ).output.trim();
+  if( oldName )
+  {
+    start
+    ({
+      execPath :
+      [
+        \`git config --global --unset url.https://\$\{ oldName \}@github.com.insteadof\`,
+        \`git config --global --unset url.https://\$\{ oldName \}@bitbucket.org.insteadof\`,
+      ],
+    });
+  }
+  debugger;
+  return start
+  ({
+    execPath :
+    [
+      \`git config --global user.name "\$\{ identity.login \}"\`,
+      \`git config --global user.email "\$\{ identity.email \}"\`,
+      \`git config --global url."https://\$\{ identity.login \}@github.com".insteadOf "https://github.com"\`,
+      \`git config --global url."https://\$\{ identity.login \}@bitbucket.org".insteadOf "https://bitbucket.org"\`,
+    ],
+    throwingExitCode : 1,
+  });
+}
+module.exports = onIdentity;
+`;
+    return code;
+  }
+
+  /* */
+
+  function npmHookCodeGet()
+  {
+    const code =
+    `
+function onIdentity( identity )
+{
+  const _ = this;
+  const start = _.process.starter
+  ({
+    currentPath : __dirname,
+    mode : 'shell',
+    outputCollecting : 1,
+    throwingExitCode : 1,
+    inputMirroring : 0,
+    sync : 1,
+  });
+
+  _.assert( _.str.defined( identity.login ) );
+  _.assert( _.str.defined( identity.npmPass ) );
+  _.assert( _.str.defined( identity.email ) );
+  start( 'npm i npm-cli-login' );
+  start
+  ({
+    execPath : '${ _.path.nativize( './node_modules/.bin/npm-cli-login' ) } -u ${ identity.login } -p ${ identity.npmPass } -e ${ identity.email } --quotes',
+    outputPiping : 0,
+  });
+}
+module.exports = onIdentity;
+`;
+    return code;
   }
 }
 
