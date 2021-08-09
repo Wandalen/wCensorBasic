@@ -1558,6 +1558,85 @@ function identityHookCallWithDefaultGitHook( test )
 
 //
 
+function identityHookCallWithDefaultNpmHook( test )
+{
+  const a = test.assetFor( false );
+
+  if( !_.process.insideTestContainer() )
+  return test.true( true );
+
+  a.fileProvider.dirMake( a.abs( '.' ) );
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+  const userProfileDir = a.fileProvider.configUserPath( `.censor/${ profileDir }` );
+  const login = 'wtools-bot';
+  const npmPass = process.env.PRIVATE_WTOOLS_BOT_NPM_PASS;
+  const email = process.env.PRIVATE_WTOOLS_BOT_EMAIL;
+
+  if( !npmPass || !email )
+  return test.true( true );
+
+  /* - */
+
+  a.ready.then( () =>
+  {
+    test.case = 'call npm hook';
+    var identity = { name : 'user', login, email, npmPass };
+    _.censor.identityNew({ profileDir, identity });
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml' ] );
+    var got = _.censor.identityHookCall({ profileDir, type : 'npm', selector : 'user' });
+    test.identical( got, undefined );
+    _.censor.profileDel( profileDir );
+    requireClean();
+    return null;
+  });
+  a.shell( 'npm whoami' )
+  .then( ( op ) =>
+  {
+    test.identical( op.exitCode, 0 );
+    test.identical( op.output.trim(), login );
+    return null;
+  });
+
+  /* */
+
+  a.ready.then( () =>
+  {
+    test.case = 'call npm hook twice';
+    var identity = { name : 'user', login, email, npmPass };
+    _.censor.identityNew({ profileDir, identity });
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml' ] );
+    var got = _.censor.identityHookCall({ profileDir, type : 'npm', selector : 'user' });
+    var got = _.censor.identityHookCall({ profileDir, type : 'npm', selector : 'user' });
+    test.identical( got, undefined );
+    _.censor.profileDel( profileDir );
+    requireClean();
+    return null;
+  });
+  a.shell( 'npm whoami' )
+  .then( ( op ) =>
+  {
+    test.identical( op.exitCode, 0 );
+    test.identical( op.output.trim(), login );
+    return null;
+  });
+
+  /* - */
+
+  return a.ready;
+
+  /* */
+
+  function requireClean()
+  {
+    delete require.cache[ a.path.nativize( a.abs( userProfileDir, 'hook/git/GitIdentity.js' ) ) ];
+    delete require.cache[ a.path.nativize( a.abs( userProfileDir, 'hook/npm/NpmIdentity.js' ) ) ];
+  }
+}
+
+//
+
 function identityHookCallWithUserHooks( test )
 {
   const a = test.assetFor( false );
@@ -2446,6 +2525,7 @@ const Proto =
     identityHookSet,
     identityHookSetWithOptionDefault,
     identityHookCallWithDefaultGitHook,
+    identityHookCallWithDefaultNpmHook,
     identityHookCallWithUserHooks,
 
     fileReplaceBasic,
