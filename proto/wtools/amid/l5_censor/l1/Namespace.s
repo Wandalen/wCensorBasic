@@ -902,6 +902,61 @@ identityDel.defaults =
   selector : null,
 };
 
+//
+
+function identityHookSet( o )
+{
+  const self = this;
+
+  _.assert( arguments.length === 1, 'Expects exactly one argument' );
+
+  if( _.str.is( arguments[ 0 ] ) )
+  o = { profileDir : arguments[ 0 ] };
+  _.routine.options( identityHookSet, o );
+
+  self._configNameMapFromDefaults( o );
+
+  const typesMap =
+  {
+    git : [ 'git' ],
+    npm : [ 'npm' ],
+    general : [ 'git', 'npm' ],
+  };
+
+  _.assert( o.type in typesMap );
+  _.assert( !_.path.isGlob( o.selector ) );
+
+  const o2 = _.mapOnly_( null, o, self.identityGet.defaults );
+  const identity = self.identityGet( o2 );
+  _.assert( _.map.is( identity ), `Selected no identity : ${ o.selector }. Please, improve selector.` );
+  _.assert
+  (
+    'login' in identity && 'type' in identity,
+    `Selected ${ _.props.keys( identity ).length } identity(s). Please, improve selector.`
+  );
+  _.assert( identity.type === 'general' || identity.type === o.type );
+
+  _.each( typesMap[ o.type ], ( type ) => hookMake( o.hook, type ) );
+
+  /* */
+
+  function hookMake( data, type )
+  {
+    const name = `${ type.replace( /^\w/, type[ 0 ].toUpperCase() ) }Identity.${ o.selector }.js`;
+    const filePath = _.fileProvider.configUserPath( _.path.join( o.storageDir, o.profileDir, self.storageHookDir, type, name ) );
+    _.program.make({ routineCode : data, name, filePath });
+    return filePath;
+  }
+}
+
+identityHookSet.defaults =
+{
+  ... configNameMapFrom.defaults,
+  hook : null,
+  type : null,
+  selector : null,
+};
+
 // --
 // action
 // --
@@ -2235,6 +2290,7 @@ let Extension =
   identitySet,
   identityNew,
   identityDel,
+  identityHookSet,
 
   // action
 
@@ -2287,6 +2343,7 @@ let Extension =
   storageArrangementTerminal : 'default',
   storageArrangementPostfix : '.json',
   storageArrangementPath : null,
+  storageHookDir : 'hook',
 
 }
 
