@@ -1039,10 +1039,7 @@ function identityHookCall( o )
     if( type === 'git' )
     o2.hook = gitHookCodeGet();
     else
-    {
-      _.assert( 'not covered' );
-      o2.hook = npmHookCodeGet();
-    }
+    o2.hook = npmHookCodeGet();
 
     return self.identityHookSet( o2 );
   }
@@ -1123,9 +1120,11 @@ function onIdentity( identity )
   _.assert( _.str.defined( identity.npmPass ) );
   _.assert( _.str.defined( identity.email ) );
   start( 'npm i npm-cli-login' );
+
+  const npmCli = _.path.nativize( './node_modules/.bin/npm-cli-login' );
   start
   ({
-    execPath : '${ _.path.nativize( './node_modules/.bin/npm-cli-login' ) } -u ${ identity.login } -p ${ identity.npmPass } -e ${ identity.email } --quotes',
+    execPath : \`\$\{ npmCli \} -u \$\{ identity.login \} -p \$\{ identity.npmPass \} -e \$\{ identity.email \} --quotes\`,
     outputPiping : 0,
   });
 }
