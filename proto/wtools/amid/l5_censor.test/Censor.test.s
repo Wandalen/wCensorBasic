@@ -1321,6 +1321,162 @@ function identityHookSet( test )
 
 //
 
+function identityHookCallWithDefaultGitHook( test )
+{
+  const a = test.assetFor( false );
+  a.fileProvider.dirMake( a.abs( '.' ) );
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+  const userProfileDir = a.fileProvider.configUserPath( `.censor/${ profileDir }` );
+
+  const originalConfig = a.fileProvider.fileRead( a.fileProvider.configUserPath( '.gitconfig' ) );
+
+  /* - */
+
+  begin().then( () =>
+  {
+    test.case = 'call git hook';
+    var identity = { name : 'user', login : 'userLogin', email : 'user@domain.com' };
+    _.censor.identityNew({ profileDir, identity });
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml' ] );
+    var got = _.censor.identityHookCall({ profileDir, type : 'git', selector : 'user' });
+    test.identical( got, undefined );
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml', './hook', './hook/git', './hook/git/GitIdentity.js' ] );
+    _.censor.profileDel( profileDir );
+    requireClean();
+    return null;
+  });
+  a.shell( 'git config --global --list' )
+  .then( ( op ) =>
+  {
+    test.identical( _.strCount( op.output, 'user.name=userLogin' ), 1 );
+    test.identical( _.strCount( op.output, 'user.email=user@domain.com' ), 1 );
+    test.identical( _.strCount( op.output, 'url.https://userLogin@github.com.insteadof=https://github.com' ), 1 );
+    test.identical( _.strCount( op.output, 'url.https://userLogin@bitbucket.org.insteadof=https://bitbucket.org' ), 1 );
+    return null;
+  });
+
+  /* */
+  begin();
+  a.shell( 'git config --global user.name anotherUser' )
+  a.ready.then( () =>
+  {
+    test.case = 'git user name exists';
+    var identity = { name : 'user', login : 'userLogin', email : 'user@domain.com' };
+    _.censor.identityNew({ profileDir, identity });
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml' ] );
+    var got = _.censor.identityHookCall({ profileDir, type : 'git', selector : 'user' });
+    test.identical( got, undefined );
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml', './hook', './hook/git', './hook/git/GitIdentity.js' ] );
+    _.censor.profileDel( profileDir );
+    requireClean();
+    return null;
+  });
+  a.shell( 'git config --global --list' )
+  .then( ( op ) =>
+  {
+    test.identical( _.strCount( op.output, 'user.name=userLogin' ), 1 );
+    test.identical( _.strCount( op.output, 'user.email=user@domain.com' ), 1 );
+    test.identical( _.strCount( op.output, 'url.https://userLogin@github.com.insteadof=https://github.com' ), 1 );
+    test.identical( _.strCount( op.output, 'url.https://userLogin@bitbucket.org.insteadof=https://bitbucket.org' ), 1 );
+    return null;
+  });
+
+  /* */
+
+  begin().then( () =>
+  {
+    test.case = 'call twice';
+    var identity = { name : 'user', login : 'userLogin', email : 'user@domain.com' };
+    _.censor.identityNew({ profileDir, identity });
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml' ] );
+    var got = _.censor.identityHookCall({ profileDir, type : 'git', selector : 'user' });
+    var got = _.censor.identityHookCall({ profileDir, type : 'git', selector : 'user' });
+    test.identical( got, undefined );
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml', './hook', './hook/git', './hook/git/GitIdentity.js' ] );
+    _.censor.profileDel( profileDir );
+    requireClean();
+    return null;
+  });
+  a.shell( 'git config --global --list' )
+  .then( ( op ) =>
+  {
+    test.identical( _.strCount( op.output, 'user.name=userLogin' ), 1 );
+    test.identical( _.strCount( op.output, 'user.email=user@domain.com' ), 1 );
+    test.identical( _.strCount( op.output, 'url.https://userLogin@github.com.insteadof=https://github.com' ), 1 );
+    test.identical( _.strCount( op.output, 'url.https://userLogin@bitbucket.org.insteadof=https://bitbucket.org' ), 1 );
+    return null;
+  });
+
+  /* */
+
+  begin().then( () =>
+  {
+    test.case = 'change identity';
+    var identity = { name : 'user', login : 'userLogin', email : 'user@domain.com' };
+    _.censor.identityNew({ profileDir, identity });
+    var identity = { name : 'user2', login : 'userLogin2', email : 'user2@domain.com' };
+    _.censor.identityNew({ profileDir, identity });
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml' ] );
+    var got = _.censor.identityHookCall({ profileDir, type : 'git', selector : 'user' });
+    var got = _.censor.identityHookCall({ profileDir, type : 'git', selector : 'user2' });
+    test.identical( got, undefined );
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml', './hook', './hook/git', './hook/git/GitIdentity.js' ] );
+    _.censor.profileDel( profileDir );
+    requireClean();
+    return null;
+  });
+  a.shell( 'git config --global --list' )
+  .then( ( op ) =>
+  {
+    test.identical( _.strCount( op.output, 'user.name=userLogin2' ), 1 );
+    test.identical( _.strCount( op.output, 'user.email=user2@domain.com' ), 1 );
+    test.identical( _.strCount( op.output, 'url.https://userLogin2@github.com.insteadof=https://github.com' ), 1 );
+    test.identical( _.strCount( op.output, 'url.https://userLogin2@bitbucket.org.insteadof=https://bitbucket.org' ), 1 );
+    return null;
+  });
+
+  a.ready.finally( ( err, arg ) =>
+  {
+    a.fileProvider.fileWrite( a.fileProvider.configUserPath( '.gitconfig' ), originalConfig );
+    if( err )
+    throw _.err( err );
+    return arg;
+  });
+
+  /* - */
+
+  return a.ready;
+
+  /* */
+
+  function begin()
+  {
+    return a.ready.then( () =>
+    {
+      a.fileProvider.fileWrite( a.fileProvider.configUserPath( '.gitconfig' ), '' );
+      return null;
+    });
+  }
+
+  /* */
+
+  function requireClean()
+  {
+    delete require.cache[ a.path.nativize( a.abs( userProfileDir, 'hook/git/GitIdentity.js' ) ) ];
+    delete require.cache[ a.path.nativize( a.abs( userProfileDir, 'hook/npm/NpmIdentity.js' ) ) ];
+  }
+}
+
+//
+
 function identityHookCallWithUserHooks( test )
 {
   const a = test.assetFor( false );
@@ -2207,6 +2363,7 @@ const Proto =
     identityNew,
     identityDel,
     identityHookSet,
+    identityHookCallWithDefaultGitHook,
     identityHookCallWithUserHooks,
 
     fileReplaceBasic,
