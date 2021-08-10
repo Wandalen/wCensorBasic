@@ -1795,7 +1795,50 @@ function identityUse( test )
 
   const originalConfig = a.fileProvider.fileRead( a.fileProvider.configUserPath( '.gitconfig' ) );
 
+  const hook =
+`function onIdentity( identity )
+{
+  const _ = this;
+  _.censor.identitySet({ profileDir : '${ profileDir }', identityName : 'user', set : { email : 'user@domain.com' } });
+}
+module.exports = onIdentity;`;
+
   /* - */
+
+  begin().then( () =>
+  {
+    test.case = 'use git identity from scratch, no type';
+    var identity = { name : 'user', login : 'userLogin', email : 'user@domain.com', type : 'git' };
+    _.censor.identityNew({ profileDir, identity });
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml' ] );
+    var config = _.censor.configRead({ profileDir });
+    test.identical( config.identity.user, { login : 'userLogin', email : 'user@domain.com', type : 'git' } );
+    test.identical( config.identity._current, undefined );
+    test.identical( config.identity._previous, undefined );
+    var got = _.censor.identityUse({ profileDir, type : 'git', selector : 'user' });
+    test.identical( got, undefined );
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml', './hook', './hook/git', './hook/git/GitIdentity.js' ] );
+    var config = _.censor.configRead({ profileDir });
+    test.identical( config.identity.user, { login : 'userLogin', type : 'git', email : 'user@domain.com' } );
+    test.identical( config.identity._current, { login : 'userLogin', type : 'git', email : 'user@domain.com' } );
+    test.identical( config.identity._previous, undefined );
+    _.censor.profileDel( profileDir );
+    requireClean();
+    return null;
+  });
+  a.shell( 'git config --global --list' )
+  .then( ( op ) =>
+  {
+    test.identical( _.strCount( op.output, 'user.name=userLogin' ), 1 );
+    test.identical( _.strCount( op.output, 'user.email=user@domain.com' ), 1 );
+    test.identical( _.strCount( op.output, 'url.https://userLogin@github.com.insteadof=https://github.com' ), 1 );
+    test.identical( _.strCount( op.output, 'url.https://userLogin@bitbucket.org.insteadof=https://bitbucket.org' ), 1 );
+    return null;
+  });
+
+  /* */
 
   begin().then( () =>
   {
@@ -1877,6 +1920,25 @@ function identityUse( test )
     test.identical( _.strCount( op.output, 'user.email=user2@domain.com' ), 1 );
     test.identical( _.strCount( op.output, 'url.https://userLogin2@github.com.insteadof=https://github.com' ), 1 );
     test.identical( _.strCount( op.output, 'url.https://userLogin2@bitbucket.org.insteadof=https://bitbucket.org' ), 1 );
+    return null;
+  });
+
+  /* */
+
+  begin().then( () =>
+  {
+    test.case = 'call user hook';
+    var identity = { name : 'user', type : 'git', login : 'userLogin' };
+    _.censor.identityNew({ profileDir, identity });
+    _.censor.identityHookSet({ profileDir, hook, type : 'git', selector : 'user' });
+    var config = _.censor.configRead({ profileDir });
+    test.identical( config.identity.user.email, undefined );
+    var got = _.censor.identityUse({ profileDir, type : 'git', selector : 'user' });
+    test.identical( got, undefined );
+    var config = _.censor.configRead({ profileDir });
+    test.identical( config.identity.user.email, 'user@domain.com' );
+    _.censor.profileDel( profileDir );
+    requireClean();
     return null;
   });
 
