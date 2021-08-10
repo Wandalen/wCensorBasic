@@ -1181,9 +1181,9 @@ function identityUse( o )
   self.identitySet({ profileDir : o.profileDir, identityName : '_previous', set : currentIdentity });
 
   self.identityDel({ profileDir : o.profileDir, selector : '_current' });
-  self.identitySet({ profileDir : o.profileDir, identityName : '_current', set : identity });
+  self.identitySet({ profileDir : o.profileDir, identityName : '_current', set : _.map.extend( null, identity ) });
 
-  self.identityHookCall({ profileDir : o.profileDir, selector : '_current', type : o.type || identity.type });
+  self.identityHookCall({ profileDir : o.profileDir, selector : o.selector, type : o.type || identity.type });
 }
 
 identityUse.defaults =
