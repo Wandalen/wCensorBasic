@@ -995,10 +995,14 @@ function identityNew( test )
   var o = { profileDir, identity : { name : null, login : 'userLogin' } };
   test.shouldThrowErrorSync( () => _.censor.identityNew( o ) );
 
-  test.case = 'o.identity.login is not defined string';
+  test.case = 'o.identity.*login is not defined string';
   var o = { profileDir, identity : { name : 'user', login : '' } };
   test.shouldThrowErrorSync( () => _.censor.identityNew( o ) );
   var o = { profileDir, identity : { name : 'user', login : null } };
+  test.shouldThrowErrorSync( () => _.censor.identityNew( o ) );
+  var o = { profileDir, identity : { 'name' : 'user', 'git.login' : '' } };
+  test.shouldThrowErrorSync( () => _.censor.identityNew( o ) );
+  var o = { profileDir, identity : { 'name' : 'user', 'git.login' : null } };
   test.shouldThrowErrorSync( () => _.censor.identityNew( o ) );
 
   test.case = 'try to create identity with the existed name';
