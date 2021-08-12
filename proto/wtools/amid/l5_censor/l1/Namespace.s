@@ -817,25 +817,34 @@ function identitySet( o )
 
   _.assert( arguments.length === 1, 'Expects exactly one argument.' );
   _.routine.options( identitySet, o );
-  _.assert( _.str.defined( o.identityName ), 'Expects identity name {-o.identityName-}.' );
+  _.assert( _.str.defined( o.selector ), 'Expects identity name {-o.selector-}.' );
   _.assert( _.map.is( o.set ), 'Expects map {-o.set-}.' );
 
-  const o2 = _.mapOnly_( null, o, self.configSet.defaults );
-  _.each( o2.set, ( value, key ) =>
+  if( !o.force )
   {
-    o2.set[ `identity/${ o.identityName }/${ key }` ] = value;
-    delete o2.set[ key ];
+    const o2 = _.mapOnly_( null, o, self.identityGet.defaults );
+    debugger;
+    if( self.identityGet( o2 ) === undefined )
+    throw _.err( `Identity ${ o.selector } does not exists.` );
+  }
+
+  const o3 = _.mapOnly_( null, o, self.configSet.defaults );
+  _.each( o3.set, ( value, key ) =>
+  {
+    o3.set[ `identity/${ o.selector }/${ key }` ] = value;
+    delete o3.set[ key ];
   });
 
-  return self.configSet( o2 );
+  return self.configSet( o3 );
 }
 
 identitySet.defaults =
 {
   ... configNameMapFrom.defaults,
   set : null,
-  identityName : null,
-}
+  selector : null,
+  force : false,
+};
 
 //
 
@@ -856,20 +865,31 @@ function identityNew( o )
 
   self._configNameMapFromDefaults( o );
 
-  if( o.identity.type === undefined || o.identity.type === null )
-  o.identity.type = 'general';
-  _.assert( _.longHasAny( [ 'general', 'git', 'npm', 'rust' ], o.identity.type ) );
-
   const o2 = _.mapOnly_( null, o, self.identityGet.defaults );
   o2.selector = o.identity.name;
-  if( self.identityGet( o2 ) !== undefined )
-  throw _.err( `Identity ${ o.identity.name } already exists. Please, delete existed identity or create new identity with different name` );
+  const identity = self.identityGet( o2 );
+  if( !o.force )
+  {
+    if( identity !== undefined )
+    throw _.err( `Identity ${ o.identity.name } already exists. Please, delete existed identity or create new identity with different name` );
+  }
 
-  o.identityName = o.identity.name;
+  if( o.identity.type === undefined || o.identity.type === null )
+  {
+    if( !identity || ( identity && !identity.type ) )
+    o.identity.type = 'general';
+    else
+    o.identity.type = identity.type;
+  }
+  _.assert( _.longHasAny( [ 'general', 'git', 'npm', 'rust' ], o.identity.type ) );
+
+  o.selector = o.identity.name;
   delete o.identity.name;
   o.set = o.identity;
   delete o.identity;
+  o.force = true;
 
+  debugger;
   return self.identitySet( o );
 }
 
@@ -877,6 +897,7 @@ identityNew.defaults =
 {
   ... configNameMapFrom.defaults,
   identity : null,
+  force : false,
 };
 
 //
@@ -1183,10 +1204,10 @@ function identityUse( o )
   o3.selector = '_current';
   const currentIdentity = self.identityGet( o3 );
   if( currentIdentity !== undefined )
-  self.identitySet({ profileDir : o.profileDir, identityName : '_previous', set : currentIdentity });
+  self.identitySet({ profileDir : o.profileDir, selector : '_previous', set : currentIdentity });
 
   self.identityDel({ profileDir : o.profileDir, selector : '_current' });
-  self.identitySet({ profileDir : o.profileDir, identityName : '_current', set : _.map.extend( null, identity ) });
+  self.identitySet({ profileDir : o.profileDir, selector : '_current', set : _.map.extend( null, identity ) });
 
   self.identityHookCall({ profileDir : o.profileDir, selector : o.selector, type : o.type || identity.type });
 }
