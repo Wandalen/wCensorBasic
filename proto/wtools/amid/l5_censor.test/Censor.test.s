@@ -729,19 +729,19 @@ function identitySet( test )
 
   /* */
 
-  test.case = 'set no properties in identity in config that not exists';
+  test.case = 'set no properties in identity in config that not exists, force - 1';
   var config = _.censor.configRead({ profileDir });
   test.identical( config, null );
-  var got = _.censor.identitySet({ profileDir, identityName : 'user', set : {} });
+  var got = _.censor.identitySet({ profileDir, selector : 'user', set : {}, force : 1 });
   test.identical( got, undefined );
   var config = _.censor.configRead({ profileDir });
   test.identical( config, { about : {}, path : {} } );
   _.censor.profileDel( profileDir );
 
-  test.case = 'set properties into identity in config that not exists';
+  test.case = 'set properties into identity in config that not exists, force - 1';
   var config = _.censor.configRead({ profileDir });
   test.identical( config, null );
-  var got = _.censor.identitySet({ profileDir, identityName : 'user', set : { login : 'userLogin' } });
+  var got = _.censor.identitySet({ profileDir, selector : 'user', set : { login : 'userLogin' }, force : 1 });
   test.identical( got, undefined );
   var config = _.censor.configRead({ profileDir });
   test.identical( config, { about : {}, path : {}, identity : { user : { login : 'userLogin' } } } );
@@ -749,21 +749,21 @@ function identitySet( test )
 
   /* */
 
-  test.case = 'set no properties in identity in config that exists, identities not exist';
+  test.case = 'set no properties in identity in config that exists, identities not exist, force - 1';
   _.censor.configSet({ profileDir, set : { about : { name : profileDir } } });
   var config = _.censor.configRead({ profileDir });
   test.identical( config, { about : { name : profileDir }, path : {} } );
-  var got = _.censor.identitySet({ profileDir, identityName : 'user', set : {} });
+  var got = _.censor.identitySet({ profileDir, selector : 'user', set : {}, force : 1 });
   test.identical( got, undefined );
   var config = _.censor.configRead({ profileDir });
   test.identical( config, { about : { name : profileDir }, path : {} } );
   _.censor.profileDel( profileDir );
 
-  test.case = 'set properties in identity in config that exists, identities not exist';
+  test.case = 'set properties in identity in config that exists, identities not exist, force - 1';
   _.censor.configSet({ profileDir, set : { about : { name : profileDir } } });
   var config = _.censor.configRead({ profileDir });
   test.identical( config, { about : { name : profileDir }, path : {} } );
-  var got = _.censor.identitySet({ profileDir, identityName : 'user', set : { login : 'userLogin' } });
+  var got = _.censor.identitySet({ profileDir, selector : 'user', set : { login : 'userLogin' }, force : 1 });
   test.identical( got, undefined );
   var config = _.censor.configRead({ profileDir });
   test.identical( config, { about : { name : profileDir }, path : {}, identity : { user : { login : 'userLogin' } } } );
@@ -771,34 +771,34 @@ function identitySet( test )
 
   /* */
 
-  test.case = 'set no properties in identity in config that exists, single identity, identityName matches identity';
+  test.case = 'set no properties in identity in config that exists, single identity, selector matches identity';
   var identity = { name : 'user', login : 'userLogin' };
   _.censor.identityNew({ profileDir, identity });
   var config = _.censor.configRead({ profileDir });
   test.identical( config.identity, { user : { login : 'userLogin', type : 'general' } } );
-  var got = _.censor.identitySet({ profileDir, identityName : 'user', set : {} });
+  var got = _.censor.identitySet({ profileDir, selector : 'user', set : {} });
   test.identical( got, undefined );
   var config = _.censor.configRead({ profileDir });
   test.identical( config.identity, { user : { login : 'userLogin', type : 'general' } } );
   _.censor.profileDel( profileDir );
 
-  test.case = 'set properties in identity in config that exists, single identity, identityName matches identity, replace';
+  test.case = 'set properties in identity in config that exists, single identity, selector matches identity, replace';
   var identity = { name : 'user', login : 'userLogin' };
   _.censor.identityNew({ profileDir, identity });
   var config = _.censor.configRead({ profileDir });
   test.identical( config.identity, { user : { login : 'userLogin', type : 'general' } } );
-  var got = _.censor.identitySet({ profileDir, identityName : 'user', set : { type : 'git' } });
+  var got = _.censor.identitySet({ profileDir, selector : 'user', set : { type : 'git' } });
   test.identical( got, undefined );
   var config = _.censor.configRead({ profileDir });
   test.identical( config.identity, { user : { login : 'userLogin', type : 'git' } } );
   _.censor.profileDel( profileDir );
 
-  test.case = 'set properties in identity in config that exists, single identity, identityName matches identity, extend';
+  test.case = 'set properties in identity in config that exists, single identity, selector matches identity, extend';
   var identity = { name : 'user', login : 'userLogin' };
   _.censor.identityNew({ profileDir, identity });
   var config = _.censor.configRead({ profileDir });
   test.identical( config.identity, { user : { login : 'userLogin', type : 'general' } } );
-  var got = _.censor.identitySet({ profileDir, identityName : 'user', set : { email : 'user@domain.com' } });
+  var got = _.censor.identitySet({ profileDir, selector : 'user', set : { email : 'user@domain.com' } });
   test.identical( got, undefined );
   var config = _.censor.configRead({ profileDir });
   test.identical( config.identity, { user : { login : 'userLogin', type : 'general', email : 'user@domain.com' } } );
@@ -806,23 +806,23 @@ function identitySet( test )
 
   /* */
 
-  test.case = 'set no properties in identity in config that exists, single identity, identityName matches not identity';
+  test.case = 'set no properties in identity in config that exists, single identity, selector matches not identity, force - 1';
   var identity = { name : 'user', login : 'userLogin' };
   _.censor.identityNew({ profileDir, identity });
   var config = _.censor.configRead({ profileDir });
   test.identical( config.identity, { user : { login : 'userLogin', type : 'general' } } );
-  var got = _.censor.identitySet({ profileDir, identityName : 'user2', set : {} });
+  var got = _.censor.identitySet({ profileDir, selector : 'user2', set : {}, force : 1 });
   test.identical( got, undefined );
   var config = _.censor.configRead({ profileDir });
   test.identical( config.identity, { user : { login : 'userLogin', type : 'general' } } );
   _.censor.profileDel( profileDir );
 
-  test.case = 'set properties in identity in config that exists, single identity, identityName matches not identity';
+  test.case = 'set properties in identity in config that exists, single identity, selector matches not identity, force - 1';
   var identity = { name : 'user', login : 'userLogin' };
   _.censor.identityNew({ profileDir, identity });
   var config = _.censor.configRead({ profileDir });
   test.identical( config.identity, { user : { login : 'userLogin', type : 'general' } } );
-  var got = _.censor.identitySet({ profileDir, identityName : 'user2', set : { login : 'userLogin2' } });
+  var got = _.censor.identitySet({ profileDir, selector : 'user2', set : { login : 'userLogin2' }, force : 1 });
   test.identical( got, undefined );
   var config = _.censor.configRead({ profileDir });
   test.identical( config.identity, { user : { login : 'userLogin', type : 'general' }, user2 : { login : 'userLogin2' } } );
@@ -830,14 +830,14 @@ function identitySet( test )
 
   /* */
 
-  test.case = 'set no properties in identity in config that exists, several identities, identityName with glob, matches identities';
+  test.case = 'set no properties in identity in config that exists, several identities, selector with glob, matches identities';
   var identity = { name : 'user', login : 'userLogin' };
   _.censor.identityNew({ profileDir, identity });
   var identity = { name : 'user2', login : 'userLogin2' };
   _.censor.identityNew({ profileDir, identity });
   var config = _.censor.configRead({ profileDir });
   test.true( _.map.is( config.identity ) );
-  var got = _.censor.identitySet({ profileDir, identityName : 'user*', set : {} });
+  var got = _.censor.identitySet({ profileDir, selector : 'user*', set : {} });
   test.identical( got, undefined );
   var config = _.censor.configRead({ profileDir });
   var exp =
@@ -848,14 +848,14 @@ function identitySet( test )
   test.identical( config.identity, exp );
   _.censor.profileDel( profileDir );
 
-  test.case = 'set properties in identity in config that exists, several identities, identityName with glob, matches identities';
+  test.case = 'set properties in identity in config that exists, several identities, selector with glob, matches identities';
   var identity = { name : 'user', login : 'userLogin' };
   _.censor.identityNew({ profileDir, identity });
   var identity = { name : 'user2', login : 'userLogin2' };
   _.censor.identityNew({ profileDir, identity });
   var config = _.censor.configRead({ profileDir });
   test.true( _.map.is( config.identity ) );
-  var got = _.censor.identitySet({ profileDir, identityName : 'user*', set : { login : 'userLogin3' } });
+  var got = _.censor.identitySet({ profileDir, selector : 'user*', set : { login : 'userLogin3' } });
   test.identical( got, undefined );
   var config = _.censor.configRead({ profileDir });
   var exp =
@@ -875,20 +875,24 @@ function identitySet( test )
   test.shouldThrowErrorSync( () => _.censor.identitySet() );
 
   test.case = 'extra arguments';
-  var o = { profileDir, identityName : 'user', set : {} };
+  var o = { profileDir, selector : 'user', set : {} };
   test.shouldThrowErrorSync( () => _.censor.identitySet( o, o ) );
 
   test.case = 'wrong type of options map';
-  test.shouldThrowErrorSync( () => _.censor.identitySet([ { profileDir, identityName : 'user', set : {} } ]) );
+  test.shouldThrowErrorSync( () => _.censor.identitySet([ { profileDir, selector : 'user', set : {}, force : 1 } ]) );
 
   test.case = 'unknown option in options map';
-  test.shouldThrowErrorSync( () => _.censor.identitySet({ profileDir, identityName : 'user', set : {}, unknown : 1 }) );
+  test.shouldThrowErrorSync( () => _.censor.identitySet({ profileDir, selector : 'user', set : {}, force : 1, unknown : 1 }) );
 
-  test.case = 'o.identityName is not defined string';
-  test.shouldThrowErrorSync( () => _.censor.identitySet({ profileDir, identityName : '', set : {} }) );
+  test.case = 'o.selector is not defined string';
+  test.shouldThrowErrorSync( () => _.censor.identitySet({ profileDir, selector : '', set : {}, force : 1 }) );
 
   test.case = 'wrong type of o.set';
-  test.shouldThrowErrorSync( () => _.censor.identitySet({ profileDir, identityName : 'user', set : null }) );
+  test.shouldThrowErrorSync( () => _.censor.identitySet({ profileDir, selector : 'user', set : null, force : 1 }) );
+
+  test.case = 'identity does not exists, force - 0';
+  test.shouldThrowErrorSync( () => _.censor.identitySet({ profileDir, selector : 'user', set : {}, force : 0 }) );
+  _.censor.profileDel( profileDir );
 }
 
 
@@ -959,6 +963,21 @@ function identityNew( test )
   _.censor.identityNew({ profileDir, identity });
   var config = _.censor.configRead({ profileDir });
   var exp = { user : { login : 'userLogin', type : 'git', email : 'user@domain.com', token : 'someToken' } };
+  test.identical( config.identity, exp );
+  _.censor.profileDel( profileDir );
+
+  /* */
+
+  test.case = 'rewrite identity with the existed name, force - 1';
+  var identity = { name : 'user', login : 'userLogin', type : 'git' };
+  _.censor.identityNew({ profileDir, identity });
+  var config = _.censor.configRead({ profileDir });
+  var exp = { user : { login : 'userLogin', type : 'git' } };
+  test.identical( config.identity, exp );
+  var identity = { name : 'user', login : 'userLogin2', email : 'user@domain.com' };
+  _.censor.identityNew({ profileDir, identity, force : 1 });
+  var config = _.censor.configRead({ profileDir });
+  var exp = { user : { login : 'userLogin2', type : 'git', email : 'user@domain.com' } };
   test.identical( config.identity, exp );
   _.censor.profileDel( profileDir );
 
@@ -1655,7 +1674,7 @@ function identityHookCallWithUserHooks( test )
 `function onIdentity( identity )
 {
   const _ = this;
-  _.censor.identitySet({ profileDir : '${ profileDir }', identityName : 'user', set : { email : 'user@domain.com' } });
+  _.censor.identitySet({ profileDir : '${ profileDir }', selector : 'user', set : { email : 'user@domain.com' } });
 }
 module.exports = onIdentity;`;
   const hook2 =
@@ -1663,7 +1682,7 @@ module.exports = onIdentity;`;
 {
   const _ = this;
   debugger;
-  _.censor.identitySet({ profileDir : '${ profileDir }', identityName : 'user', set : { token : 'userToken' } });
+  _.censor.identitySet({ profileDir : '${ profileDir }', selector : 'user', set : { token : 'userToken' } });
 }
 module.exports = onIdentity;`;
 
@@ -1803,7 +1822,7 @@ function identityUse( test )
 `function onIdentity( identity )
 {
   const _ = this;
-  _.censor.identitySet({ profileDir : '${ profileDir }', identityName : 'user', set : { email : 'user@domain.com' } });
+  _.censor.identitySet({ profileDir : '${ profileDir }', selector : 'user', set : { email : 'user@domain.com' } });
 }
 module.exports = onIdentity;`;
 
