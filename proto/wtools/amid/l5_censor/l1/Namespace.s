@@ -847,18 +847,23 @@ function identityNew( o )
   _.routine.options( identityNew, o );
   _.assert( _.map.is( o.identity ) );
   _.assert( _.str.defined( o.identity.name ), 'Expects field {-o.identity.name-}.' );
+
+  const loginKey = o.identity.type === 'general' || o.identity.type === null ? 'login' : `${ o.identity.type }.login`;
+  if( loginKey in o.identity )
+  _.assert( _.str.defined( o.identity[ loginKey ] ), `Expects field {-o.identity[ '${ loginKey }' ]-} or {-o.identity.login-}.` )
+  else
   _.assert( _.str.defined( o.identity.login ), 'Expects field {-o.identity.login-}.' );
 
   self._configNameMapFromDefaults( o );
 
   if( o.identity.type === undefined || o.identity.type === null )
   o.identity.type = 'general';
-  _.assert( _.longHasAny( [ 'general', 'git', 'npm' ], o.identity.type ) );
+  _.assert( _.longHasAny( [ 'general', 'git', 'npm', 'rust' ], o.identity.type ) );
 
   const o2 = _.mapOnly_( null, o, self.identityGet.defaults );
   o2.selector = o.identity.name;
   if( self.identityGet( o2 ) !== undefined )
-  throw _.err( `Identity ${ name } already exists. Please, delete existed identity or create new identity with different name` );
+  throw _.err( `Identity ${ o.identity.name } already exists. Please, delete existed identity or create new identity with different name` );
 
   o.identityName = o.identity.name;
   delete o.identity.name;
