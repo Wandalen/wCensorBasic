@@ -756,6 +756,7 @@ identityCopy.defaults =
   ... configNameMapFrom.defaults,
   identitySrcName : null,
   identityDstName : null,
+  force : false,
 };
 
 //
@@ -817,25 +818,33 @@ function identitySet( o )
 
   _.assert( arguments.length === 1, 'Expects exactly one argument.' );
   _.routine.options( identitySet, o );
-  _.assert( _.str.defined( o.identityName ), 'Expects identity name {-o.identityName-}.' );
+  _.assert( _.str.defined( o.selector ), 'Expects identity name {-o.selector-}.' );
   _.assert( _.map.is( o.set ), 'Expects map {-o.set-}.' );
 
-  const o2 = _.mapOnly_( null, o, self.configSet.defaults );
-  _.each( o2.set, ( value, key ) =>
+  if( !o.force )
   {
-    o2.set[ `identity/${ o.identityName }/${ key }` ] = value;
-    delete o2.set[ key ];
+    const o2 = _.mapOnly_( null, o, self.identityGet.defaults );
+    if( self.identityGet( o2 ) === undefined )
+    throw _.err( `Identity ${ o.selector } does not exists.` );
+  }
+
+  const o3 = _.mapOnly_( null, o, self.configSet.defaults );
+  _.each( o3.set, ( value, key ) =>
+  {
+    o3.set[ `identity/${ o.selector }/${ key }` ] = value;
+    delete o3.set[ key ];
   });
 
-  return self.configSet( o2 );
+  return self.configSet( o3 );
 }
 
 identitySet.defaults =
 {
   ... configNameMapFrom.defaults,
   set : null,
-  identityName : null,
-}
+  selector : null,
+  force : false,
+};
 
 //
 
@@ -847,23 +856,40 @@ function identityNew( o )
   _.routine.options( identityNew, o );
   _.assert( _.map.is( o.identity ) );
   _.assert( _.str.defined( o.identity.name ), 'Expects field {-o.identity.name-}.' );
+
+  const loginKey = o.identity.type === 'general' || o.identity.type === null ? 'login' : `${ o.identity.type }.login`;
+  if( loginKey in o.identity )
+  _.assert( _.str.defined( o.identity[ loginKey ] ), `Expects field {-o.identity[ '${ loginKey }' ]-} or {-o.identity.login-}.` )
+  else
   _.assert( _.str.defined( o.identity.login ), 'Expects field {-o.identity.login-}.' );
 
   self._configNameMapFromDefaults( o );
 
-  if( o.identity.type === undefined || o.identity.type === null )
-  o.identity.type = 'general';
-  _.assert( _.longHasAny( [ 'general', 'git', 'npm' ], o.identity.type ) );
-
   const o2 = _.mapOnly_( null, o, self.identityGet.defaults );
   o2.selector = o.identity.name;
-  if( self.identityGet( o2 ) !== undefined )
-  throw _.err( `Identity ${ name } already exists. Please, delete existed identity or create new identity with different name` );
+  const identity = self.identityGet( o2 );
+  if( !o.force )
+  if( identity !== undefined )
+  {
+    const errMsg = `Identity ${ o.identity.name } already exists. `
+    + `Please, delete existed identity or create new identity with different name`;
+    throw _.err( errMsg );
+  }
 
-  o.identityName = o.identity.name;
+  if( o.identity.type === undefined || o.identity.type === null )
+  {
+    if( !identity || ( identity && !identity.type ) )
+    o.identity.type = 'general';
+    else
+    o.identity.type = identity.type;
+  }
+  _.assert( _.longHasAny( [ 'general', 'git', 'npm', 'rust' ], o.identity.type ) );
+
+  o.selector = o.identity.name;
   delete o.identity.name;
   o.set = o.identity;
   delete o.identity;
+  o.force = true;
 
   return self.identitySet( o );
 }
@@ -872,6 +898,7 @@ identityNew.defaults =
 {
   ... configNameMapFrom.defaults,
   identity : null,
+  force : false,
 };
 
 //
@@ -917,7 +944,8 @@ function identityHookSet( o )
   {
     git : [ 'git' ],
     npm : [ 'npm' ],
-    general : [ 'git', 'npm' ],
+    rust : [ 'rust' ],
+    general : [ 'git', 'npm', 'rust' ],
   };
 
   _.assert( o.type in typesMap );
@@ -978,17 +1006,19 @@ function identityHookCall( o )
   {
     git : [ 'git' ],
     npm : [ 'npm' ],
-    general : [ 'git', 'npm' ],
+    rust : [ 'rust' ],
+    general : [ 'git', 'npm', 'rust' ],
   };
 
   _.assert( o.type in typesMap );
   _.assert( !_.path.isGlob( o.selector ) );
 
+  o.logger = _.logger.relativeMaybe( o.logger, -3 );
   self._configNameMapFromDefaults( o );
 
   const o2 = _.mapOnly_( null, o, self.identityGet.defaults );
   const identity = self.identityGet( o2 );
-  _.assert( _.map.is( identity ), `Selected no identity : ${ o.identitySrcName }. Please, improve selector.` );
+  _.assert( _.map.is( identity ), `Selected no identity : ${ o.selector }. Please, improve selector.` );
   _.assert
   (
     'login' in identity && 'type' in identity,
@@ -1020,7 +1050,7 @@ function identityHookCall( o )
     const routine = require( _.path.nativize( filePath ) );
     _.assert( _.routine.is( routine ) );
 
-    let result = routine.call( _, identity );
+    let result = routine.call( _, identity, o );
     if( _.promiseIs( result ) )
     result = _.Consequence.From( result );
     if( _.consequenceIs( result ) )
@@ -1038,8 +1068,10 @@ function identityHookCall( o )
 
     if( type === 'git' )
     o2.hook = gitHookCodeGet();
-    else
+    else if( type === 'npm' )
     o2.hook = npmHookCodeGet();
+    else
+    o2.hook = rustHookCodeGet();
 
     return self.identityHookSet( o2 );
   }
@@ -1050,7 +1082,7 @@ function identityHookCall( o )
   {
     const code =
     `
-function onIdentity( identity )
+function onIdentity( identity, options )
 {
   const _ = this;
   const ready = _.take( null );
@@ -1065,9 +1097,11 @@ function onIdentity( identity )
     ready,
   });
 
-  _.assert( _.str.defined( identity.login ) );
-  _.assert( _.str.defined( identity.email ) );
-  const oldName = start( 'git config --global user.name' ).output.trim();
+  const login = identity[ 'git.login' ] || identity.login;
+  const email = identity[ 'git.email' ] || identity.email;
+  _.assert( _.str.defined( login ) );
+  _.assert( _.str.defined( email ) );
+  const oldName = start({ execPath : 'git config --global user.name', outputPiping : 0 }).output.trim();
   if( oldName )
   {
     start
@@ -1079,15 +1113,24 @@ function onIdentity( identity )
       ],
     });
   }
-  return start
+  start
   ({
     execPath :
     [
-      \`git config --global user.name "\$\{ identity.login \}"\`,
-      \`git config --global user.email "\$\{ identity.email \}"\`,
-      \`git config --global url."https://\$\{ identity.login \}@github.com".insteadOf "https://github.com"\`,
-      \`git config --global url."https://\$\{ identity.login \}@bitbucket.org".insteadOf "https://bitbucket.org"\`,
+      \`git config --global user.name "\$\{ login \}"\`,
+      \`git config --global user.email "\$\{ email \}"\`,
+      \`git config --global url."https://\$\{ login \}@github.com".insteadOf "https://github.com"\`,
+      \`git config --global url."https://\$\{ login \}@bitbucket.org".insteadOf "https://bitbucket.org"\`,
     ],
+    throwingExitCode : 1,
+  });
+
+  if( options.logger )
+  start
+  ({
+    execPath :  'git config --global --list --show-origin',
+    logger : options.logger,
+    outputPiping : 1,
     throwingExitCode : 1,
   });
 }
@@ -1102,7 +1145,7 @@ module.exports = onIdentity;
   {
     const code =
     `
-function onIdentity( identity )
+function onIdentity( identity, options )
 {
   const _ = this;
   const start = _.process.starter
@@ -1115,17 +1158,42 @@ function onIdentity( identity )
     sync : 1,
   });
 
-  _.assert( _.str.defined( identity.login ) );
-  _.assert( _.str.defined( identity.npmPass ) );
-  _.assert( _.str.defined( identity.email ) );
+  const login = identity[ 'npm.login' ] || identity.login;
+  const email = identity[ 'npm.email' ] || identity.email;
+  const token = identity[ 'npm.token' ] || identity.token;
+  _.assert( _.str.defined( login ) );
+  _.assert( _.str.defined( email ) );
+  _.assert( _.str.defined( token ) );
   start( 'npm i npm-cli-login' );
 
   const npmCli = _.path.nativize( './node_modules/.bin/npm-cli-login' );
   start
   ({
-    execPath : \`\$\{ npmCli \} -u \$\{ identity.login \} -p \$\{ identity.npmPass \} -e \$\{ identity.email \} --quotes\`,
+    execPath : \`\$\{ npmCli \} -u \$\{ login \} -p \$\{ token \} -e \$\{ email \} --quotes\`,
     outputPiping : 0,
   });
+
+  if( options.logger )
+  start
+  ({
+    execPath : 'npm whoami',
+    outputPiping : 1,
+    logger : options.logger,
+  });
+}
+module.exports = onIdentity;
+`;
+    return code;
+  }
+
+  /* */
+
+  function rustHookCodeGet()
+  {
+    const code =
+    `
+function onIdentity( identity )
+{
 }
 module.exports = onIdentity;
 `;
@@ -1138,6 +1206,7 @@ identityHookCall.defaults =
   ... configNameMapFrom.defaults,
   selector : null,
   type : null,
+  logger : 2,
 };
 
 //
@@ -1153,7 +1222,8 @@ function identityUse( o )
   {
     git : [ 'git' ],
     npm : [ 'npm' ],
-    general : [ 'git', 'npm' ],
+    rust : [ 'rust' ],
+    general : [ 'git', 'npm', 'rust' ],
   };
 
   _.assert( o.type in typesMap || o.type === null );
@@ -1178,12 +1248,13 @@ function identityUse( o )
   o3.selector = '_current';
   const currentIdentity = self.identityGet( o3 );
   if( currentIdentity !== undefined )
-  self.identitySet({ profileDir : o.profileDir, identityName : '_previous', set : currentIdentity });
+  self.identitySet({ profileDir : o.profileDir, selector : '_previous', set : currentIdentity, force : 1 });
 
   self.identityDel({ profileDir : o.profileDir, selector : '_current' });
-  self.identitySet({ profileDir : o.profileDir, identityName : '_current', set : _.map.extend( null, identity ) });
+  self.identitySet({ profileDir : o.profileDir, selector : '_current', set : _.map.extend( null, identity ), force : 1 });
 
-  self.identityHookCall({ profileDir : o.profileDir, selector : o.selector, type : o.type || identity.type });
+  o.type = o.type || identity.type;
+  self.identityHookCall( o );
 }
 
 identityUse.defaults =
@@ -1191,6 +1262,7 @@ identityUse.defaults =
   ... configNameMapFrom.defaults,
   selector : null,
   type : null,
+  logger : 2,
 };
 
 // --
