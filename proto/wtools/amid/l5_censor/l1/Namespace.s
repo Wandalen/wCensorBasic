@@ -1067,8 +1067,10 @@ function identityHookCall( o )
 
     if( type === 'git' )
     o2.hook = gitHookCodeGet();
-    else
+    else if( type === 'npm' )
     o2.hook = npmHookCodeGet();
+    else
+    o2.hook = rustHookCodeGet();
 
     return self.identityHookSet( o2 );
   }
@@ -1160,6 +1162,20 @@ module.exports = onIdentity;
 `;
     return code;
   }
+
+  /* */
+
+  function rustHookCodeGet()
+  {
+    const code =
+    `
+function onIdentity( identity )
+{
+}
+module.exports = onIdentity;
+`;
+    return code;
+  }
 }
 
 identityHookCall.defaults =
@@ -1182,7 +1198,8 @@ function identityUse( o )
   {
     git : [ 'git' ],
     npm : [ 'npm' ],
-    general : [ 'git', 'npm' ],
+    rust : [ 'rust' ],
+    general : [ 'git', 'npm', 'rust' ],
   };
 
   _.assert( o.type in typesMap || o.type === null );
@@ -1207,7 +1224,7 @@ function identityUse( o )
   o3.selector = '_current';
   const currentIdentity = self.identityGet( o3 );
   if( currentIdentity !== undefined )
-  self.identitySet({ profileDir : o.profileDir, selector : '_previous', set : currentIdentity });
+  self.identitySet({ profileDir : o.profileDir, selector : '_previous', set : currentIdentity, force : 1 });
 
   self.identityDel({ profileDir : o.profileDir, selector : '_current' });
   self.identitySet({ profileDir : o.profileDir, selector : '_current', set : _.map.extend( null, identity ), force : 1 });

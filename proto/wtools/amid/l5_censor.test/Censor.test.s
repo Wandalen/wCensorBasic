@@ -1305,6 +1305,8 @@ function identityHookSet( test )
     './hook/git/GitIdentity.user.js',
     './hook/npm',
     './hook/npm/NpmIdentity.user.js',
+    './hook/rust',
+    './hook/rust/RustIdentity.user.js',
   ];
   test.identical( files, exp );
   _.censor.profileDel( profileDir );
@@ -1433,6 +1435,8 @@ function identityHookSetWithOptionDefault( test )
     './hook/git/GitIdentity.js',
     './hook/npm',
     './hook/npm/NpmIdentity.js',
+    './hook/rust',
+    './hook/rust/RustIdentity.js',
   ];
   test.identical( files, exp );
   _.censor.profileDel( profileDir );
