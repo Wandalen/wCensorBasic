@@ -423,6 +423,23 @@ function identityCopy( test )
   test.identical( config.identity.user, config.identity.user3 );
   _.censor.profileDel( profileDir );
 
+  /* */
+
+  test.case = 'config exists, identity exists, selector matches identity, dst identity exists, force - 0';
+  var identity = { name : 'user', login : 'userLogin' };
+  _.censor.identityNew({ profileDir, identity });
+  var identity = { name : 'user2', login : 'userLogin2' };
+  _.censor.identityNew({ profileDir, identity });
+  var config = _.censor.configRead({ profileDir });
+  test.identical( _.props.keys( config.identity ), [ 'user', 'user2' ] );
+  test.notIdentical( config.identity.user, config.identity.user3 );
+  var got = _.censor.identityCopy({ profileDir, identitySrcName : 'user', identityDstName : 'user2', force : 1 });
+  test.identical( got, undefined );
+  var config = _.censor.configRead({ profileDir });
+  test.identical( _.props.keys( config.identity ), [ 'user', 'user2' ] );
+  test.identical( config.identity.user, config.identity.user2 );
+  _.censor.profileDel( profileDir );
+
   /* - */
 
   if( !Config.debug )
@@ -474,6 +491,14 @@ function identityCopy( test )
   var identity = { name : 'user', login : 'userLogin' };
   _.censor.identityNew({ profileDir, identity });
   test.shouldThrowErrorSync( () => _.censor.identityCopy({ profileDir, identitySrcName : 'user2', identityDstName : 'user3' }) );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'config exists, identity exists, selector matches identity, dst identity exists, force - 0';
+  var identity = { name : 'user', login : 'userLogin' };
+  _.censor.identityNew({ profileDir, identity });
+  var identity = { name : 'user2', login : 'userLogin2' };
+  _.censor.identityNew({ profileDir, identity });
+  test.shouldThrowErrorSync( () => _.censor.identityCopy({ profileDir, identitySrcName : 'user', identityDstName : 'user2' }) );
   _.censor.profileDel( profileDir );
 }
 
@@ -2716,7 +2741,6 @@ function filesHardLinkOptionExcludingHyphened( test )
 
 const Proto =
 {
-
   name : 'Tools.mid.Censor',
   silencing : 1,
   enabled : 1,
@@ -2766,8 +2790,7 @@ const Proto =
     filesHardLinkOptionExcludingHyphened,
 
   }
-
-}
+};
 
 const Self = wTestSuite( Proto );
 if( typeof module !== 'undefined' && !module.parent )
