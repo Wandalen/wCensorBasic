@@ -1626,10 +1626,10 @@ function identityHookCallWithDefaultNpmHook( test )
   const profileDir = `test-${ _.intRandom( 1000000 ) }`;
   const userProfileDir = a.fileProvider.configUserPath( `.censor/${ profileDir }` );
   const login = 'wtools-bot';
-  const npmPass = process.env.PRIVATE_WTOOLS_BOT_NPM_PASS;
+  const token = process.env.PRIVATE_WTOOLS_BOT_NPM_TOKEN;
   const email = process.env.PRIVATE_WTOOLS_BOT_EMAIL;
 
-  if( !npmPass || !email )
+  if( !token || !email )
   return test.true( true );
 
   /* - */
@@ -1637,7 +1637,7 @@ function identityHookCallWithDefaultNpmHook( test )
   a.ready.then( () =>
   {
     test.case = 'call npm hook';
-    var identity = { name : 'user', login, email, npmPass };
+    var identity = { name : 'user', login, email, token };
     _.censor.identityNew({ profileDir, identity });
     var files = a.find( userProfileDir );
     test.identical( files, [ '.', './config.yaml' ] );

@@ -1013,6 +1013,7 @@ function identityHookCall( o )
   _.assert( o.type in typesMap );
   _.assert( !_.path.isGlob( o.selector ) );
 
+  o.logger = _.logger.relativeMaybe( o.logger, -3 );
   self._configNameMapFromDefaults( o );
 
   const o2 = _.mapOnly_( null, o, self.identityGet.defaults );
@@ -1100,7 +1101,7 @@ function onIdentity( identity, options )
   const email = identity[ 'git.email' ] || identity.email;
   _.assert( _.str.defined( login ) );
   _.assert( _.str.defined( email ) );
-  const oldName = start( 'git config --global user.name' ).output.trim();
+  const oldName = start({ execPath : 'git config --global user.name', outputPiping : 0 }).output.trim();
   if( oldName )
   {
     start
@@ -1112,7 +1113,7 @@ function onIdentity( identity, options )
       ],
     });
   }
-  return start
+  start
   ({
     execPath :
     [
@@ -1120,8 +1121,16 @@ function onIdentity( identity, options )
       \`git config --global user.email "\$\{ email \}"\`,
       \`git config --global url."https://\$\{ login \}@github.com".insteadOf "https://github.com"\`,
       \`git config --global url."https://\$\{ login \}@bitbucket.org".insteadOf "https://bitbucket.org"\`,
-      \`git config --global --list --show-origin\`,
     ],
+    throwingExitCode : 1,
+  });
+
+  if( options.logger )
+  start
+  ({
+    execPath :  'git config --global --list --show-origin',
+    logger : options.logger,
+    outputPiping : 1,
     throwingExitCode : 1,
   });
 }
@@ -1136,7 +1145,7 @@ module.exports = onIdentity;
   {
     const code =
     `
-function onIdentity( identity )
+function onIdentity( identity, options )
 {
   const _ = this;
   const start = _.process.starter
@@ -1162,6 +1171,14 @@ function onIdentity( identity )
   ({
     execPath : \`\$\{ npmCli \} -u \$\{ login \} -p \$\{ token \} -e \$\{ email \} --quotes\`,
     outputPiping : 0,
+  });
+
+  if( options.logger )
+  start
+  ({
+    execPath : 'npm whoami',
+    outputPiping : 1,
+    logger : options.logger,
   });
 }
 module.exports = onIdentity;
@@ -1189,6 +1206,7 @@ identityHookCall.defaults =
   ... configNameMapFrom.defaults,
   selector : null,
   type : null,
+  logger : 2,
 };
 
 //
@@ -1235,7 +1253,8 @@ function identityUse( o )
   self.identityDel({ profileDir : o.profileDir, selector : '_current' });
   self.identitySet({ profileDir : o.profileDir, selector : '_current', set : _.map.extend( null, identity ), force : 1 });
 
-  self.identityHookCall({ profileDir : o.profileDir, selector : o.selector, type : o.type || identity.type });
+  o.type = o.type || identity.type;
+  self.identityHookCall( o );
 }
 
 identityUse.defaults =
@@ -1243,6 +1262,7 @@ identityUse.defaults =
   ... configNameMapFrom.defaults,
   selector : null,
   type : null,
+  logger : 2,
 };
 
 // --
