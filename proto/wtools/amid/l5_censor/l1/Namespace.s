@@ -944,7 +944,8 @@ function identityHookSet( o )
   {
     git : [ 'git' ],
     npm : [ 'npm' ],
-    general : [ 'git', 'npm' ],
+    rust : [ 'rust' ],
+    general : [ 'git', 'npm', 'rust' ],
   };
 
   _.assert( o.type in typesMap );
@@ -1005,7 +1006,8 @@ function identityHookCall( o )
   {
     git : [ 'git' ],
     npm : [ 'npm' ],
-    general : [ 'git', 'npm' ],
+    rust : [ 'rust' ],
+    general : [ 'git', 'npm', 'rust' ],
   };
 
   _.assert( o.type in typesMap );
@@ -1015,7 +1017,7 @@ function identityHookCall( o )
 
   const o2 = _.mapOnly_( null, o, self.identityGet.defaults );
   const identity = self.identityGet( o2 );
-  _.assert( _.map.is( identity ), `Selected no identity : ${ o.identitySrcName }. Please, improve selector.` );
+  _.assert( _.map.is( identity ), `Selected no identity : ${ o.selector }. Please, improve selector.` );
   _.assert
   (
     'login' in identity && 'type' in identity,
@@ -1208,7 +1210,7 @@ function identityUse( o )
   self.identitySet({ profileDir : o.profileDir, selector : '_previous', set : currentIdentity });
 
   self.identityDel({ profileDir : o.profileDir, selector : '_current' });
-  self.identitySet({ profileDir : o.profileDir, selector : '_current', set : _.map.extend( null, identity ) });
+  self.identitySet({ profileDir : o.profileDir, selector : '_current', set : _.map.extend( null, identity ), force : 1 });
 
   self.identityHookCall({ profileDir : o.profileDir, selector : o.selector, type : o.type || identity.type });
 }
