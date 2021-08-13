@@ -1049,7 +1049,7 @@ function identityHookCall( o )
     const routine = require( _.path.nativize( filePath ) );
     _.assert( _.routine.is( routine ) );
 
-    let result = routine.call( _, identity );
+    let result = routine.call( _, identity, o );
     if( _.promiseIs( result ) )
     result = _.Consequence.From( result );
     if( _.consequenceIs( result ) )
@@ -1081,7 +1081,7 @@ function identityHookCall( o )
   {
     const code =
     `
-function onIdentity( identity )
+function onIdentity( identity, options )
 {
   const _ = this;
   const ready = _.take( null );
@@ -1096,8 +1096,10 @@ function onIdentity( identity )
     ready,
   });
 
-  _.assert( _.str.defined( identity.login ) );
-  _.assert( _.str.defined( identity.email ) );
+  const login = identity[ 'git.login' ] || identity.login;
+  const email = identity[ 'git.email' ] || identity.email;
+  _.assert( _.str.defined( login ) );
+  _.assert( _.str.defined( email ) );
   const oldName = start( 'git config --global user.name' ).output.trim();
   if( oldName )
   {
@@ -1114,10 +1116,11 @@ function onIdentity( identity )
   ({
     execPath :
     [
-      \`git config --global user.name "\$\{ identity.login \}"\`,
-      \`git config --global user.email "\$\{ identity.email \}"\`,
-      \`git config --global url."https://\$\{ identity.login \}@github.com".insteadOf "https://github.com"\`,
-      \`git config --global url."https://\$\{ identity.login \}@bitbucket.org".insteadOf "https://bitbucket.org"\`,
+      \`git config --global user.name "\$\{ login \}"\`,
+      \`git config --global user.email "\$\{ email \}"\`,
+      \`git config --global url."https://\$\{ login \}@github.com".insteadOf "https://github.com"\`,
+      \`git config --global url."https://\$\{ login \}@bitbucket.org".insteadOf "https://bitbucket.org"\`,
+      \`git config --global --list --show-origin\`,
     ],
     throwingExitCode : 1,
   });
@@ -1146,15 +1149,18 @@ function onIdentity( identity )
     sync : 1,
   });
 
-  _.assert( _.str.defined( identity.login ) );
-  _.assert( _.str.defined( identity.npmPass ) );
-  _.assert( _.str.defined( identity.email ) );
+  const login = identity[ 'npm.login' ] || identity.login;
+  const email = identity[ 'npm.email' ] || identity.email;
+  const token = identity[ 'npm.token' ] || identity.token;
+  _.assert( _.str.defined( login ) );
+  _.assert( _.str.defined( email ) );
+  _.assert( _.str.defined( token ) );
   start( 'npm i npm-cli-login' );
 
   const npmCli = _.path.nativize( './node_modules/.bin/npm-cli-login' );
   start
   ({
-    execPath : \`\$\{ npmCli \} -u \$\{ identity.login \} -p \$\{ identity.npmPass \} -e \$\{ identity.email \} --quotes\`,
+    execPath : \`\$\{ npmCli \} -u \$\{ login \} -p \$\{ token \} -e \$\{ email \} --quotes\`,
     outputPiping : 0,
   });
 }
