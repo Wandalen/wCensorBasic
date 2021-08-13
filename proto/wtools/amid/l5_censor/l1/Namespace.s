@@ -756,6 +756,7 @@ identityCopy.defaults =
   ... configNameMapFrom.defaults,
   identitySrcName : null,
   identityDstName : null,
+  force : false,
 };
 
 //
@@ -823,7 +824,6 @@ function identitySet( o )
   if( !o.force )
   {
     const o2 = _.mapOnly_( null, o, self.identityGet.defaults );
-    debugger;
     if( self.identityGet( o2 ) === undefined )
     throw _.err( `Identity ${ o.selector } does not exists.` );
   }
@@ -869,9 +869,11 @@ function identityNew( o )
   o2.selector = o.identity.name;
   const identity = self.identityGet( o2 );
   if( !o.force )
+  if( identity !== undefined )
   {
-    if( identity !== undefined )
-    throw _.err( `Identity ${ o.identity.name } already exists. Please, delete existed identity or create new identity with different name` );
+    const errMsg = `Identity ${ o.identity.name } already exists. `
+    + `Please, delete existed identity or create new identity with different name`;
+    throw _.err( errMsg );
   }
 
   if( o.identity.type === undefined || o.identity.type === null )
@@ -889,7 +891,6 @@ function identityNew( o )
   delete o.identity;
   o.force = true;
 
-  debugger;
   return self.identitySet( o );
 }
 
