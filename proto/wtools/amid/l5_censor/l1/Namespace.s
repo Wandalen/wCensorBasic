@@ -948,6 +948,7 @@ function identityHookPathMake( o )
   };
 
   _.assert( o.type in typesMap );
+  _.assert( _.str.is( o.selector ) );
   _.assert( !_.path.isGlob( o.selector ) );
 
   const baseName = `${ o.type.replace( /^\w/, o.type[ 0 ].toUpperCase() ) }Identity`;

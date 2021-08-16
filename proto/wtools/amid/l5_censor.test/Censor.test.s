@@ -1241,6 +1241,66 @@ function identityDel( test )
 
 //
 
+function identityHookPathMake( test )
+{
+  const a = test.assetFor( false );
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+
+  /* */
+
+  test.case = 'get not default hook, selector - empty string';
+  var got = _.censor.identityHookPathMake({ profileDir, type : 'git', selector : '', default : false });
+  var exp = a.abs( a.path.dirUserHome(), _.censor.storageDir, profileDir, 'hook/git/GitIdentity..js' );
+  test.identical( got, exp );
+
+  test.case = 'get not default hook, selector - empty string';
+  var got = _.censor.identityHookPathMake({ profileDir, type : 'git', selector : '', default : true });
+  var exp = a.abs( a.path.dirUserHome(), _.censor.storageDir, profileDir, 'hook/git/GitIdentity.js' );
+  test.identical( got, exp );
+
+  /* */
+
+  test.case = 'get not default hook';
+  var got = _.censor.identityHookPathMake({ profileDir, type : 'git', selector : 'user', default : false });
+  var exp = a.abs( a.path.dirUserHome(), _.censor.storageDir, profileDir, 'hook/git/GitIdentity.user.js' );
+  test.identical( got, exp );
+
+  test.case = 'get not default hook';
+  var got = _.censor.identityHookPathMake({ profileDir, type : 'git', selector : 'user', default : true });
+  var exp = a.abs( a.path.dirUserHome(), _.censor.storageDir, profileDir, 'hook/git/GitIdentity.js' );
+  test.identical( got, exp );
+
+  /* - */
+
+  if( !Config.debug )
+  return;
+
+  test.case = 'without arguments';
+  test.shouldThrowErrorSync( () => _.censor.identityHookPathMake() );
+
+  test.case = 'extra arguments';
+  var o = { profileDir, type : 'git', selector : 'user' };
+  test.shouldThrowErrorSync( () => _.censor.identityHookPathMake( o, o ) );
+
+  test.case = 'wrong type of options map';
+  test.shouldThrowErrorSync( () => _.censor.identityHookPathMake([ { profileDir, type : 'git', selector : 'user' } ]) );
+
+  test.case = 'unknown option in options map';
+  test.shouldThrowErrorSync( () => _.censor.identityHookPathMake([ { profileDir, type : 'git', selector : 'user', unknown : 1 } ]) );
+
+  test.case = 'o.selector has not valid value';
+  test.shouldThrowErrorSync( () => _.censor.identityHookPathMake({ profileDir, type : 'git', selector : null }) );
+
+  test.case = 'o.selector is string with glob';
+  test.shouldThrowErrorSync( () => _.censor.identityHookPathMake({ profileDir, type : 'git', selector : 'user*' }) );
+
+  test.case = 'o.type has not valid value';
+  test.shouldThrowErrorSync( () => _.censor.identityHookPathMake({ profileDir, type : null, selector : 'user' }) );
+  test.shouldThrowErrorSync( () => _.censor.identityHookPathMake({ profileDir, type : 'invalid', selector : 'user' }) );
+}
+
+//
+
 function identityHookSet( test )
 {
   const a = test.assetFor( false );
@@ -2773,6 +2833,7 @@ const Proto =
     identitySet,
     identityNew,
     identityDel,
+    identityHookPathMake,
     identityHookSet,
     identityHookSetWithOptionDefault,
     identityHookCallWithDefaultGitHook,
