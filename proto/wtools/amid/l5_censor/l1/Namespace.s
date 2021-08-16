@@ -740,7 +740,7 @@ function identityCopy( o )
   _.assert( _.map.is( identity ), `Selected no identity : ${ o.identitySrcName }. Please, improve selector.` );
   _.assert
   (
-    'login' in identity && 'type' in identity,
+    ( 'login' in identity || `${ identity.type }.login` in identity ) && 'type' in identity,
     `Selected ${ _.props.keys( identity ).length } identity(s). Please, improve selector.`
   );
 
@@ -903,6 +903,106 @@ identityNew.defaults =
 
 //
 
+function identityFrom( o )
+{
+  const self = this;
+
+  _.assert( arguments.length === 1, 'Expects exactly single options map {-o-}' );
+  _.routine.options( identityFrom, o );
+  if( o.selector !== null )
+  {
+    _.assert( _.str.defined( o.selector ) );
+    _.assert( !_.path.isGlob( o.selector ) );
+  }
+
+  self._configNameMapFromDefaults( o );
+
+  const identityMakerMap =
+  {
+    git : gitIdentityDataGet,
+    npm : npmIdentityDataGet,
+    rust : rustIdentityDataGet,
+  };
+  _.assert( o.type in identityMakerMap );
+
+  const ready = _.take( null );
+  const start = _.process.starter
+  ({
+    currentPath : __dirname,
+    mode : 'shell',
+    outputCollecting : 1,
+    outputPiping : 0,
+    throwingExitCode : 0,
+    inputMirroring : 0,
+    sync : 1,
+    ready,
+  });
+
+  const o3 = _.mapOnly_( null, o, self.identitySet.defaults );
+  o3.force = true;
+  o3.set = identityMakerMap[ o.type ]();
+
+  if( o3.selector === null )
+  o3.selector = o3.set[ `${ o.type }.login` ];
+
+  if( !o.force )
+  verifyIdentity( o.selector || o3.selector );
+
+  return self.identitySet( o3 );
+
+  /* */
+
+  function gitIdentityDataGet()
+  {
+    const data = Object.create( null );
+    data.type = 'git';
+    data[ 'git.login' ] = start({ execPath : 'git config --global user.name' }).output.trim();
+    data[ 'git.email' ] = start({ execPath : 'git config --global user.email' }).output.trim();
+    _.assert( _.str.defined( data[ 'git.login' ] ) );
+    _.assert( _.str.defined( data[ 'git.email' ] ) );
+    return data;
+  }
+
+  /* */
+
+  function npmIdentityDataGet()
+  {
+    _.assert( false, 'not implemented' );
+  }
+
+  /* */
+
+  function rustIdentityDataGet()
+  {
+    _.assert( false, 'not implemented' );
+  }
+
+  /* */
+
+  function verifyIdentity( selector )
+  {
+    const o2 = _.mapOnly_( null, o, self.identityGet.defaults );
+    o2.selector = selector;
+    const identity = self.identityGet( o2 );
+    if( identity !== undefined )
+    {
+      const errMsg = `Identity ${ selector } already exists. `
+      + `Please, delete existed identity or create new identity with different name`;
+      throw _.err( errMsg );
+    }
+  }
+}
+
+identityFrom.defaults =
+{
+  ... configNameMapFrom.defaults,
+  selector : null,
+  type : null,
+  force : false,
+};
+
+//
+
 function identityDel( o )
 {
   const self = this;
@@ -996,7 +1096,7 @@ function identityHookGet( o )
   _.assert( _.map.is( identity ), `Selected no identity : ${ o.selector }. Please, improve selector.` );
   _.assert
   (
-    'login' in identity && 'type' in identity,
+    ( 'login' in identity || `${ o.type }.login` in identity ) && 'type' in identity,
     `Selected ${ _.props.keys( identity ).length } identity(s). Please, improve selector.`
   );
   _.assert( identity.type === 'general' || identity.type === o.type );
@@ -1061,7 +1161,7 @@ function identityHookSet( o )
   _.assert( _.map.is( identity ), `Selected no identity : ${ o.selector }. Please, improve selector.` );
   _.assert
   (
-    'login' in identity && 'type' in identity,
+    ( 'login' in identity || `${ o.type }.login` in identity ) && 'type' in identity,
     `Selected ${ _.props.keys( identity ).length } identity(s). Please, improve selector.`
   );
   _.assert( identity.type === 'general' || identity.type === o.type );
@@ -1255,7 +1355,7 @@ function identityHookCall( o )
   _.assert( _.map.is( identity ), `Selected no identity : ${ o.selector }. Please, improve selector.` );
   _.assert
   (
-    'login' in identity && 'type' in identity,
+    ( 'login' in identity || `${ o.type }.login` in identity ) && 'type' in identity,
     `Selected ${ _.props.keys( identity ).length } identity(s). Please, improve selector.`
   );
   _.assert( identity.type === 'general' || identity.type === o.type );
@@ -1330,7 +1430,7 @@ function identityUse( o )
   _.assert( _.map.is( identity ), `Selected no identity : ${ o.identitySrcName }. Please, improve selector.` );
   _.assert
   (
-    'login' in identity && 'type' in identity,
+    ( 'login' in identity || `${ o.type }.login` in identity ) && 'type' in identity,
     `Selected ${ _.props.keys( identity ).length } identity(s). Please, improve selector.`
   );
   _.assert( identity.type === 'general' || identity.type === o.type || o.type === null );
@@ -2691,6 +2791,7 @@ let Extension =
   identityList,
   identitySet,
   identityNew,
+  identityFrom,
   identityDel,
   identityHookPathMake,
   identityHookGet,
