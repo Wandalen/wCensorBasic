@@ -1003,11 +1003,14 @@ function identityHookGet( o )
 
   const o3 = _.mapOnly_( null, o, self.identityHookPathMake.defaults );
   const result = [];
-  _.each( typesMap[ o.type ], ( type ) => result.push( hookGet( o.hook, type ) ) );
+  _.each( typesMap[ o.type ], ( type ) => result.push( hookGet( type ) ) );
+  if( result.length === 1 )
+  return result[ 0 ];
+  return result;
 
   /* */
 
-  function hookGet( data, type )
+  function hookGet( type )
   {
     o3.type = type;
     o3.default = false;
@@ -1017,10 +1020,9 @@ function identityHookGet( o )
 
     o3.default = true;
     filePath = self.identityHookPathMake( o3 );
-    if( _.fileProvider.fileExists( filePath ) )
+    if( !_.fileProvider.fileExists( filePath ) )
+    self.identityHookSet( o3 );
     return _.fileProvider.fileRead( filePath );
-
-
   }
 }
 
