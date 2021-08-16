@@ -931,6 +931,45 @@ identityDel.defaults =
 
 //
 
+function identityHookPathMake( o )
+{
+  const self = this;
+
+  _.assert( arguments.length === 1, 'Expects exactly one argument' );
+  _.routine.options( identityHookPathMake, o );
+
+  self._configNameMapFromDefaults( o );
+
+  const typesMap =
+  {
+    git : [ 'git' ],
+    npm : [ 'npm' ],
+    rust : [ 'rust' ],
+  };
+
+  _.assert( o.type in typesMap );
+  _.assert( !_.path.isGlob( o.selector ) );
+
+  const baseName = `${ o.type.replace( /^\w/, o.type[ 0 ].toUpperCase() ) }Identity`;
+  let hookRelativePath;
+  if( o.default )
+  hookRelativePath = _.path.join( o.storageDir, o.profileDir, self.storageHookDir, o.type, `${ baseName }.js` );
+  else
+  hookRelativePath = _.path.join( o.storageDir, o.profileDir, self.storageHookDir, o.type, `${ baseName }.${ o.selector }.js` );
+
+  return _.fileProvider.configUserPath( hookRelativePath );
+}
+
+identityHookPathMake.defaults =
+{
+  ... configNameMapFrom.defaults,
+  type : null,
+  selector : null,
+  default : false,
+};
+
+//
+
 function identityHookSet( o )
 {
   const self = this;
@@ -968,17 +1007,17 @@ function identityHookSet( o )
     _.assert( identity.type === 'general' || identity.type === o.type );
   }
 
+  const o3 = _.mapOnly_( null, o, self.identityHookPathMake.defaults );
+  if( o.selector === '' )
+  o3.default = true;
   _.each( typesMap[ o.type ], ( type ) => hookMake( o.hook, type ) );
 
   /* */
 
   function hookMake( data, type )
   {
-    const baseName = `${ type.replace( /^\w/, type[ 0 ].toUpperCase() ) }Identity`;
-    let name = `${ baseName }.${ o.selector }.js`;
-    if( o.selector === '' )
-    name = `${ baseName }.js`;
-    const filePath = _.fileProvider.configUserPath( _.path.join( o.storageDir, o.profileDir, self.storageHookDir, type, name ) );
+    o3.type = type;
+    const filePath = self.identityHookPathMake( o3 );
     _.fileProvider.fileWrite({ filePath, data });
     return filePath;
   }
@@ -1026,16 +1065,18 @@ function identityHookCall( o )
   );
   _.assert( identity.type === 'general' || identity.type === o.type );
 
+  const o3 = _.mapOnly_( null, o, self.identityHookPathMake.defaults );
+
   _.each( typesMap[ o.type ], ( type ) =>
   {
-    const baseName = `${ type.replace( /^\w/, type[ 0 ].toUpperCase() ) }Identity`;
-    const userHookPath = _.path.join( o.storageDir, o.profileDir, self.storageHookDir, type, `${ baseName }.${ o.selector }.js` );
-    let filePath = _.fileProvider.configUserPath( userHookPath );
+    o3.type = type;
+    o3.default = false;
+    let filePath = self.identityHookPathMake( o3 );
 
     if( !_.fileProvider.fileExists( filePath ) )
     {
-      const userDefaultHookPath = _.path.join( o.storageDir, o.profileDir, self.storageHookDir, type, `${ baseName }.js` );
-      filePath = _.fileProvider.configUserPath( userDefaultHookPath );
+      o3.default = true;
+      filePath = self.identityHookPathMake( o3 );
       if( !_.fileProvider.fileExists( filePath ) )
       defaultHookMake( type );
     }
@@ -2598,6 +2639,7 @@ let Extension =
   identitySet,
   identityNew,
   identityDel,
+  identityHookPathMake,
   identityHookSet,
   identityHookCall,
   identityUse,
