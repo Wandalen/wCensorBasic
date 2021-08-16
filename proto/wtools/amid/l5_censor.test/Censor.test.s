@@ -1660,7 +1660,7 @@ function identityHookCallWithDefaultNpmHook( test )
   a.ready.then( () =>
   {
     test.case = 'call npm hook twice';
-    var identity = { name : 'user', login, email, npmPass };
+    var identity = { name : 'user', login, email, token };
     _.censor.identityNew({ profileDir, identity });
     var files = a.find( userProfileDir );
     test.identical( files, [ '.', './config.yaml' ] );
@@ -1710,7 +1710,6 @@ module.exports = onIdentity;`;
 `function onIdentity( identity )
 {
   const _ = this;
-  debugger;
   _.censor.identitySet({ profileDir : '${ profileDir }', selector : 'user', set : { token : 'userToken' } });
 }
 module.exports = onIdentity;`;
