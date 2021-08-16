@@ -1445,7 +1445,7 @@ function identityHookSetWithOptionDefault( test )
   _.censor.identityNew({ profileDir, identity });
   var files = a.find( userProfileDir );
   test.identical( files, [ '.', './config.yaml' ] );
-  var got = _.censor.identityHookSet({ profileDir, hook, type : 'git', selector : '', default : true });
+  var got = _.censor.identityHookSet({ profileDir, hook, type : 'git', selector : 'user', default : true });
   test.identical( got, undefined );
   var files = a.find( userProfileDir );
   var exp =
@@ -1464,7 +1464,7 @@ function identityHookSetWithOptionDefault( test )
   _.censor.identityNew({ profileDir, identity });
   var files = a.find( userProfileDir );
   test.identical( files, [ '.', './config.yaml' ] );
-  var got = _.censor.identityHookSet({ profileDir, hook, type : 'npm', selector : '', default : true });
+  var got = _.censor.identityHookSet({ profileDir, hook, type : 'npm', selector : 'user', default : true });
   test.identical( got, undefined );
   var files = a.find( userProfileDir );
   var exp =
@@ -1483,7 +1483,7 @@ function identityHookSetWithOptionDefault( test )
   _.censor.identityNew({ profileDir, identity });
   var files = a.find( userProfileDir );
   test.identical( files, [ '.', './config.yaml' ] );
-  var got = _.censor.identityHookSet({ profileDir, hook, type : 'general', selector : '', default : true });
+  var got = _.censor.identityHookSet({ profileDir, hook, type : 'general', selector : 'user', default : true });
   test.identical( got, undefined );
   var files = a.find( userProfileDir );
   var exp =
@@ -1499,16 +1499,6 @@ function identityHookSetWithOptionDefault( test )
     './hook/rust/RustIdentity.js',
   ];
   test.identical( files, exp );
-  _.censor.profileDel( profileDir );
-
-  /* - */
-
-  if( !Config.debug )
-  return;
-
-  test.case = 'default - true, selector - not empty string';
-  _.censor.identityNew({ profileDir, identity : { name : 'user', login : 'userLogin' } });
-  test.shouldThrowErrorSync( () => _.censor.identityHookSet({ profileDir, hook, type : 'git', selector : 'user', default : true }) );
   _.censor.profileDel( profileDir );
 }
 
