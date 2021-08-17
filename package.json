@@ -1,6 +1,6 @@
 {
   "name": "wcensorbasic",
-  "version": "0.2.154",
+  "version": "0.2.155",
   "description": "Tool to edit files massively and with undo",
   "author": "Kostiantyn Wandalen <wanalen@01.school>",
   "license": "MIT",
@@ -24,8 +24,9 @@
   },
   "dependencies": {
     "wTools": "delta",
-    "wfilesarchive": "delta",
-    "wFiles": "delta"
+    "wresolver": "delta",
+    "wfilesbasic": "delta",
+    "wfilesarchive": "delta"
   },
   "devDependencies": {
     "wTesting": "delta",
