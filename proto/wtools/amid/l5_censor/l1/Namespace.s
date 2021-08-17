@@ -1422,19 +1422,25 @@ function identityUse( o )
   );
   _.assert( identity.type === 'general' || identity.type === o.type || o.type === null );
 
+  o.type = o.type || identity.type;
+
   /* */
 
-  self.identityDel({ profileDir : o.profileDir, selector : '_previous' });
-  const o3 = _.mapOnly_( null, o, self.identityGet.defaults );
-  o3.selector = '_current';
-  const currentIdentity = self.identityGet( o3 );
-  if( currentIdentity !== undefined )
-  self.identitySet({ profileDir : o.profileDir, selector : '_previous', set : currentIdentity, force : 1 });
-
-  self.identityDel({ profileDir : o.profileDir, selector : '_current' });
-  self.identitySet({ profileDir : o.profileDir, selector : '_current', set : _.map.extend( null, identity ), force : 1 });
-
+  const previousSelector = `_previous.${ o.type }`;
+  self.identityDel({ profileDir : o.profileDir, selector : previousSelector });
+  const o3 = _.mapOnly_( null, o, self.identityFrom.defaults );
   o.type = o.type || identity.type;
+  o3.force = true;
+  o3.selector = previousSelector;
+  try
+  {
+    self.identityFrom( o3 );
+  }
+  catch( err )
+  {
+    _.error.attend( err );
+  }
+
   self.identityHookCall( o );
 }
 
