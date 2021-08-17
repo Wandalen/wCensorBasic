@@ -3011,6 +3011,19 @@ function filesHardLinkOptionExcludingHyphened( test )
   return a.ready;
 }
 
+//
+
+function where( test )
+{
+  const a = test.assetFor( false );
+
+  /* */
+
+  test.case = 'no utility Censor';
+  var got = _.censor.where();
+  test.identical( got, { 'Git::global' : a.fileProvider.configUserPath( '.gitconfig' ) } );
+}
+
 // --
 // test suite definition
 // --
@@ -3067,6 +3080,7 @@ const Proto =
     filesHardLinkOptionExcludingPath,
     filesHardLinkOptionExcludingHyphened,
 
+    where,
   }
 };
 
