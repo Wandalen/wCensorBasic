@@ -675,79 +675,6 @@ function identityGet( test )
 
 //
 
-function identityList( test )
-{
-  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
-
-  /* */
-
-  getAllIdentities( profileDir );
-  getAllIdentities({ profileDir });
-
-  /* */
-
-  function getAllIdentities( arg )
-  {
-    test.open( `${ _.entity.exportStringSolo( arg ) }` );
-
-    test.case = 'get identities from not existed config';
-    var config = _.censor.configRead({ profileDir });
-    test.identical( config, null );
-    var got = _.censor.identityList( _.entity.make( arg ) );
-    test.identical( got, [] );
-    _.censor.profileDel( profileDir );
-
-    test.case = 'get identities from existed config, identities not exist';
-    _.censor.configSet({ profileDir, set : { about : { name : profileDir } } });
-    var config = _.censor.configRead({ profileDir });
-    test.identical( config, { about : { name : profileDir }, path : {} } );
-    var got = _.censor.identityList( _.entity.make( arg ) );
-    test.identical( got, [] );
-    _.censor.profileDel( profileDir );
-
-    test.case = 'get identities from existed config, single identity';
-    var identity = { name : 'user', login : 'userLogin' };
-    _.censor.identityNew({ profileDir, identity });
-    var config = _.censor.configRead({ profileDir });
-    test.true( _.map.is( config.identity ) );
-    var got = _.censor.identityList( _.entity.make( arg ) );
-    test.identical( got, [ 'user' ] );
-    _.censor.profileDel( profileDir );
-
-    test.case = 'get identities from existed config, several identities';
-    var identity = { name : 'user', login : 'userLogin' };
-    _.censor.identityNew({ profileDir, identity });
-    var identity = { name : 'user2', login : 'userLogin2' };
-    _.censor.identityNew({ profileDir, identity });
-    var config = _.censor.configRead({ profileDir });
-    test.true( _.map.is( config.identity ) );
-    var got = _.censor.identityList( _.entity.make( arg ) );
-    test.identical( got, [ 'user', 'user2' ] );
-    _.censor.profileDel( profileDir );
-
-    test.close( `${ _.entity.exportStringSolo( arg ) }` );
-  }
-
-  /* - */
-
-  if( !Config.debug )
-  return;
-
-  test.case = 'without arguments';
-  test.shouldThrowErrorSync( () => _.censor.identityList() );
-
-  test.case = 'extra arguments';
-  test.shouldThrowErrorSync( () => _.censor.identityList( profileDir, profileDir ) );
-
-  test.case = 'wrong type of options map';
-  test.shouldThrowErrorSync( () => _.censor.identityList([ profileDir ]) );
-
-  test.case = 'unknown option in options map';
-  test.shouldThrowErrorSync( () => _.censor.identityList({ profileDir, unknown : '' }) );
-}
-
-//
-
 function identitySet( test )
 {
   const profileDir = `test-${ _.intRandom( 1000000 ) }`;
@@ -3115,7 +3042,6 @@ const Proto =
 
     identityCopy,
     identityGet,
-    identityList,
     identitySet,
     identityNew,
     identityFrom,
