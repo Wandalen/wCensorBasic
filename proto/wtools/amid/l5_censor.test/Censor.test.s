@@ -849,6 +849,37 @@ function identitySet( test )
 
 //
 
+function identitySetWithResolving( test )
+{
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+
+  /* */
+
+  test.case = 'resolve data from config';
+  _.censor.configSet({ profileDir, set : { about : { name : 'user', email : 'user@domain.com' } }});
+  var config = _.censor.configRead({ profileDir });
+  test.identical( config, { about : { name : 'user', email : 'user@domain.com' }, path : {} } );
+  var got = _.censor.identitySet
+  ({
+    profileDir,
+    selector : 'from.about',
+    set : { login : '{about/name}', email : '{about/email}' },
+    force : 1
+  });
+  test.identical( got, undefined );
+  var config = _.censor.configRead({ profileDir });
+  var exp =
+  {
+    about : { name : 'user', email : 'user@domain.com' },
+    path : {},
+    identity : { 'from.about' : { login : 'user', email : 'user@domain.com' } },
+  };
+  test.identical( config, exp );
+  _.censor.profileDel( profileDir );
+}
+
+//
+
 function identityNew( test )
 {
   const profileDir = `test-${ _.intRandom( 1000000 ) }`;
@@ -3056,6 +3087,7 @@ const Proto =
     identityCopy,
     identityGet,
     identitySet,
+    identitySetWithResolving,
     identityNew,
     identityFrom,
     identityDel,
