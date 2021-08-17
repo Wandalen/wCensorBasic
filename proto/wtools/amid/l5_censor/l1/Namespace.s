@@ -805,14 +805,24 @@ function identitySet( o )
     throw _.err( `Identity ${ o.selector } does not exists.` );
   }
 
-  const o3 = _.mapOnly_( null, o, self.configSet.defaults );
-  _.each( o3.set, ( value, key ) =>
+  const o3 = _.mapOnly_( null, o, self.configRead.defaults );
+  const config = self.configRead( o3 );
+
+  const o4 = _.mapOnly_( null, o, self.configSet.defaults );
+  _.each( o4.set, ( value, key ) =>
   {
-    o3.set[ `identity/${ o.selector }/${ key }` ] = value;
-    delete o3.set[ key ];
+    value = _.resolver.resolve
+    ({
+      src : config,
+      selector : value,
+      onSelectorReplicate : _.resolver.functor.onSelectorReplicateComposite(),
+      onSelectorDown : _.resolver.functor.onSelectorDownComposite(),
+    });
+    o4.set[ `identity/${ o.selector }/${ key }` ] = value;
+    delete o4.set[ key ];
   });
 
-  return self.configSet( o3 );
+  return self.configSet( o4 );
 }
 
 identitySet.defaults =
