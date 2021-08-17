@@ -2634,6 +2634,42 @@ undo.defaults.mode = 'undo';
 // etc
 // --
 
+function where()
+{
+  _.assert( arguments.length === 0 );
+
+  const result = Object.create( null );
+  try
+  {
+    result[ 'Censor::local' ] = _.path.join( require.resolve( 'wcensor' ), '../../..' );
+    result[ 'Censor::entry' ] = require.resolve( 'wcensor' );
+    result[ 'Censor::remote' ] = 'https://github.com/Wandalen/wCensor.git';
+  }
+  catch( err )
+  {
+    _.error.attend( err );
+  }
+
+  const start = _.process.starter
+  ({
+    currentPath : __dirname,
+    mode : 'shell',
+    outputCollecting : 1,
+    outputPiping : 0,
+    throwingExitCode : 0,
+    inputMirroring : 0,
+    sync : 1,
+  });
+
+  const gitOutput = start( 'git config --global --show-origin user.name' ).output.trim();
+  const splits = _.str.split( gitOutput, /\s+/ );
+  result[ 'Git::global' ] = _.strRemoveBegin( splits[ 0 ], 'file:' );
+
+  return result;
+}
+
+//
+
 function hashMapOutdatedFiles( o )
 {
   let result = [];
@@ -2802,6 +2838,8 @@ let Extension =
   undo,
 
   // etc
+
+  where,
 
   hashMapOutdatedFiles,
 
