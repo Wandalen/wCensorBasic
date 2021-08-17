@@ -789,29 +789,6 @@ identityGet.defaults =
 
 //
 
-function identityList( o )
-{
-  const self = this;
-
-  _.assert( arguments.length === 1, 'Expects exactly one argument' );
-
-  if( _.str.is( arguments[ 0 ] ) )
-  o = { profileDir : arguments[ 0 ] };
-  _.map.assertHasOnly( o, identityList.defaults );
-
-  const identities = self.identityGet( o );
-  if( !_.map.is( identities ) )
-  return [];
-  return _.props.keys( identities );
-}
-
-identityList.defaults =
-{
-  ... configNameMapFrom.defaults,
-};
-
-//
-
 function identitySet( o )
 {
   const self = this;
@@ -2788,7 +2765,6 @@ let Extension =
 
   identityCopy,
   identityGet,
-  identityList,
   identitySet,
   identityNew,
   identityFrom,
