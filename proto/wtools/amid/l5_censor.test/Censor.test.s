@@ -1016,6 +1016,35 @@ function identityNew( test )
 
 //
 
+function identityNewWithResolving( test )
+{
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+
+  /* */
+
+  test.case = 'resolve data from config';
+  var identity = { name : 'user', login : 'userLogin', type : 'git' };
+  _.censor.identityNew({ profileDir, identity });
+  var config = _.censor.configRead({ profileDir });
+  test.identical( config.identity, { user : { login : 'userLogin', type : 'git' } } );
+  var got = _.censor.identityNew
+  ({
+    profileDir,
+    identity : { name : 'from.identity', login : '{identity/user/login}', type : 'git' },
+  });
+  test.identical( got, undefined );
+  var config = _.censor.configRead({ profileDir });
+  var exp =
+  {
+    'user' : { login : 'userLogin', type : 'git' },
+    'from.identity' : { login : 'userLogin', type : 'git' },
+  };
+  test.identical( config.identity, exp );
+  _.censor.profileDel( profileDir );
+}
+
+//
+
 function identityFrom( test )
 {
   const a = test.assetFor( false );
@@ -3089,6 +3118,7 @@ const Proto =
     identitySet,
     identitySetWithResolving,
     identityNew,
+    identityNewWithResolving,
     identityFrom,
     identityDel,
     identityHookPathMake,
