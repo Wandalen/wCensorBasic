@@ -675,79 +675,6 @@ function identityGet( test )
 
 //
 
-function identityList( test )
-{
-  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
-
-  /* */
-
-  getAllIdentities( profileDir );
-  getAllIdentities({ profileDir });
-
-  /* */
-
-  function getAllIdentities( arg )
-  {
-    test.open( `${ _.entity.exportStringSolo( arg ) }` );
-
-    test.case = 'get identities from not existed config';
-    var config = _.censor.configRead({ profileDir });
-    test.identical( config, null );
-    var got = _.censor.identityList( _.entity.make( arg ) );
-    test.identical( got, [] );
-    _.censor.profileDel( profileDir );
-
-    test.case = 'get identities from existed config, identities not exist';
-    _.censor.configSet({ profileDir, set : { about : { name : profileDir } } });
-    var config = _.censor.configRead({ profileDir });
-    test.identical( config, { about : { name : profileDir }, path : {} } );
-    var got = _.censor.identityList( _.entity.make( arg ) );
-    test.identical( got, [] );
-    _.censor.profileDel( profileDir );
-
-    test.case = 'get identities from existed config, single identity';
-    var identity = { name : 'user', login : 'userLogin' };
-    _.censor.identityNew({ profileDir, identity });
-    var config = _.censor.configRead({ profileDir });
-    test.true( _.map.is( config.identity ) );
-    var got = _.censor.identityList( _.entity.make( arg ) );
-    test.identical( got, [ 'user' ] );
-    _.censor.profileDel( profileDir );
-
-    test.case = 'get identities from existed config, several identities';
-    var identity = { name : 'user', login : 'userLogin' };
-    _.censor.identityNew({ profileDir, identity });
-    var identity = { name : 'user2', login : 'userLogin2' };
-    _.censor.identityNew({ profileDir, identity });
-    var config = _.censor.configRead({ profileDir });
-    test.true( _.map.is( config.identity ) );
-    var got = _.censor.identityList( _.entity.make( arg ) );
-    test.identical( got, [ 'user', 'user2' ] );
-    _.censor.profileDel( profileDir );
-
-    test.close( `${ _.entity.exportStringSolo( arg ) }` );
-  }
-
-  /* - */
-
-  if( !Config.debug )
-  return;
-
-  test.case = 'without arguments';
-  test.shouldThrowErrorSync( () => _.censor.identityList() );
-
-  test.case = 'extra arguments';
-  test.shouldThrowErrorSync( () => _.censor.identityList( profileDir, profileDir ) );
-
-  test.case = 'wrong type of options map';
-  test.shouldThrowErrorSync( () => _.censor.identityList([ profileDir ]) );
-
-  test.case = 'unknown option in options map';
-  test.shouldThrowErrorSync( () => _.censor.identityList({ profileDir, unknown : '' }) );
-}
-
-//
-
 function identitySet( test )
 {
   const profileDir = `test-${ _.intRandom( 1000000 ) }`;
@@ -922,6 +849,37 @@ function identitySet( test )
 
 //
 
+function identitySetWithResolving( test )
+{
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+
+  /* */
+
+  test.case = 'resolve data from config';
+  _.censor.configSet({ profileDir, set : { about : { name : 'user', email : 'user@domain.com' } } });
+  var config = _.censor.configRead({ profileDir });
+  test.identical( config, { about : { name : 'user', email : 'user@domain.com' }, path : {} } );
+  var got = _.censor.identitySet
+  ({
+    profileDir,
+    selector : 'from.about',
+    set : { login : '{about/name}', email : '{about/email}' },
+    force : 1
+  });
+  test.identical( got, undefined );
+  var config = _.censor.configRead({ profileDir });
+  var exp =
+  {
+    about : { name : 'user', email : 'user@domain.com' },
+    path : {},
+    identity : { 'from.about' : { login : 'user', email : 'user@domain.com' } },
+  };
+  test.identical( config, exp );
+  _.censor.profileDel( profileDir );
+}
+
+//
+
 function identityNew( test )
 {
   const profileDir = `test-${ _.intRandom( 1000000 ) }`;
@@ -1053,6 +1011,35 @@ function identityNew( test )
   _.censor.identityNew( o );
   var o = { profileDir, identity : { name : 'user', login : 'different' } };
   test.shouldThrowErrorSync( () => _.censor.identityNew( o ) );
+  _.censor.profileDel( profileDir );
+}
+
+//
+
+function identityNewWithResolving( test )
+{
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+
+  /* */
+
+  test.case = 'resolve data from config';
+  var identity = { name : 'user', login : 'userLogin', type : 'git' };
+  _.censor.identityNew({ profileDir, identity });
+  var config = _.censor.configRead({ profileDir });
+  test.identical( config.identity, { user : { login : 'userLogin', type : 'git' } } );
+  var got = _.censor.identityNew
+  ({
+    profileDir,
+    identity : { name : 'from.identity', login : '{identity/user/login}', type : 'git' },
+  });
+  test.identical( got, undefined );
+  var config = _.censor.configRead({ profileDir });
+  var exp =
+  {
+    'user' : { login : 'userLogin', type : 'git' },
+    'from.identity' : { login : 'userLogin', type : 'git' },
+  };
+  test.identical( config.identity, exp );
   _.censor.profileDel( profileDir );
 }
 
@@ -1974,8 +1961,9 @@ function identityHookCallWithDefaultNpmHook( test )
   const login = 'wtools-bot';
   const token = process.env.PRIVATE_WTOOLS_BOT_NPM_TOKEN;
   const email = process.env.PRIVATE_WTOOLS_BOT_EMAIL;
+  const pass = process.env.NPM_PASS;
 
-  if( !token || !email )
+  if( !token || !email || !pass )
   return test.true( true );
 
   /* - */
@@ -2211,16 +2199,14 @@ module.exports = onIdentity;`;
     test.identical( files, [ '.', './config.yaml' ] );
     var config = _.censor.configRead({ profileDir });
     test.identical( config.identity.user, { login : 'userLogin', email : 'user@domain.com', type : 'git' } );
-    test.identical( config.identity._current, undefined );
-    test.identical( config.identity._previous, undefined );
+    test.identical( config.identity[ '_previous.git' ], undefined );
     var got = _.censor.identityUse({ profileDir, type : 'git', selector : 'user' });
     test.identical( got, undefined );
     var files = a.find( userProfileDir );
     test.identical( files, [ '.', './config.yaml', './hook', './hook/git', './hook/git/GitIdentity.js' ] );
     var config = _.censor.configRead({ profileDir });
     test.identical( config.identity.user, { login : 'userLogin', type : 'git', email : 'user@domain.com' } );
-    test.identical( config.identity._current, { login : 'userLogin', type : 'git', email : 'user@domain.com' } );
-    test.identical( config.identity._previous, undefined );
+    test.identical( config.identity[ '_previous.git' ], undefined );
     _.censor.profileDel( profileDir );
     requireClean();
     return null;
@@ -2246,16 +2232,14 @@ module.exports = onIdentity;`;
     test.identical( files, [ '.', './config.yaml' ] );
     var config = _.censor.configRead({ profileDir });
     test.identical( config.identity.user, { login : 'userLogin', type : 'git', email : 'user@domain.com' } );
-    test.identical( config.identity._current, undefined );
-    test.identical( config.identity._previous, undefined );
+    test.identical( config.identity[ '_previous.git' ], undefined );
     var got = _.censor.identityUse({ profileDir, type : 'git', selector : 'user' });
     test.identical( got, undefined );
     var files = a.find( userProfileDir );
     test.identical( files, [ '.', './config.yaml', './hook', './hook/git', './hook/git/GitIdentity.js' ] );
     var config = _.censor.configRead({ profileDir });
     test.identical( config.identity.user, { login : 'userLogin', type : 'git', email : 'user@domain.com' } );
-    test.identical( config.identity._current, { login : 'userLogin', type : 'git', email : 'user@domain.com' } );
-    test.identical( config.identity._previous, undefined );
+    test.identical( config.identity[ '_previous.git' ], undefined );
     _.censor.profileDel( profileDir );
     requireClean();
     return null;
@@ -2284,8 +2268,7 @@ module.exports = onIdentity;`;
     var config = _.censor.configRead({ profileDir });
     test.identical( config.identity.user, { login : 'userLogin', type : 'git', email : 'user@domain.com' } );
     test.identical( config.identity.user2, { login : 'userLogin2', type : 'general', email : 'user2@domain.com' } );
-    test.identical( config.identity._current, undefined );
-    test.identical( config.identity._previous, undefined );
+    test.identical( config.identity[ '_previous.git' ], undefined );
 
     var got = _.censor.identityUse({ profileDir, type : 'git', selector : 'user' });
     test.identical( got, undefined );
@@ -2294,8 +2277,7 @@ module.exports = onIdentity;`;
     var config = _.censor.configRead({ profileDir });
     test.identical( config.identity.user, { login : 'userLogin', type : 'git', email : 'user@domain.com' } );
     test.identical( config.identity.user2, { login : 'userLogin2', type : 'general', email : 'user2@domain.com' } );
-    test.identical( config.identity._current, { login : 'userLogin', type : 'git', email : 'user@domain.com' } );
-    test.identical( config.identity._previous, undefined );
+    test.identical( config.identity[ '_previous.git' ], undefined );
 
     var got = _.censor.identityUse({ profileDir, type : 'git', selector : 'user2' });
     test.identical( got, undefined );
@@ -2304,8 +2286,8 @@ module.exports = onIdentity;`;
     var config = _.censor.configRead({ profileDir });
     test.identical( config.identity.user, { login : 'userLogin', type : 'git', email : 'user@domain.com' } );
     test.identical( config.identity.user2, { login : 'userLogin2', type : 'general', email : 'user2@domain.com' } );
-    test.identical( config.identity._current, { login : 'userLogin2', type : 'general', email : 'user2@domain.com' } );
-    test.identical( config.identity._previous, { login : 'userLogin', type : 'git', email : 'user@domain.com' } );
+    var exp = { 'git.login' : 'userLogin', 'type' : 'git', 'git.email' : 'user@domain.com' };
+    test.identical( config.identity[ '_previous.git' ], exp );
     _.censor.profileDel( profileDir );
     requireClean();
     return null;
@@ -3084,6 +3066,19 @@ function filesHardLinkOptionExcludingHyphened( test )
   return a.ready;
 }
 
+//
+
+function where( test )
+{
+  const a = test.assetFor( false );
+
+  /* */
+
+  test.case = 'no utility Censor';
+  var got = _.censor.where();
+  test.identical( got, { 'Git::global' : a.fileProvider.configUserPath( '.gitconfig' ) } );
+}
+
 // --
 // test suite definition
 // --
@@ -3115,9 +3110,10 @@ const Proto =
 
     identityCopy,
     identityGet,
-    identityList,
     identitySet,
+    identitySetWithResolving,
     identityNew,
+    identityNewWithResolving,
     identityFrom,
     identityDel,
     identityHookPathMake,
@@ -3141,6 +3137,7 @@ const Proto =
     filesHardLinkOptionExcludingPath,
     filesHardLinkOptionExcludingHyphened,
 
+    where,
   }
 };
 

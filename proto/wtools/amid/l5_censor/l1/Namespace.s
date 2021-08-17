@@ -789,29 +789,6 @@ identityGet.defaults =
 
 //
 
-function identityList( o )
-{
-  const self = this;
-
-  _.assert( arguments.length === 1, 'Expects exactly one argument' );
-
-  if( _.str.is( arguments[ 0 ] ) )
-  o = { profileDir : arguments[ 0 ] };
-  _.map.assertHasOnly( o, identityList.defaults );
-
-  const identities = self.identityGet( o );
-  if( !_.map.is( identities ) )
-  return [];
-  return _.props.keys( identities );
-}
-
-identityList.defaults =
-{
-  ... configNameMapFrom.defaults,
-};
-
-//
-
 function identitySet( o )
 {
   const self = this;
@@ -828,14 +805,24 @@ function identitySet( o )
     throw _.err( `Identity ${ o.selector } does not exists.` );
   }
 
-  const o3 = _.mapOnly_( null, o, self.configSet.defaults );
-  _.each( o3.set, ( value, key ) =>
+  const o3 = _.mapOnly_( null, o, self.configRead.defaults );
+  const config = self.configRead( o3 );
+
+  const o4 = _.mapOnly_( null, o, self.configSet.defaults );
+  _.each( o4.set, ( value, key ) =>
   {
-    o3.set[ `identity/${ o.selector }/${ key }` ] = value;
-    delete o3.set[ key ];
+    value = _.resolver.resolve
+    ({
+      src : config,
+      selector : value,
+      onSelectorReplicate : _.resolver.functor.onSelectorReplicateComposite(),
+      onSelectorDown : _.resolver.functor.onSelectorDownComposite(),
+    });
+    o4.set[ `identity/${ o.selector }/${ key }` ] = value;
+    delete o4.set[ key ];
   });
 
-  return self.configSet( o3 );
+  return self.configSet( o4 );
 }
 
 identitySet.defaults =
@@ -1278,22 +1265,40 @@ function onIdentity( identity, options )
   const login = identity[ 'npm.login' ] || identity.login;
   const email = identity[ 'npm.email' ] || identity.email;
   const token = identity[ 'npm.token' ] || identity.token;
+  const password = process.env.NPM_PASS;
   _.assert( _.str.defined( login ) );
   _.assert( _.str.defined( email ) );
   _.assert( _.str.defined( token ) );
-  start( 'npm i npm-cli-login' );
+  _.assert( _.str.defined( password ), 'Expects password as environment variable {-NPM_PASS-}' );
 
+  start( 'npm i npm-cli-login' );
   const npmCli = _.path.nativize( './node_modules/.bin/npm-cli-login' );
   start
   ({
-    execPath : \`\$\{ npmCli \} -u \$\{ login \} -p \$\{ token \} -e \$\{ email \} --quotes\`,
+    execPath : \`\$\{ npmCli \} -u \$\{ login \} -p \$\{ password \} -e \$\{ email \} --quotes\`,
     outputPiping : 0,
+    outputCollecting : 0,
   });
+
+  const npmrcPath = _.fileProvider.configUserPath( '.npmrc' );
+
+  const data = \`//registry.npmjs.org/:_authToken="\$\{ token \}"\n\`;
+  let config;
+  if( _.fileProvider.fileExists( npmrcPath ) )
+  {
+    config = _.fileProvider.fileRead( npmrcPath );
+    config = _.str.replace( config, /\\/\\/registry\\.npmjs\\.org.*\\n/, data );
+  }
+  else
+  {
+    config = data;
+  }
+  _.fileProvider.fileWrite( npmrcPath, config );
 
   if( options.logger )
   start
   ({
-    execPath : 'npm whoami',
+    execPath : 'npm profile get --json',
     outputPiping : 1,
     logger : options.logger,
   });
@@ -1435,19 +1440,25 @@ function identityUse( o )
   );
   _.assert( identity.type === 'general' || identity.type === o.type || o.type === null );
 
+  o.type = o.type || identity.type;
+
   /* */
 
-  self.identityDel({ profileDir : o.profileDir, selector : '_previous' });
-  const o3 = _.mapOnly_( null, o, self.identityGet.defaults );
-  o3.selector = '_current';
-  const currentIdentity = self.identityGet( o3 );
-  if( currentIdentity !== undefined )
-  self.identitySet({ profileDir : o.profileDir, selector : '_previous', set : currentIdentity, force : 1 });
-
-  self.identityDel({ profileDir : o.profileDir, selector : '_current' });
-  self.identitySet({ profileDir : o.profileDir, selector : '_current', set : _.map.extend( null, identity ), force : 1 });
-
+  const previousSelector = `_previous.${ o.type }`;
+  self.identityDel({ profileDir : o.profileDir, selector : previousSelector });
+  const o3 = _.mapOnly_( null, o, self.identityFrom.defaults );
   o.type = o.type || identity.type;
+  o3.force = true;
+  o3.selector = previousSelector;
+  try
+  {
+    self.identityFrom( o3 );
+  }
+  catch( err )
+  {
+    _.error.attend( err );
+  }
+
   self.identityHookCall( o );
 }
 
@@ -2657,6 +2668,42 @@ undo.defaults.mode = 'undo';
 // etc
 // --
 
+function where()
+{
+  _.assert( arguments.length === 0 );
+
+  const result = Object.create( null );
+  try
+  {
+    result[ 'Censor::local' ] = _.path.join( require.resolve( 'wcensor' ), '../../..' );
+    result[ 'Censor::entry' ] = require.resolve( 'wcensor' );
+    result[ 'Censor::remote' ] = 'https://github.com/Wandalen/wCensor.git';
+  }
+  catch( err )
+  {
+    _.error.attend( err );
+  }
+
+  const start = _.process.starter
+  ({
+    currentPath : __dirname,
+    mode : 'shell',
+    outputCollecting : 1,
+    outputPiping : 0,
+    throwingExitCode : 0,
+    inputMirroring : 0,
+    sync : 1,
+  });
+
+  const gitOutput = start( 'git config --global --show-origin user.name' ).output.trim();
+  const splits = _.str.split( gitOutput, /\s+/ );
+  result[ 'Git::global' ] = _.strRemoveBegin( splits[ 0 ], 'file:' );
+
+  return result;
+}
+
+//
+
 function hashMapOutdatedFiles( o )
 {
   let result = [];
@@ -2788,7 +2835,6 @@ let Extension =
 
   identityCopy,
   identityGet,
-  identityList,
   identitySet,
   identityNew,
   identityFrom,
@@ -2826,6 +2872,8 @@ let Extension =
   undo,
 
   // etc
+
+  where,
 
   hashMapOutdatedFiles,
 
