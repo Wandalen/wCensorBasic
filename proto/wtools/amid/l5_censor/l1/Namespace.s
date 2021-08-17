@@ -1265,22 +1265,40 @@ function onIdentity( identity, options )
   const login = identity[ 'npm.login' ] || identity.login;
   const email = identity[ 'npm.email' ] || identity.email;
   const token = identity[ 'npm.token' ] || identity.token;
+  const password = process.env.NPM_PASS;
   _.assert( _.str.defined( login ) );
   _.assert( _.str.defined( email ) );
   _.assert( _.str.defined( token ) );
-  start( 'npm i npm-cli-login' );
+  _.assert( _.str.defined( password ), 'Expects password as environment variable {-NPM_PASS-}' );
 
+  start( 'npm i npm-cli-login' );
   const npmCli = _.path.nativize( './node_modules/.bin/npm-cli-login' );
   start
   ({
-    execPath : \`\$\{ npmCli \} -u \$\{ login \} -p \$\{ token \} -e \$\{ email \} --quotes\`,
+    execPath : \`\$\{ npmCli \} -u \$\{ login \} -p \$\{ password \} -e \$\{ email \} --quotes\`,
     outputPiping : 0,
+    outputCollecting : 0,
   });
+
+  const npmrcPath = _.fileProvider.configUserPath( '.npmrc' );
+
+  const data = \`//registry.npmjs.org/:_authToken="\$\{ token \}"\n\`;
+  let config;
+  if( _.fileProvider.fileExists( npmrcPath ) )
+  {
+    config = _.fileProvider.fileRead( npmrcPath );
+    config = _.str.replace( config, /\\/\\/registry\\.npmjs\\.org.*\\n/, data );
+  }
+  else
+  {
+    config = data;
+  }
+  _.fileProvider.fileWrite( npmrcPath, config );
 
   if( options.logger )
   start
   ({
-    execPath : 'npm whoami',
+    execPath : 'npm profile get --json',
     outputPiping : 1,
     logger : options.logger,
   });

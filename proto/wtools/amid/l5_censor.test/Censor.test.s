@@ -856,7 +856,7 @@ function identitySetWithResolving( test )
   /* */
 
   test.case = 'resolve data from config';
-  _.censor.configSet({ profileDir, set : { about : { name : 'user', email : 'user@domain.com' } }});
+  _.censor.configSet({ profileDir, set : { about : { name : 'user', email : 'user@domain.com' } } });
   var config = _.censor.configRead({ profileDir });
   test.identical( config, { about : { name : 'user', email : 'user@domain.com' }, path : {} } );
   var got = _.censor.identitySet
@@ -1961,8 +1961,9 @@ function identityHookCallWithDefaultNpmHook( test )
   const login = 'wtools-bot';
   const token = process.env.PRIVATE_WTOOLS_BOT_NPM_TOKEN;
   const email = process.env.PRIVATE_WTOOLS_BOT_EMAIL;
+  const pass = process.env.NPM_PASS;
 
-  if( !token || !email )
+  if( !token || !email || !pass )
   return test.true( true );
 
   /* - */
@@ -2285,7 +2286,8 @@ module.exports = onIdentity;`;
     var config = _.censor.configRead({ profileDir });
     test.identical( config.identity.user, { login : 'userLogin', type : 'git', email : 'user@domain.com' } );
     test.identical( config.identity.user2, { login : 'userLogin2', type : 'general', email : 'user2@domain.com' } );
-    test.identical( config.identity[ '_previous.git' ], { 'git.login' : 'userLogin', type : 'git', 'git.email' : 'user@domain.com' } );
+    var exp = { 'git.login' : 'userLogin', 'type' : 'git', 'git.email' : 'user@domain.com' };
+    test.identical( config.identity[ '_previous.git' ], exp );
     _.censor.profileDel( profileDir );
     requireClean();
     return null;
