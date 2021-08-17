@@ -24,8 +24,9 @@
   },
   "dependencies": {
     "wTools": "",
+    "wresolver": "",
     "wfilesarchive": "",
-    "wFiles": ""
+    "wfilesbasic": ""
   },
   "devDependencies": {
     "wTesting": "",
