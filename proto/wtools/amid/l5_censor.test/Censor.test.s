@@ -3076,7 +3076,9 @@ function where( test )
 
   test.case = 'no utility Censor';
   var got = _.censor.where();
-  test.identical( got, { 'Git::global' : a.fileProvider.configUserPath( '.gitconfig' ) } );
+  var configPath = a.fileProvider.configUserPath( '.gitconfig' );
+  var exp = process.platform === 'win32' ? _.strReplace( a.path.nativize( configPath ), '\\', '/' ) : configPath;
+  test.identical( got, { 'Git::global' : exp } );
 }
 
 // --
