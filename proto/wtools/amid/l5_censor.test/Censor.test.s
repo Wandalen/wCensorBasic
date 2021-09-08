@@ -2357,6 +2357,82 @@ module.exports = onIdentity;`;
 
 //
 
+function identityResolveDefaultMaybe( test )
+{
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+  var defaultIdentity = { name : 'user', login : 'userLogin', type : 'general', default : true };
+  var serviceIdentity1 = { name : 'user21', login : 'userLogin', type : 'git', services : [ 'github.com', 'gitlab.com' ] };
+  var serviceIdentity2 = { name : 'user22', login : 'userLogin', type : 'npm', services : [ 'npmjs.org' ] };
+  var typeIdentity = { name : 'user3', login : 'userLogin', type : 'rust' };
+
+  /* */
+
+  test.case = 'several identities with default identity, search exactly default identity by string';
+  _.censor.identityNew({ profileDir, identity : _.map.extend( null, defaultIdentity ) });
+  _.censor.identityNew({ profileDir, identity : _.map.extend( null, serviceIdentity1 ) });
+  _.censor.identityNew({ profileDir, identity : _.map.extend( null, typeIdentity ) });
+  var got = _.censor.identityResolveDefaultMaybe( profileDir );
+  test.identical( got, _.mapBut_( null, defaultIdentity, [ 'name' ] ) );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'several identities with default identity, search exactly default identity, map';
+  _.censor.identityNew({ profileDir, identity : _.map.extend( null, defaultIdentity ) });
+  _.censor.identityNew({ profileDir, identity : _.map.extend( null, serviceIdentity1 ) });
+  _.censor.identityNew({ profileDir, identity : _.map.extend( null, typeIdentity ) });
+  var got = _.censor.identityResolveDefaultMaybe( { profileDir } );
+  test.identical( got, _.mapBut_( null, defaultIdentity, [ 'name' ] ) );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'several identities without default identity, search by service';
+  _.censor.identityNew({ profileDir, identity : _.map.extend( null, serviceIdentity1 ) });
+  _.censor.identityNew({ profileDir, identity : _.map.extend( null, serviceIdentity2 ) });
+  _.censor.identityNew({ profileDir, identity : _.map.extend( null, typeIdentity ) });
+  var got = _.censor.identityResolveDefaultMaybe( { profileDir, service : 'github.com' } );
+  test.identical( got, _.mapBut_( null, serviceIdentity1, [ 'name' ] ) );
+  var got = _.censor.identityResolveDefaultMaybe( { profileDir, service : 'gitlab.com' } );
+  test.identical( got, _.mapBut_( null, serviceIdentity1, [ 'name' ] ) );
+  var got = _.censor.identityResolveDefaultMaybe( { profileDir, service : 'npmjs.org' } );
+  test.identical( got, _.mapBut_( null, serviceIdentity2, [ 'name' ] ) );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'several identities without default identity, search by type';
+  _.censor.identityNew({ profileDir, identity : _.map.extend( null, serviceIdentity1 ) });
+  _.censor.identityNew({ profileDir, identity : _.map.extend( null, serviceIdentity2 ) });
+  _.censor.identityNew({ profileDir, identity : _.map.extend( null, typeIdentity ) });
+  var got = _.censor.identityResolveDefaultMaybe( { profileDir, type : 'npm' } );
+  test.identical( got, _.mapBut_( null, serviceIdentity2, [ 'name' ] ) );
+  _.censor.profileDel( profileDir );
+
+  /* - */
+
+  if( !Config.debug )
+  return;
+
+  test.case = 'extra arguments';
+  test.shouldThrowErrorSync( () => _.censor.identityResolveDefaultMaybe( profileDir, profileDir ) );
+
+  test.case = 'wrong type of options map';
+  test.shouldThrowErrorSync( () => _.censor.identityResolveDefaultMaybe([ profileDir ]) );
+
+  test.case = 'unknown option in options map';
+  test.shouldThrowErrorSync( () => _.censor.identityResolveDefaultMaybe({ profileDir, selector : '', unknown : 1 }) );
+
+  test.case = 'wrong value of o.type';
+  test.shouldThrowErrorSync( () => _.censor.identityResolveDefaultMaybe({ profileDir, type : 'wrong' }) );
+
+  test.case = 'resolve no default identity';
+  _.censor.identityNew({ profileDir, identity : _.map.extend( null, serviceIdentity1 ) });
+  test.shouldThrowErrorSync( () => _.censor.identityResolveDefaultMaybe({ profileDir }) );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'resolve identity, but combination of o.type and o.service is wrong';
+  _.censor.identityNew({ profileDir, identity : _.map.extend( null, serviceIdentity1 ) });
+  test.shouldThrowErrorSync( () => _.censor.identityResolveDefaultMaybe({ profileDir, service : 'github.com', type : 'npm' }) );
+  _.censor.profileDel( profileDir );
+}
+
+//
+
 function fileReplaceBasic( test )
 {
   let context = this;
@@ -3126,6 +3202,7 @@ const Proto =
     identityHookCallWithDefaultNpmHook,
     identityHookCallWithUserHooks,
     identityUse,
+    identityResolveDefaultMaybe,
 
     fileReplaceBasic,
     filesReplaceBasic,
