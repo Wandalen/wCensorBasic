@@ -2367,6 +2367,13 @@ function identityResolveDefaultMaybe( test )
 
   /* */
 
+  test.case = 'resolve no identity';
+  _.censor.identityNew({ profileDir, identity : _.map.extend( null, serviceIdentity1 ) });
+  _.censor.identityNew({ profileDir, identity : _.map.extend( null, typeIdentity ) });
+  var got = _.censor.identityResolveDefaultMaybe( profileDir );
+  test.identical( got, undefined );
+  _.censor.profileDel( profileDir );
+
   test.case = 'several identities with default identity, search exactly default identity by string';
   _.censor.identityNew({ profileDir, identity : _.map.extend( null, defaultIdentity ) });
   _.censor.identityNew({ profileDir, identity : _.map.extend( null, serviceIdentity1 ) });
@@ -2419,11 +2426,6 @@ function identityResolveDefaultMaybe( test )
 
   test.case = 'wrong value of o.type';
   test.shouldThrowErrorSync( () => _.censor.identityResolveDefaultMaybe({ profileDir, type : 'wrong' }) );
-
-  test.case = 'resolve no default identity';
-  _.censor.identityNew({ profileDir, identity : _.map.extend( null, serviceIdentity1 ) });
-  test.shouldThrowErrorSync( () => _.censor.identityResolveDefaultMaybe({ profileDir }) );
-  _.censor.profileDel( profileDir );
 
   test.case = 'resolve identity, but combination of o.type and o.service is wrong';
   _.censor.identityNew({ profileDir, identity : _.map.extend( null, serviceIdentity1 ) });
