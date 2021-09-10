@@ -1470,6 +1470,67 @@ identityUse.defaults =
   logger : 2,
 };
 
+//
+
+function identityResolveDefaultMaybe( o )
+{
+  const self = this;
+
+  if( arguments.length === 0 )
+  o = Object.create( null );
+  else if( _.str.is( o ) )
+  o = { profileDir : o };
+  else
+  _.assert( arguments.length === 1, 'Expects no arguments or single options map {-o-}.' );
+
+  _.routine.options( identityResolveDefaultMaybe, o );
+
+  const typesMap =
+  {
+    git : [ 'git' ],
+    npm : [ 'npm' ],
+    rust : [ 'rust' ],
+    general : [ 'git', 'npm', 'rust' ],
+  };
+
+  _.assert( o.type in typesMap || o.type === null );
+
+  self._configNameMapFromDefaults( o );
+
+  const o2 = _.mapOnly_( null, o, self.identityGet.defaults );
+  o2.selector = '';
+  const identitiesMap = self.identityGet( o2 );
+
+  /* */
+
+  let identity = _.any( identitiesMap, ( e ) => e.default ? e : undefined );
+
+  if( o.service )
+  {
+    if( identity )
+    _.assert( !!identity.services || _.longHas( identity.services, o.service ) );
+    else
+    identity = _.any( identitiesMap, ( e ) => ( !!e.services && _.longHas( e.services, o.service ) ) ? e : undefined );
+  }
+
+  if( o.type )
+  {
+    if( identity )
+    _.assert( identity.type === o.type || identity.type === 'general' );
+    else
+    identity = _.any( identitiesMap, ( e ) => e.type === o.type ? e : undefined );
+  }
+
+  return identity;
+}
+
+identityResolveDefaultMaybe.defaults =
+{
+  ... configNameMapFrom.defaults,
+  type : null,
+  service : null,
+};
+
 // --
 // action
 // --
@@ -2844,6 +2905,7 @@ let Extension =
   identityHookSet,
   identityHookCall,
   identityUse,
+  identityResolveDefaultMaybe,
 
   // action
 
