@@ -241,7 +241,38 @@ profileLog.defaults =
   ... profileNameMapFrom.defaults,
   logger : null,
   verbosity : 3,
+};
+
+//
+
+function profileHookPathMake( o )
+{
+  const self = this;
+
+  _.assert( arguments.length === 1, 'Expects exactly one argument' );
+  _.routine.options( profileHookPathMake, o );
+
+  self._configNameMapFromDefaults( o );
+
+  const typesMap =
+  {
+    git : [ 'git' ],
+    npm : [ 'npm' ],
+    rust : [ 'rust' ],
+  };
+
+  _.assert( o.type in typesMap );
+
+  const baseName = `${ o.type.replace( /^\w/, o.type[ 0 ].toUpperCase() ) }Hook`;
+  const hookRelativePath = _.path.join( o.storageDir, o.profileDir, self.storageHookDir, o.type, `${ baseName }.js` );
+  return _.fileProvider.configUserPath( hookRelativePath );
 }
+
+profileHookPathMake.defaults =
+{
+  ... configNameMapFrom.defaults,
+  type : null,
+};
 
 //
 
@@ -1018,46 +1049,6 @@ identityDel.defaults =
 
 //
 
-function identityHookPathMake( o )
-{
-  const self = this;
-
-  _.assert( arguments.length === 1, 'Expects exactly one argument' );
-  _.routine.options( identityHookPathMake, o );
-
-  self._configNameMapFromDefaults( o );
-
-  const typesMap =
-  {
-    git : [ 'git' ],
-    npm : [ 'npm' ],
-    rust : [ 'rust' ],
-  };
-
-  _.assert( o.type in typesMap );
-  _.assert( _.str.is( o.selector ) );
-  _.assert( !_.path.isGlob( o.selector ) );
-
-  const baseName = `${ o.type.replace( /^\w/, o.type[ 0 ].toUpperCase() ) }Identity`;
-  let hookRelativePath;
-  if( o.default )
-  hookRelativePath = _.path.join( o.storageDir, o.profileDir, self.storageHookDir, o.type, `${ baseName }.js` );
-  else
-  hookRelativePath = _.path.join( o.storageDir, o.profileDir, self.storageHookDir, o.type, `${ baseName }.${ o.selector }.js` );
-
-  return _.fileProvider.configUserPath( hookRelativePath );
-}
-
-identityHookPathMake.defaults =
-{
-  ... configNameMapFrom.defaults,
-  type : null,
-  selector : null,
-  default : false,
-};
-
-//
-
 function identityHookGet( o )
 {
   const self = this;
@@ -1088,7 +1079,7 @@ function identityHookGet( o )
   );
   _.assert( identity.type === 'general' || identity.type === o.type );
 
-  const o3 = _.mapOnly_( null, o, self.identityHookPathMake.defaults );
+  const o3 = _.mapOnly_( null, o, self.profileHookPathMake.defaults );
   const result = [];
   _.each( typesMap[ o.type ], ( type ) => result.push( hookGet( type ) ) );
   if( result.length === 1 )
@@ -1101,12 +1092,12 @@ function identityHookGet( o )
   {
     o3.type = type;
     o3.default = false;
-    let filePath = self.identityHookPathMake( o3 );
+    let filePath = self.profileHookPathMake( o3 );
     if( _.fileProvider.fileExists( filePath ) )
     return _.fileProvider.fileRead( filePath );
 
     o3.default = true;
-    filePath = self.identityHookPathMake( o3 );
+    filePath = self.profileHookPathMake( o3 );
     if( !_.fileProvider.fileExists( filePath ) )
     self.identityHookSet( o3 );
     return _.fileProvider.fileRead( filePath );
@@ -1153,7 +1144,7 @@ function identityHookSet( o )
   );
   _.assert( identity.type === 'general' || identity.type === o.type );
 
-  const o3 = _.mapOnly_( null, o, self.identityHookPathMake.defaults );
+  const o3 = _.mapOnly_( null, o, self.profileHookPathMake.defaults );
   _.each( typesMap[ o.type ], ( type ) => hookMake( o.hook, type ) );
 
   /* */
@@ -1161,7 +1152,7 @@ function identityHookSet( o )
   function hookMake( data, type )
   {
     o3.type = type;
-    const filePath = self.identityHookPathMake( o3 );
+    const filePath = self.profileHookPathMake( o3 );
     if( o.default )
     data = hookCodeGet( type );
     _.fileProvider.fileWrite({ filePath, data });
@@ -1365,18 +1356,18 @@ function identityHookCall( o )
   );
   _.assert( identity.type === 'general' || identity.type === o.type );
 
-  const o3 = _.mapOnly_( null, o, self.identityHookPathMake.defaults );
+  const o3 = _.mapOnly_( null, o, self.profileHookPathMake.defaults );
 
   _.each( typesMap[ o.type ], ( type ) =>
   {
     o3.type = type;
     o3.default = false;
-    let filePath = self.identityHookPathMake( o3 );
+    let filePath = self.profileHookPathMake( o3 );
 
     if( !_.fileProvider.fileExists( filePath ) )
     {
       o3.default = true;
-      filePath = self.identityHookPathMake( o3 );
+      filePath = self.profileHookPathMake( o3 );
       if( !_.fileProvider.fileExists( filePath ) )
       self.identityHookSet( o3 );
     }
@@ -2882,6 +2873,7 @@ let Extension =
   profileRead,
   profileDel,
   profileLog,
+  profileHookPathMake,
 
   _configNameMapFromDefaults,
   configNameMapFrom,
@@ -2907,7 +2899,6 @@ let Extension =
   identityNew,
   identityFrom,
   identityDel,
-  identityHookPathMake,
   identityHookGet,
   identityHookSet,
   identityHookCall,
