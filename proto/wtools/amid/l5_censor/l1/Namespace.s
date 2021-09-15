@@ -252,7 +252,7 @@ function profileHookPathMake( o )
   _.assert( arguments.length === 1, 'Expects exactly one argument' );
   _.routine.options( profileHookPathMake, o );
 
-  self._configNameMapFromDefaults( o );
+  self._profileNameMapFromDefaults( o );
 
   const typesMap =
   {
@@ -264,13 +264,13 @@ function profileHookPathMake( o )
   _.assert( o.type in typesMap );
 
   const baseName = `${ o.type.replace( /^\w/, o.type[ 0 ].toUpperCase() ) }Hook`;
-  const hookRelativePath = _.path.join( o.storageDir, o.profileDir, self.storageHookDir, o.type, `${ baseName }.js` );
+  const hookRelativePath = _.path.join( o.storageDir, o.profileDir, self.storageHookDir, `${ baseName }.js` );
   return _.fileProvider.configUserPath( hookRelativePath );
 }
 
 profileHookPathMake.defaults =
 {
-  ... configNameMapFrom.defaults,
+  ... profileNameMapFrom.defaults,
   type : null,
 };
 
