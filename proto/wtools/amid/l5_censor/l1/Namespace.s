@@ -2739,6 +2739,13 @@ function where()
     result[ 'Censor::local' ] = _.path.join( require.resolve( 'wcensor' ), '../../..' );
     result[ 'Censor::entry' ] = require.resolve( 'wcensor' );
     result[ 'Censor::remote' ] = 'https://github.com/Wandalen/wCensor.git';
+    const configsMap = _.censor.configNameMapFrom({});
+    result[ 'Censor::default' ] =
+    {
+      storage : configsMap.storageDir,
+      profile : configsMap.profileDir,
+      config : configsMap.storagePath,
+    };
   }
   catch( err )
   {
