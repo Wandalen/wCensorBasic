@@ -330,6 +330,48 @@ profileHookGet.defaults =
 
 //
 
+function profileHookSet( o )
+{
+  const self = this;
+
+  _.assert( arguments.length === 1, 'Expects exactly one argument' );
+  _.routine.options( profileHookSet, o );
+  _.assert( _.str.defined( o.hook ), 'Expects hook.' );
+
+  self._profileNameMapFromDefaults( o );
+
+  const typesMap =
+  {
+    git : [ 'git' ],
+    npm : [ 'npm' ],
+    rust : [ 'rust' ],
+    general : [ 'git', 'npm', 'rust' ],
+  };
+
+  _.assert( o.type in typesMap );
+
+  const o2 = _.mapOnly_( null, o, self.profileHookPathMake.defaults );
+  _.each( typesMap[ o.type ], ( type ) => hookMake( o.hook, type ) );
+
+  /* */
+
+  function hookMake( data, type )
+  {
+    o2.type = type;
+    const filePath = self.profileHookPathMake( o2 );
+    _.fileProvider.fileWrite({ filePath, data });
+  }
+}
+
+profileHookSet.defaults =
+{
+  ... profileNameMapFrom.defaults,
+  hook : null,
+  type : null,
+};
+
+//
+
 function _profileGitHook( identity, options )
 {
   const start = _.process.starter
@@ -1282,75 +1324,6 @@ identityDel.defaults =
 
 //
 
-function identityHookSet( o )
-{
-  const self = this;
-
-  _.assert( arguments.length === 1, 'Expects exactly one argument' );
-  _.routine.options( identityHookSet, o );
-
-  self._configNameMapFromDefaults( o );
-
-  const typesMap =
-  {
-    git : [ 'git' ],
-    npm : [ 'npm' ],
-    rust : [ 'rust' ],
-    general : [ 'git', 'npm', 'rust' ],
-  };
-
-  _.assert( o.type in typesMap );
-  _.assert( !_.path.isGlob( o.selector ) );
-
-  const o2 = _.mapOnly_( null, o, self.identityGet.defaults );
-  const identity = self.identityGet( o2 );
-  _.assert( _.map.is( identity ), `Selected no identity : ${ o.selector }. Please, improve selector.` );
-  _.assert
-  (
-    ( 'login' in identity || `${ o.type }.login` in identity ) && 'type' in identity,
-    `Selected ${ _.props.keys( identity ).length } identity(s). Please, improve selector.`
-  );
-  _.assert( identity.type === 'general' || identity.type === o.type );
-
-  const o3 = _.mapOnly_( null, o, self.profileHookPathMake.defaults );
-  _.each( typesMap[ o.type ], ( type ) => hookMake( o.hook, type ) );
-
-  /* */
-
-  function hookMake( data, type )
-  {
-    o3.type = type;
-    const filePath = self.profileHookPathMake( o3 );
-    if( o.default )
-    data = hookCodeGet( type );
-    _.fileProvider.fileWrite({ filePath, data });
-    return filePath;
-  }
-
-  /* */
-
-  function hookCodeGet( type )
-  {
-    if( type === 'git' )
-    return gitHookCodeGet();
-    else if( type === 'npm' )
-    return npmHookCodeGet();
-    else
-    return rustHookCodeGet();
-  }
-}
-
-identityHookSet.defaults =
-{
-  ... configNameMapFrom.defaults,
-  hook : null,
-  type : null,
-  selector : null,
-  default : false,
-};
-
-//
-
 function identityUse( o )
 {
   const self = this;
@@ -1400,7 +1373,7 @@ function identityUse( o )
     _.error.attend( err );
   }
 
-  self.profileHookCallWithIdentity( o );
+  self.profileHookCallWithIdentity( _.mapOnly_( null, o, _.censor.profileHookCallWithIdentity.defaults  ) );
 }
 
 identityUse.defaults =
@@ -2825,6 +2798,7 @@ let Extension =
   profileLog,
   profileHookPathMake,
   profileHookGet,
+  profileHookSet,
   profileHookCallWithIdentity,
 
   _configNameMapFromDefaults,
@@ -2851,7 +2825,6 @@ let Extension =
   identityNew,
   identityFrom,
   identityDel,
-  identityHookSet,
   identityUse,
   identityResolveDefaultMaybe,
 
