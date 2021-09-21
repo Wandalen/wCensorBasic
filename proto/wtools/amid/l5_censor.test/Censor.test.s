@@ -214,6 +214,578 @@ function profileDelWithOptionsMap( test )
 
 //
 
+function profileHookPathMake( test )
+{
+  const a = test.assetFor( false );
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+
+  /* */
+
+  test.case = 'type - git';
+  var got = _.censor.profileHookPathMake({ profileDir, type : 'git' });
+  var exp = a.abs( a.path.dirUserHome(), _.censor.storageDir, profileDir, 'hook/GitHook.js' );
+  test.identical( got, exp );
+
+  test.case = 'type - npm';
+  var got = _.censor.profileHookPathMake({ profileDir, type : 'npm' });
+  var exp = a.abs( a.path.dirUserHome(), _.censor.storageDir, profileDir, 'hook/NpmHook.js' );
+  test.identical( got, exp );
+
+  test.case = 'type - rust';
+  var got = _.censor.profileHookPathMake({ profileDir, type : 'rust' });
+  var exp = a.abs( a.path.dirUserHome(), _.censor.storageDir, profileDir, 'hook/RustHook.js' );
+  test.identical( got, exp );
+
+  /* - */
+
+  if( !Config.debug )
+  return;
+
+  test.case = 'without arguments';
+  test.shouldThrowErrorSync( () => _.censor.profileHookPathMake() );
+
+  test.case = 'extra arguments';
+  var o = { profileDir, type : 'git' };
+  test.shouldThrowErrorSync( () => _.censor.profileHookPathMake( o, o ) );
+
+  test.case = 'wrong type of options map';
+  test.shouldThrowErrorSync( () => _.censor.profileHookPathMake([ { profileDir, type : 'git' } ]) );
+
+  test.case = 'unknown option in options map';
+  test.shouldThrowErrorSync( () => _.censor.profileHookPathMake([ { profileDir, type : 'git', unknown : 1 } ]) );
+
+  test.case = 'o.type has not valid value';
+  test.shouldThrowErrorSync( () => _.censor.profileHookPathMake({ profileDir, type : null }) );
+  test.shouldThrowErrorSync( () => _.censor.profileHookPathMake({ profileDir, type : 'invalid' }) );
+}
+
+//
+
+function profileHookGet( test )
+{
+  const a = test.assetFor( false );
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+  const userProfileDir = a.fileProvider.configUserPath( `.censor/${ profileDir }` );
+  const hook = 'console.log( `hook` );';
+
+  /* */
+
+  test.case = 'get git hook, hooks do not exist';
+  var identity = { name : 'user', login : 'userLogin' };
+  _.censor.identityNew({ profileDir, identity });
+  var files = a.find( userProfileDir );
+  test.identical( files, [ '.', './config.yaml' ] );
+  var got = _.censor.profileHookGet({ profileDir, type : 'git' });
+  test.true( _.strBegins( got, /function .*( identity, options )/ ) );
+  var files = a.find( userProfileDir );
+  var exp = [ '.', './config.yaml' ];
+  test.identical( files, exp );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'get npm hook, hooks do not exist';
+  var identity = { name : 'user', login : 'userLogin' };
+  _.censor.identityNew({ profileDir, identity });
+  var files = a.find( userProfileDir );
+  test.identical( files, [ '.', './config.yaml' ] );
+  var got = _.censor.profileHookGet({ profileDir, type : 'npm' });
+  test.true( _.strBegins( got, /function .*( identity, options )/ ) );
+  var files = a.find( userProfileDir );
+  var exp = [ '.', './config.yaml' ];
+  test.identical( files, exp );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'set hooks for general type, get all hooks';
+  var identity = { name : 'user', login : 'userLogin' };
+  _.censor.identityNew({ profileDir, identity });
+  var files = a.find( userProfileDir );
+  test.identical( files, [ '.', './config.yaml' ] );
+  var got = _.censor.profileHookSet({ profileDir, hook, type : 'general' });
+  var got = _.censor.profileHookGet({ profileDir, type : 'general' });
+  test.true( _.array.is( got ) );
+  test.identical( got.length, 3 );
+  test.identical( got[ 0 ], hook );
+  test.identical( got[ 0 ], got[ 1 ] );
+  test.identical( got[ 1 ], got[ 2 ] );
+  var files = a.find( userProfileDir );
+  var exp =
+  [
+    '.',
+    './config.yaml',
+    './hook',
+    './hook/GitHook.js',
+    './hook/NpmHook.js',
+    './hook/RustHook.js',
+  ];
+  test.identical( files, exp );
+  _.censor.profileDel( profileDir );
+
+  /* - */
+
+  if( !Config.debug )
+  return;
+
+  test.case = 'without arguments';
+  test.shouldThrowErrorSync( () => _.censor.profileHookGet() );
+
+  test.case = 'extra arguments';
+  var o = { profileDir, type : 'git' };
+  test.shouldThrowErrorSync( () => _.censor.profileHookGet( o, o ) );
+
+  test.case = 'wrong type of options map';
+  test.shouldThrowErrorSync( () => _.censor.profileHookGet([ { profileDir, type : 'git' } ]) );
+
+  test.case = 'unknown option in options map';
+  test.shouldThrowErrorSync( () => _.censor.profileHookGet({ profileDir, type : 'git', unknown : 1 }) );
+
+  test.case = 'wrong type of o.type';
+  test.shouldThrowErrorSync( () => _.censor.profileHookGet({ profileDir, type : null }) );
+
+  test.case = 'unknown type of o.type';
+  test.shouldThrowErrorSync( () => _.censor.profileHookGet({ profileDir, type : 'unknown' }) );
+}
+
+//
+
+function profileHookCallWithIdentityWithDefaultGitHook( test )
+{
+  const a = test.assetFor( false );
+
+  if( !_.process.insideTestContainer() )
+  return test.true( true );
+
+  a.fileProvider.dirMake( a.abs( '.' ) );
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+  const userProfileDir = a.fileProvider.configUserPath( `.censor/${ profileDir }` );
+
+  const originalConfig = a.fileProvider.fileRead( a.fileProvider.configUserPath( '.gitconfig' ) );
+
+  /* - */
+
+  begin().then( () =>
+  {
+    test.case = 'call git hook';
+    var identity = { name : 'user', login : 'userLogin', email : 'user@domain.com' };
+    _.censor.identityNew({ profileDir, identity });
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml' ] );
+    var got = _.censor.profileHookCallWithIdentity({ profileDir, type : 'git', selector : 'user' });
+    test.identical( got, undefined );
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml' ] );
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+  a.shell( 'git config --global --list' )
+  .then( ( op ) =>
+  {
+    test.identical( _.strCount( op.output, 'user.name=userLogin' ), 1 );
+    test.identical( _.strCount( op.output, 'user.email=user@domain.com' ), 1 );
+    test.identical( _.strCount( op.output, 'url.https://userLogin@github.com.insteadof=https://github.com' ), 1 );
+    test.identical( _.strCount( op.output, 'url.https://userLogin@bitbucket.org.insteadof=https://bitbucket.org' ), 1 );
+    return null;
+  });
+
+  /* */
+
+  begin();
+  a.shell( 'git config --global user.name anotherUser' )
+  a.ready.then( () =>
+  {
+    test.case = 'git user name exists';
+    var identity = { name : 'user', login : 'userLogin', email : 'user@domain.com' };
+    _.censor.identityNew({ profileDir, identity });
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml' ] );
+    var got = _.censor.profileHookCallWithIdentity({ profileDir, type : 'git', selector : 'user' });
+    test.identical( got, undefined );
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml' ] );
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+  a.shell( 'git config --global --list' )
+  .then( ( op ) =>
+  {
+    test.identical( _.strCount( op.output, 'user.name=userLogin' ), 1 );
+    test.identical( _.strCount( op.output, 'user.email=user@domain.com' ), 1 );
+    test.identical( _.strCount( op.output, 'url.https://userLogin@github.com.insteadof=https://github.com' ), 1 );
+    test.identical( _.strCount( op.output, 'url.https://userLogin@bitbucket.org.insteadof=https://bitbucket.org' ), 1 );
+    return null;
+  });
+
+  /* */
+
+  begin().then( () =>
+  {
+    test.case = 'call twice';
+    var identity = { name : 'user', login : 'userLogin', email : 'user@domain.com' };
+    _.censor.identityNew({ profileDir, identity });
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml' ] );
+    var got = _.censor.profileHookCallWithIdentity({ profileDir, type : 'git', selector : 'user' });
+    var got = _.censor.profileHookCallWithIdentity({ profileDir, type : 'git', selector : 'user' });
+    test.identical( got, undefined );
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml' ] );
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+  a.shell( 'git config --global --list' )
+  .then( ( op ) =>
+  {
+    test.identical( _.strCount( op.output, 'user.name=userLogin' ), 1 );
+    test.identical( _.strCount( op.output, 'user.email=user@domain.com' ), 1 );
+    test.identical( _.strCount( op.output, 'url.https://userLogin@github.com.insteadof=https://github.com' ), 1 );
+    test.identical( _.strCount( op.output, 'url.https://userLogin@bitbucket.org.insteadof=https://bitbucket.org' ), 1 );
+    return null;
+  });
+
+  /* */
+
+  begin().then( () =>
+  {
+    test.case = 'change identity';
+    var identity = { name : 'user', login : 'userLogin', email : 'user@domain.com' };
+    _.censor.identityNew({ profileDir, identity });
+    var identity = { name : 'user2', login : 'userLogin2', email : 'user2@domain.com' };
+    _.censor.identityNew({ profileDir, identity });
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml' ] );
+    var got = _.censor.profileHookCallWithIdentity({ profileDir, type : 'git', selector : 'user' });
+    var got = _.censor.profileHookCallWithIdentity({ profileDir, type : 'git', selector : 'user2' });
+    test.identical( got, undefined );
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml' ] );
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+  a.shell( 'git config --global --list' )
+  .then( ( op ) =>
+  {
+    test.identical( _.strCount( op.output, 'user.name=userLogin2' ), 1 );
+    test.identical( _.strCount( op.output, 'user.email=user2@domain.com' ), 1 );
+    test.identical( _.strCount( op.output, 'url.https://userLogin2@github.com.insteadof=https://github.com' ), 1 );
+    test.identical( _.strCount( op.output, 'url.https://userLogin2@bitbucket.org.insteadof=https://bitbucket.org' ), 1 );
+    return null;
+  });
+
+  a.ready.finally( ( err, arg ) =>
+  {
+    a.fileProvider.fileWrite( a.fileProvider.configUserPath( '.gitconfig' ), originalConfig );
+    if( err )
+    throw _.err( err );
+    return arg;
+  });
+
+  /* - */
+
+  return a.ready;
+
+  /* */
+
+  function begin()
+  {
+    return a.ready.then( () =>
+    {
+      a.fileProvider.fileWrite( a.fileProvider.configUserPath( '.gitconfig' ), '' );
+      return null;
+    });
+  }
+}
+
+//
+
+function profileHookCallWithIdentityWithDefaultNpmHook( test )
+{
+  const a = test.assetFor( false );
+
+  if( !_.process.insideTestContainer() )
+  return test.true( true );
+
+  a.fileProvider.dirMake( a.abs( '.' ) );
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+  const userProfileDir = a.fileProvider.configUserPath( `.censor/${ profileDir }` );
+  const login = 'wtools-bot';
+  const token = process.env.PRIVATE_WTOOLS_BOT_NPM_TOKEN;
+  const email = process.env.PRIVATE_WTOOLS_BOT_EMAIL;
+  const pass = process.env.NPM_PASS;
+
+  if( !token || !email || !pass )
+  return test.true( true );
+
+  /* - */
+
+  a.ready.then( () =>
+  {
+    test.case = 'call npm hook';
+    var identity = { name : 'user', login, email, token };
+    _.censor.identityNew({ profileDir, identity });
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml' ] );
+    var got = _.censor.profileHookCallWithIdentity({ profileDir, type : 'npm', selector : 'user' });
+    test.identical( got, undefined );
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+  a.shell( 'npm whoami' )
+  .then( ( op ) =>
+  {
+    test.identical( op.exitCode, 0 );
+    test.identical( op.output.trim(), login );
+    return null;
+  });
+
+  /* */
+
+  a.ready.then( () =>
+  {
+    test.case = 'call npm hook twice';
+    var identity = { name : 'user', login, email, token };
+    _.censor.identityNew({ profileDir, identity });
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml' ] );
+    var got = _.censor.profileHookCallWithIdentity({ profileDir, type : 'npm', selector : 'user' });
+    var got = _.censor.profileHookCallWithIdentity({ profileDir, type : 'npm', selector : 'user' });
+    test.identical( got, undefined );
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+  a.shell( 'npm whoami' )
+  .then( ( op ) =>
+  {
+    test.identical( op.exitCode, 0 );
+    test.identical( op.output.trim(), login );
+    return null;
+  });
+
+  /* - */
+
+  return a.ready;
+}
+
+//
+
+function profileHookCallWithIdentityWithUserHooks( test )
+{
+  const a = test.assetFor( false );
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+  const userProfileDir = a.fileProvider.configUserPath( `.censor/${ profileDir }` );
+  const hook =
+`function onIdentity( identity )
+{
+  const _ = this;
+  _.censor.identitySet({ profileDir : '${ profileDir }', selector : 'user', set : { email : 'user@domain.com' } });
+}
+module.exports = onIdentity;`;
+  const hook2 =
+`function onIdentity( identity )
+{
+  const _ = this;
+  _.censor.identitySet({ profileDir : '${ profileDir }', selector : 'user', set : { token : 'userToken' } });
+}
+module.exports = onIdentity;`;
+
+  /* */
+
+  test.case = 'call git hook';
+  var identity = { name : 'user', login : 'userLogin' };
+  _.censor.identityNew({ profileDir, identity });
+  _.censor.profileHookSet({ profileDir, hook, type : 'git' });
+  var config = _.censor.configRead({ profileDir });
+  test.identical( config.identity.user.email, undefined );
+  var got = _.censor.profileHookCallWithIdentity({ profileDir, type : 'git', selector : 'user' });
+  test.identical( got, undefined );
+  var config = _.censor.configRead({ profileDir });
+  test.identical( config.identity.user.email, 'user@domain.com' );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'call npm hook';
+  var identity = { name : 'user', login : 'userLogin' };
+  _.censor.identityNew({ profileDir, identity });
+  _.censor.profileHookSet({ profileDir, hook, type : 'npm' });
+  var config = _.censor.configRead({ profileDir });
+  test.identical( config.identity.user.email, undefined );
+  var got = _.censor.profileHookCallWithIdentity({ profileDir, type : 'npm', selector : 'user' });
+  test.identical( got, undefined );
+  var config = _.censor.configRead({ profileDir });
+  test.identical( config.identity.user.email, 'user@domain.com' );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'call hooks for general type';
+  var identity = { name : 'user', login : 'userLogin' };
+  _.censor.identityNew({ profileDir, identity });
+  _.censor.profileHookSet({ profileDir, hook, type : 'git' });
+  _.censor.profileHookSet({ profileDir, hook : hook2, type : 'npm' });
+  var config = _.censor.configRead({ profileDir });
+  test.identical( config.identity.user.email, undefined );
+  test.identical( config.identity.user.token, undefined );
+  var got = _.censor.profileHookCallWithIdentity({ profileDir, type : 'general', selector : 'user' });
+  test.identical( got, undefined );
+  var config = _.censor.configRead({ profileDir });
+  test.identical( config.identity.user.email, 'user@domain.com' );
+  test.identical( config.identity.user.token, 'userToken' );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'call git hooks for different identities';
+  var identity = { name : 'user', login : 'userLogin' };
+  _.censor.identityNew({ profileDir, identity });
+  var identity = { name : 'user2', login : 'userLogin2' };
+  _.censor.identityNew({ profileDir, identity });
+  _.censor.profileHookSet({ profileDir, hook, type : 'git' });
+  _.censor.profileHookSet({ profileDir, hook : hook2, type : 'npm' });
+  var config = _.censor.configRead({ profileDir });
+  test.identical( config.identity.user.email, undefined );
+  test.identical( config.identity.user.token, undefined );
+  test.identical( config.identity.user2.email, undefined );
+  test.identical( config.identity.user2.token, undefined );
+  _.censor.profileHookCallWithIdentity({ profileDir, type : 'git', selector : 'user' });
+  _.censor.profileHookCallWithIdentity({ profileDir, type : 'npm', selector : 'user2' });
+  var config = _.censor.configRead({ profileDir });
+  test.identical( config.identity.user.email, 'user@domain.com' );
+  test.identical( config.identity.user.token, 'userToken' );
+  test.identical( config.identity.user2.email, undefined );
+  test.identical( config.identity.user2.token, undefined );
+  _.censor.profileDel( profileDir );
+
+  /* - */
+
+  if( Config.debug )
+  {
+    test.case = 'without arguments';
+    test.shouldThrowErrorSync( () => _.censor.profileHookCallWithIdentity() );
+
+    test.case = 'extra arguments';
+    var o = { profileDir, type : 'git', selector : 'user' };
+    test.shouldThrowErrorSync( () => _.censor.profileHookCallWithIdentity( o, o ) );
+
+    test.case = 'wrong type of options map';
+    test.shouldThrowErrorSync( () => _.censor.profileHookCallWithIdentity([ { profileDir, type : 'git', selector : 'user' } ]) );
+
+    test.case = 'unknown option in options map';
+    test.shouldThrowErrorSync( () => _.censor.profileHookCallWithIdentity({ profileDir, type : 'git', selector : 'user', unknown : 1 }) );
+
+    test.case = 'wrong type of o.type';
+    test.shouldThrowErrorSync( () => _.censor.profileHookCallWithIdentity({ profileDir, type : null, selector : 'user' }) );
+
+    test.case = 'unknown type of o.type';
+    test.shouldThrowErrorSync( () => _.censor.profileHookCallWithIdentity({ profileDir, type : 'unknown', selector : 'user' }) );
+
+    test.case = 'o.selector is glob';
+    test.shouldThrowErrorSync( () => _.censor.profileHookCallWithIdentity({ profileDir, type : 'unknown', selector : 'user*' }) );
+
+    test.case = 'identity type is not equal to o.type, not general identity type';
+    _.censor.identityNew({ profileDir, identity : { name : 'user', login : 'userLogin', type : 'npm' } });
+    test.shouldThrowErrorSync( () => _.censor.profileHookCallWithIdentity({ profileDir, type : 'git', selector : 'user' }) );
+    _.censor.profileDel( profileDir );
+    _.censor.identityNew({ profileDir, identity : { name : 'user', login : 'userLogin', type : 'npm' } });
+    test.shouldThrowErrorSync( () => _.censor.profileHookCallWithIdentity({ profileDir, type : 'general', selector : 'user' }) );
+    _.censor.profileDel( profileDir );
+
+    test.case = 'hook return no routine';
+    _.censor.identityNew({ profileDir, identity : { name : 'user', login : 'userLogin' } });
+    _.censor.profileHookSet({ profileDir, hook : 'console.log( `hook` );', type : 'git' });
+    test.shouldThrowErrorSync( () => _.censor.profileHookCallWithIdentity({ profileDir, type : 'git', selector : 'user' }) );
+    _.censor.profileDel( profileDir );
+  }
+}
+
+//
+
+function profileHookSet( test )
+{
+  const a = test.assetFor( false );
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+  const userProfileDir = a.fileProvider.configUserPath( `.censor/${ profileDir }` );
+  const hook = 'console.log( `hook` );';
+
+  /* */
+
+  test.case = 'set git hook';
+  var identity = { name : 'user', login : 'userLogin' };
+  _.censor.identityNew({ profileDir, identity });
+  var files = a.find( userProfileDir );
+  test.identical( files, [ '.', './config.yaml' ] );
+  var got = _.censor.profileHookSet({ profileDir, hook, type : 'git' });
+  test.identical( got, undefined );
+  var files = a.find( userProfileDir );
+  var exp =
+  [
+    '.',
+    './config.yaml',
+    './hook',
+    './hook/GitHook.js',
+  ];
+  test.identical( files, exp );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'set npm hook';
+  var identity = { name : 'user', login : 'userLogin' };
+  _.censor.identityNew({ profileDir, identity });
+  var files = a.find( userProfileDir );
+  test.identical( files, [ '.', './config.yaml' ] );
+  var got = _.censor.profileHookSet({ profileDir, hook, type : 'npm' });
+  test.identical( got, undefined );
+  var files = a.find( userProfileDir );
+  var exp =
+  [
+    '.',
+    './config.yaml',
+    './hook',
+    './hook/NpmHook.js',
+  ];
+  test.identical( files, exp );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'set hooks for general type';
+  var identity = { name : 'user', login : 'userLogin' };
+  _.censor.identityNew({ profileDir, identity });
+  var files = a.find( userProfileDir );
+  test.identical( files, [ '.', './config.yaml' ] );
+  var got = _.censor.profileHookSet({ profileDir, hook, type : 'general' });
+  test.identical( got, undefined );
+  var files = a.find( userProfileDir );
+  var exp =
+  [
+    '.',
+    './config.yaml',
+    './hook',
+    './hook/GitHook.js',
+    './hook/NpmHook.js',
+    './hook/RustHook.js',
+  ];
+  test.identical( files, exp );
+  _.censor.profileDel( profileDir );
+
+  /* - */
+
+  if( !Config.debug )
+  return;
+
+  test.case = 'without arguments';
+  test.shouldThrowErrorSync( () => _.censor.profileHookSet() );
+
+  test.case = 'extra arguments';
+  var o = { profileDir, hook, type : 'git' };
+  test.shouldThrowErrorSync( () => _.censor.profileHookSet( o, o ) );
+
+  test.case = 'wrong type of options map';
+  test.shouldThrowErrorSync( () => _.censor.profileHookSet([ { profileDir, hook, type : 'git' } ]) );
+
+  test.case = 'unknown option in options map';
+  test.shouldThrowErrorSync( () => _.censor.profileHookSet({ profileDir, hook, type : 'git', unknown : 1 }) );
+
+  test.case = 'wrong type of o.type';
+  test.shouldThrowErrorSync( () => _.censor.profileHookSet({ profileDir, hook, type : null }) );
+
+  test.case = 'unknown type of o.type';
+  test.shouldThrowErrorSync( () => _.censor.profileHookSet({ profileDir, hook, type : 'unknown' }) );
+
+  test.case = 'o.selector is glob';
+  test.shouldThrowErrorSync( () => _.censor.profileHookSet({ profileDir, hook, type : 'unknown' }) );
+}
+
+//
+
 function configRead( test )
 {
   const a = test.assetFor( 'basic' );
@@ -1066,7 +1638,7 @@ function identityFrom( test )
     var config = _.censor.configRead({ profileDir });
     var exp = { user : { login : 'userLogin', type : 'general', email : 'user@domain.com' } };
     test.identical( config.identity, exp );
-    _.censor.identityHookCall({ profileDir, type : 'git', selector : 'user' });
+    _.censor.profileHookCallWithIdentity({ profileDir, type : 'git', selector : 'user' });
     var got = _.censor.identityFrom({ profileDir, type : 'git' });
     test.identical( got, undefined );
     var config = _.censor.configRead({ profileDir });
@@ -1090,7 +1662,7 @@ function identityFrom( test )
     var config = _.censor.configRead({ profileDir });
     var exp = { user : { login : 'userLogin', type : 'general', email : 'user@domain.com' } };
     test.identical( config.identity, exp );
-    _.censor.identityHookCall({ profileDir, type : 'git', selector : 'user' });
+    _.censor.profileHookCallWithIdentity({ profileDir, type : 'git', selector : 'user' });
     var got = _.censor.identityFrom({ profileDir, selector : 'git', type : 'git' });
     test.identical( got, undefined );
     var config = _.censor.configRead({ profileDir });
@@ -1120,7 +1692,7 @@ function identityFrom( test )
       user2 : { login : 'userLogin2', type : 'general', email : 'user2@domain.com' },
     };
     test.identical( config.identity, exp );
-    _.censor.identityHookCall({ profileDir, type : 'git', selector : 'user2' });
+    _.censor.profileHookCallWithIdentity({ profileDir, type : 'git', selector : 'user2' });
     var got = _.censor.identityFrom({ profileDir, selector : 'user', type : 'git', force : 1 });
     test.identical( got, undefined );
     var config = _.censor.configRead({ profileDir });
@@ -1157,7 +1729,7 @@ function identityFrom( test )
       user2 : { login : 'userLogin2', type : 'general', email : 'user2@domain.com' },
     };
     test.identical( config.identity, exp );
-    _.censor.identityHookCall({ profileDir, type : 'git', selector : 'user2' });
+    _.censor.profileHookCallWithIdentity({ profileDir, type : 'git', selector : 'user2' });
     var got = _.censor.identityFrom({ profileDir, selector : 'user', type : 'git', force : 1 });
     test.identical( got, undefined );
     var config = _.censor.configRead({ profileDir });
@@ -1411,762 +1983,6 @@ function identityDel( test )
 
 //
 
-function identityHookPathMake( test )
-{
-  const a = test.assetFor( false );
-  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
-
-  /* */
-
-  test.case = 'get not default hook, selector - empty string';
-  var got = _.censor.identityHookPathMake({ profileDir, type : 'git', selector : '', default : false });
-  var exp = a.abs( a.path.dirUserHome(), _.censor.storageDir, profileDir, 'hook/git/GitIdentity..js' );
-  test.identical( got, exp );
-
-  test.case = 'get not default hook, selector - empty string';
-  var got = _.censor.identityHookPathMake({ profileDir, type : 'git', selector : '', default : true });
-  var exp = a.abs( a.path.dirUserHome(), _.censor.storageDir, profileDir, 'hook/git/GitIdentity.js' );
-  test.identical( got, exp );
-
-  /* */
-
-  test.case = 'get not default hook';
-  var got = _.censor.identityHookPathMake({ profileDir, type : 'git', selector : 'user', default : false });
-  var exp = a.abs( a.path.dirUserHome(), _.censor.storageDir, profileDir, 'hook/git/GitIdentity.user.js' );
-  test.identical( got, exp );
-
-  test.case = 'get not default hook';
-  var got = _.censor.identityHookPathMake({ profileDir, type : 'git', selector : 'user', default : true });
-  var exp = a.abs( a.path.dirUserHome(), _.censor.storageDir, profileDir, 'hook/git/GitIdentity.js' );
-  test.identical( got, exp );
-
-  /* - */
-
-  if( !Config.debug )
-  return;
-
-  test.case = 'without arguments';
-  test.shouldThrowErrorSync( () => _.censor.identityHookPathMake() );
-
-  test.case = 'extra arguments';
-  var o = { profileDir, type : 'git', selector : 'user' };
-  test.shouldThrowErrorSync( () => _.censor.identityHookPathMake( o, o ) );
-
-  test.case = 'wrong type of options map';
-  test.shouldThrowErrorSync( () => _.censor.identityHookPathMake([ { profileDir, type : 'git', selector : 'user' } ]) );
-
-  test.case = 'unknown option in options map';
-  test.shouldThrowErrorSync( () => _.censor.identityHookPathMake([ { profileDir, type : 'git', selector : 'user', unknown : 1 } ]) );
-
-  test.case = 'o.selector has not valid value';
-  test.shouldThrowErrorSync( () => _.censor.identityHookPathMake({ profileDir, type : 'git', selector : null }) );
-
-  test.case = 'o.selector is string with glob';
-  test.shouldThrowErrorSync( () => _.censor.identityHookPathMake({ profileDir, type : 'git', selector : 'user*' }) );
-
-  test.case = 'o.type has not valid value';
-  test.shouldThrowErrorSync( () => _.censor.identityHookPathMake({ profileDir, type : null, selector : 'user' }) );
-  test.shouldThrowErrorSync( () => _.censor.identityHookPathMake({ profileDir, type : 'invalid', selector : 'user' }) );
-}
-
-//
-
-function identityHookGet( test )
-{
-  const a = test.assetFor( false );
-  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
-  const userProfileDir = a.fileProvider.configUserPath( `.censor/${ profileDir }` );
-  const hook = 'console.log( `hook` );';
-
-  /* */
-
-  test.case = 'get git hook, hooks do not exist';
-  var identity = { name : 'user', login : 'userLogin' };
-  _.censor.identityNew({ profileDir, identity });
-  var files = a.find( userProfileDir );
-  test.identical( files, [ '.', './config.yaml' ] );
-  var got = _.censor.identityHookGet({ profileDir, type : 'git', selector : 'user' });
-  test.true( _.strBegins( got, '\nfunction onIdentity( identity, options )' ) );
-  var files = a.find( userProfileDir );
-  var exp =
-  [
-    '.',
-    './config.yaml',
-    './hook',
-    './hook/git',
-    './hook/git/GitIdentity.js'
-  ];
-  test.identical( files, exp );
-  _.censor.profileDel( profileDir );
-
-  test.case = 'get npm hook, hooks do not exist';
-  var identity = { name : 'user', login : 'userLogin' };
-  _.censor.identityNew({ profileDir, identity });
-  var files = a.find( userProfileDir );
-  test.identical( files, [ '.', './config.yaml' ] );
-  var got = _.censor.identityHookGet({ profileDir, type : 'npm', selector : 'user' });
-  test.true( _.strBegins( got, '\nfunction onIdentity( identity, options )' ) );
-  var files = a.find( userProfileDir );
-  var exp =
-  [
-    '.',
-    './config.yaml',
-    './hook',
-    './hook/npm',
-    './hook/npm/NpmIdentity.js'
-  ];
-  test.identical( files, exp );
-  _.censor.profileDel( profileDir );
-
-  test.case = 'set hooks for general type, get all hooks';
-  var identity = { name : 'user', login : 'userLogin' };
-  _.censor.identityNew({ profileDir, identity });
-  var files = a.find( userProfileDir );
-  test.identical( files, [ '.', './config.yaml' ] );
-  var got = _.censor.identityHookSet({ profileDir, hook, type : 'general', selector : 'user' });
-  var got = _.censor.identityHookGet({ profileDir, type : 'general', selector : 'user' });
-  test.true( _.array.is( got ) );
-  test.identical( got.length, 3 );
-  test.identical( got[ 0 ], hook );
-  test.identical( got[ 0 ], got[ 1 ] );
-  test.identical( got[ 1 ], got[ 2 ] );
-  var files = a.find( userProfileDir );
-  var exp =
-  [
-    '.',
-    './config.yaml',
-    './hook',
-    './hook/git',
-    './hook/git/GitIdentity.user.js',
-    './hook/npm',
-    './hook/npm/NpmIdentity.user.js',
-    './hook/rust',
-    './hook/rust/RustIdentity.user.js',
-  ];
-  test.identical( files, exp );
-  _.censor.profileDel( profileDir );
-
-  /* - */
-
-  if( !Config.debug )
-  return;
-
-  test.case = 'without arguments';
-  test.shouldThrowErrorSync( () => _.censor.identityHookGet() );
-
-  test.case = 'extra arguments';
-  var o = { profileDir, type : 'git', selector : 'user' };
-  test.shouldThrowErrorSync( () => _.censor.identityHookGet( o, o ) );
-
-  test.case = 'wrong type of options map';
-  test.shouldThrowErrorSync( () => _.censor.identityHookGet([ { profileDir, type : 'git', selector : 'user' } ]) );
-
-  test.case = 'unknown option in options map';
-  test.shouldThrowErrorSync( () => _.censor.identityHookGet({ profileDir, type : 'git', selector : 'user', unknown : 1 }) );
-
-  test.case = 'wrong type of o.type';
-  test.shouldThrowErrorSync( () => _.censor.identityHookGet({ profileDir, type : null, selector : 'user' }) );
-
-  test.case = 'unknown type of o.type';
-  test.shouldThrowErrorSync( () => _.censor.identityHookGet({ profileDir, type : 'unknown', selector : 'user' }) );
-
-  test.case = 'o.selector is glob';
-  test.shouldThrowErrorSync( () => _.censor.identityHookGet({ profileDir, type : 'unknown', selector : 'user*' }) );
-
-  test.case = 'identity type is not equal to o.type, not general identity type';
-  _.censor.identityNew({ profileDir, identity : { name : 'user', login : 'userLogin', type : 'npm' } });
-  test.shouldThrowErrorSync( () => _.censor.identityHookGet({ profileDir, type : 'git', selector : 'user' }) );
-  _.censor.profileDel( profileDir );
-  _.censor.identityNew({ profileDir, identity : { name : 'user', login : 'userLogin', type : 'npm' } });
-  test.shouldThrowErrorSync( () => _.censor.identityHookGet({ profileDir, hook, type : 'general', selector : 'user' }) );
-  _.censor.profileDel( profileDir );
-}
-
-//
-
-function identityHookSet( test )
-{
-  const a = test.assetFor( false );
-  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
-  const userProfileDir = a.fileProvider.configUserPath( `.censor/${ profileDir }` );
-  const hook = 'console.log( `hook` );';
-
-  /* */
-
-  test.case = 'set git hook';
-  var identity = { name : 'user', login : 'userLogin' };
-  _.censor.identityNew({ profileDir, identity });
-  var files = a.find( userProfileDir );
-  test.identical( files, [ '.', './config.yaml' ] );
-  var got = _.censor.identityHookSet({ profileDir, hook, type : 'git', selector : 'user' });
-  test.identical( got, undefined );
-  var files = a.find( userProfileDir );
-  var exp =
-  [
-    '.',
-    './config.yaml',
-    './hook',
-    './hook/git',
-    './hook/git/GitIdentity.user.js'
-  ];
-  test.identical( files, exp );
-  _.censor.profileDel( profileDir );
-
-  test.case = 'set npm hook';
-  var identity = { name : 'user', login : 'userLogin' };
-  _.censor.identityNew({ profileDir, identity });
-  var files = a.find( userProfileDir );
-  test.identical( files, [ '.', './config.yaml' ] );
-  var got = _.censor.identityHookSet({ profileDir, hook, type : 'npm', selector : 'user' });
-  test.identical( got, undefined );
-  var files = a.find( userProfileDir );
-  var exp =
-  [
-    '.',
-    './config.yaml',
-    './hook',
-    './hook/npm',
-    './hook/npm/NpmIdentity.user.js'
-  ];
-  test.identical( files, exp );
-  _.censor.profileDel( profileDir );
-
-  test.case = 'set hooks for general type';
-  var identity = { name : 'user', login : 'userLogin' };
-  _.censor.identityNew({ profileDir, identity });
-  var files = a.find( userProfileDir );
-  test.identical( files, [ '.', './config.yaml' ] );
-  var got = _.censor.identityHookSet({ profileDir, hook, type : 'general', selector : 'user' });
-  test.identical( got, undefined );
-  var files = a.find( userProfileDir );
-  var exp =
-  [
-    '.',
-    './config.yaml',
-    './hook',
-    './hook/git',
-    './hook/git/GitIdentity.user.js',
-    './hook/npm',
-    './hook/npm/NpmIdentity.user.js',
-    './hook/rust',
-    './hook/rust/RustIdentity.user.js',
-  ];
-  test.identical( files, exp );
-  _.censor.profileDel( profileDir );
-
-  test.case = 'set git hooks for different identities';
-  var identity = { name : 'user', login : 'userLogin' };
-  _.censor.identityNew({ profileDir, identity });
-  var identity = { name : 'user2', login : 'userLogin2' };
-  _.censor.identityNew({ profileDir, identity });
-  var files = a.find( userProfileDir );
-  test.identical( files, [ '.', './config.yaml' ] );
-  _.censor.identityHookSet({ profileDir, hook, type : 'git', selector : 'user' });
-  _.censor.identityHookSet({ profileDir, hook, type : 'git', selector : 'user2' });
-  var files = a.find( userProfileDir );
-  var exp =
-  [
-    '.',
-    './config.yaml',
-    './hook',
-    './hook/git',
-    './hook/git/GitIdentity.user.js',
-    './hook/git/GitIdentity.user2.js',
-  ];
-  test.identical( files, exp );
-  _.censor.profileDel( profileDir );
-
-  /* - */
-
-  if( !Config.debug )
-  return;
-
-  test.case = 'without arguments';
-  test.shouldThrowErrorSync( () => _.censor.identityHookSet() );
-
-  test.case = 'extra arguments';
-  var o = { profileDir, hook, type : 'git', selector : 'user' };
-  test.shouldThrowErrorSync( () => _.censor.identityHookSet( o, o ) );
-
-  test.case = 'wrong type of options map';
-  test.shouldThrowErrorSync( () => _.censor.identityHookSet([ { profileDir, hook, type : 'git', selector : 'user' } ]) );
-
-  test.case = 'unknown option in options map';
-  test.shouldThrowErrorSync( () => _.censor.identityHookSet({ profileDir, hook, type : 'git', selector : 'user', unknown : 1 }) );
-
-  test.case = 'wrong type of o.type';
-  test.shouldThrowErrorSync( () => _.censor.identityHookSet({ profileDir, hook, type : null, selector : 'user' }) );
-
-  test.case = 'unknown type of o.type';
-  test.shouldThrowErrorSync( () => _.censor.identityHookSet({ profileDir, hook, type : 'unknown', selector : 'user' }) );
-
-  test.case = 'o.selector is glob';
-  test.shouldThrowErrorSync( () => _.censor.identityHookSet({ profileDir, hook, type : 'unknown', selector : 'user*' }) );
-
-  test.case = 'identity type is not equal to o.type, not general identity type';
-  _.censor.identityNew({ profileDir, identity : { name : 'user', login : 'userLogin', type : 'npm' } });
-  test.shouldThrowErrorSync( () => _.censor.identityHookSet({ profileDir, hook, type : 'git', selector : 'user' }) );
-  _.censor.profileDel( profileDir );
-  _.censor.identityNew({ profileDir, identity : { name : 'user', login : 'userLogin', type : 'npm' } });
-  test.shouldThrowErrorSync( () => _.censor.identityHookSet({ profileDir, hook, type : 'general', selector : 'user' }) );
-  _.censor.profileDel( profileDir );
-}
-
-//
-
-function identityHookSetWithOptionDefault( test )
-{
-  const a = test.assetFor( false );
-  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
-  const userProfileDir = a.fileProvider.configUserPath( `.censor/${ profileDir }` );
-  const hook = 'console.log( `hook` );';
-
-  /* */
-
-  test.case = 'set default git hook';
-  var identity = { name : 'user', login : 'userLogin' };
-  _.censor.identityNew({ profileDir, identity });
-  var files = a.find( userProfileDir );
-  test.identical( files, [ '.', './config.yaml' ] );
-  var got = _.censor.identityHookSet({ profileDir, hook, type : 'git', selector : 'user', default : true });
-  test.identical( got, undefined );
-  var files = a.find( userProfileDir );
-  var exp =
-  [
-    '.',
-    './config.yaml',
-    './hook',
-    './hook/git',
-    './hook/git/GitIdentity.js'
-  ];
-  test.identical( files, exp );
-  _.censor.profileDel( profileDir );
-
-  test.case = 'set default npm hook';
-  var identity = { name : 'user', login : 'userLogin' };
-  _.censor.identityNew({ profileDir, identity });
-  var files = a.find( userProfileDir );
-  test.identical( files, [ '.', './config.yaml' ] );
-  var got = _.censor.identityHookSet({ profileDir, hook, type : 'npm', selector : 'user', default : true });
-  test.identical( got, undefined );
-  var files = a.find( userProfileDir );
-  var exp =
-  [
-    '.',
-    './config.yaml',
-    './hook',
-    './hook/npm',
-    './hook/npm/NpmIdentity.js'
-  ];
-  test.identical( files, exp );
-  _.censor.profileDel( profileDir );
-
-  test.case = 'set default hooks for general type';
-  var identity = { name : 'user', login : 'userLogin' };
-  _.censor.identityNew({ profileDir, identity });
-  var files = a.find( userProfileDir );
-  test.identical( files, [ '.', './config.yaml' ] );
-  var got = _.censor.identityHookSet({ profileDir, hook, type : 'general', selector : 'user', default : true });
-  test.identical( got, undefined );
-  var files = a.find( userProfileDir );
-  var exp =
-  [
-    '.',
-    './config.yaml',
-    './hook',
-    './hook/git',
-    './hook/git/GitIdentity.js',
-    './hook/npm',
-    './hook/npm/NpmIdentity.js',
-    './hook/rust',
-    './hook/rust/RustIdentity.js',
-  ];
-  test.identical( files, exp );
-  _.censor.profileDel( profileDir );
-}
-
-//
-
-function identityHookCallWithDefaultGitHook( test )
-{
-  const a = test.assetFor( false );
-
-  if( !_.process.insideTestContainer() )
-  return test.true( true );
-
-  a.fileProvider.dirMake( a.abs( '.' ) );
-  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
-  const userProfileDir = a.fileProvider.configUserPath( `.censor/${ profileDir }` );
-
-  const originalConfig = a.fileProvider.fileRead( a.fileProvider.configUserPath( '.gitconfig' ) );
-
-  /* - */
-
-  begin().then( () =>
-  {
-    test.case = 'call git hook';
-    var identity = { name : 'user', login : 'userLogin', email : 'user@domain.com' };
-    _.censor.identityNew({ profileDir, identity });
-    var files = a.find( userProfileDir );
-    test.identical( files, [ '.', './config.yaml' ] );
-    var got = _.censor.identityHookCall({ profileDir, type : 'git', selector : 'user' });
-    test.identical( got, undefined );
-    var files = a.find( userProfileDir );
-    test.identical( files, [ '.', './config.yaml', './hook', './hook/git', './hook/git/GitIdentity.js' ] );
-    _.censor.profileDel( profileDir );
-    requireClean();
-    return null;
-  });
-  a.shell( 'git config --global --list' )
-  .then( ( op ) =>
-  {
-    test.identical( _.strCount( op.output, 'user.name=userLogin' ), 1 );
-    test.identical( _.strCount( op.output, 'user.email=user@domain.com' ), 1 );
-    test.identical( _.strCount( op.output, 'url.https://userLogin@github.com.insteadof=https://github.com' ), 1 );
-    test.identical( _.strCount( op.output, 'url.https://userLogin@bitbucket.org.insteadof=https://bitbucket.org' ), 1 );
-    return null;
-  });
-
-  /* */
-
-  begin();
-  a.shell( 'git config --global user.name anotherUser' )
-  a.ready.then( () =>
-  {
-    test.case = 'git user name exists';
-    var identity = { name : 'user', login : 'userLogin', email : 'user@domain.com' };
-    _.censor.identityNew({ profileDir, identity });
-    var files = a.find( userProfileDir );
-    test.identical( files, [ '.', './config.yaml' ] );
-    var got = _.censor.identityHookCall({ profileDir, type : 'git', selector : 'user' });
-    test.identical( got, undefined );
-    var files = a.find( userProfileDir );
-    test.identical( files, [ '.', './config.yaml', './hook', './hook/git', './hook/git/GitIdentity.js' ] );
-    _.censor.profileDel( profileDir );
-    requireClean();
-    return null;
-  });
-  a.shell( 'git config --global --list' )
-  .then( ( op ) =>
-  {
-    test.identical( _.strCount( op.output, 'user.name=userLogin' ), 1 );
-    test.identical( _.strCount( op.output, 'user.email=user@domain.com' ), 1 );
-    test.identical( _.strCount( op.output, 'url.https://userLogin@github.com.insteadof=https://github.com' ), 1 );
-    test.identical( _.strCount( op.output, 'url.https://userLogin@bitbucket.org.insteadof=https://bitbucket.org' ), 1 );
-    return null;
-  });
-
-  /* */
-
-  begin().then( () =>
-  {
-    test.case = 'call twice';
-    var identity = { name : 'user', login : 'userLogin', email : 'user@domain.com' };
-    _.censor.identityNew({ profileDir, identity });
-    var files = a.find( userProfileDir );
-    test.identical( files, [ '.', './config.yaml' ] );
-    var got = _.censor.identityHookCall({ profileDir, type : 'git', selector : 'user' });
-    var got = _.censor.identityHookCall({ profileDir, type : 'git', selector : 'user' });
-    test.identical( got, undefined );
-    var files = a.find( userProfileDir );
-    test.identical( files, [ '.', './config.yaml', './hook', './hook/git', './hook/git/GitIdentity.js' ] );
-    _.censor.profileDel( profileDir );
-    requireClean();
-    return null;
-  });
-  a.shell( 'git config --global --list' )
-  .then( ( op ) =>
-  {
-    test.identical( _.strCount( op.output, 'user.name=userLogin' ), 1 );
-    test.identical( _.strCount( op.output, 'user.email=user@domain.com' ), 1 );
-    test.identical( _.strCount( op.output, 'url.https://userLogin@github.com.insteadof=https://github.com' ), 1 );
-    test.identical( _.strCount( op.output, 'url.https://userLogin@bitbucket.org.insteadof=https://bitbucket.org' ), 1 );
-    return null;
-  });
-
-  /* */
-
-  begin().then( () =>
-  {
-    test.case = 'change identity';
-    var identity = { name : 'user', login : 'userLogin', email : 'user@domain.com' };
-    _.censor.identityNew({ profileDir, identity });
-    var identity = { name : 'user2', login : 'userLogin2', email : 'user2@domain.com' };
-    _.censor.identityNew({ profileDir, identity });
-    var files = a.find( userProfileDir );
-    test.identical( files, [ '.', './config.yaml' ] );
-    var got = _.censor.identityHookCall({ profileDir, type : 'git', selector : 'user' });
-    var got = _.censor.identityHookCall({ profileDir, type : 'git', selector : 'user2' });
-    test.identical( got, undefined );
-    var files = a.find( userProfileDir );
-    test.identical( files, [ '.', './config.yaml', './hook', './hook/git', './hook/git/GitIdentity.js' ] );
-    _.censor.profileDel( profileDir );
-    requireClean();
-    return null;
-  });
-  a.shell( 'git config --global --list' )
-  .then( ( op ) =>
-  {
-    test.identical( _.strCount( op.output, 'user.name=userLogin2' ), 1 );
-    test.identical( _.strCount( op.output, 'user.email=user2@domain.com' ), 1 );
-    test.identical( _.strCount( op.output, 'url.https://userLogin2@github.com.insteadof=https://github.com' ), 1 );
-    test.identical( _.strCount( op.output, 'url.https://userLogin2@bitbucket.org.insteadof=https://bitbucket.org' ), 1 );
-    return null;
-  });
-
-  a.ready.finally( ( err, arg ) =>
-  {
-    a.fileProvider.fileWrite( a.fileProvider.configUserPath( '.gitconfig' ), originalConfig );
-    if( err )
-    throw _.err( err );
-    return arg;
-  });
-
-  /* - */
-
-  return a.ready;
-
-  /* */
-
-  function begin()
-  {
-    return a.ready.then( () =>
-    {
-      a.fileProvider.fileWrite( a.fileProvider.configUserPath( '.gitconfig' ), '' );
-      return null;
-    });
-  }
-
-  /* */
-
-  function requireClean()
-  {
-    delete require.cache[ a.path.nativize( a.abs( userProfileDir, 'hook/git/GitIdentity.js' ) ) ];
-    delete require.cache[ a.path.nativize( a.abs( userProfileDir, 'hook/npm/NpmIdentity.js' ) ) ];
-  }
-}
-
-//
-
-function identityHookCallWithDefaultNpmHook( test )
-{
-  const a = test.assetFor( false );
-
-  if( !_.process.insideTestContainer() )
-  return test.true( true );
-
-  a.fileProvider.dirMake( a.abs( '.' ) );
-  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
-  const userProfileDir = a.fileProvider.configUserPath( `.censor/${ profileDir }` );
-  const login = 'wtools-bot';
-  const token = process.env.PRIVATE_WTOOLS_BOT_NPM_TOKEN;
-  const email = process.env.PRIVATE_WTOOLS_BOT_EMAIL;
-  const pass = process.env.NPM_PASS;
-
-  if( !token || !email || !pass )
-  return test.true( true );
-
-  /* - */
-
-  a.ready.then( () =>
-  {
-    test.case = 'call npm hook';
-    var identity = { name : 'user', login, email, token };
-    _.censor.identityNew({ profileDir, identity });
-    var files = a.find( userProfileDir );
-    test.identical( files, [ '.', './config.yaml' ] );
-    var got = _.censor.identityHookCall({ profileDir, type : 'npm', selector : 'user' });
-    test.identical( got, undefined );
-    _.censor.profileDel( profileDir );
-    requireClean();
-    return null;
-  });
-  a.shell( 'npm whoami' )
-  .then( ( op ) =>
-  {
-    test.identical( op.exitCode, 0 );
-    test.identical( op.output.trim(), login );
-    return null;
-  });
-
-  /* */
-
-  a.ready.then( () =>
-  {
-    test.case = 'call npm hook twice';
-    var identity = { name : 'user', login, email, token };
-    _.censor.identityNew({ profileDir, identity });
-    var files = a.find( userProfileDir );
-    test.identical( files, [ '.', './config.yaml' ] );
-    var got = _.censor.identityHookCall({ profileDir, type : 'npm', selector : 'user' });
-    var got = _.censor.identityHookCall({ profileDir, type : 'npm', selector : 'user' });
-    test.identical( got, undefined );
-    _.censor.profileDel( profileDir );
-    requireClean();
-    return null;
-  });
-  a.shell( 'npm whoami' )
-  .then( ( op ) =>
-  {
-    test.identical( op.exitCode, 0 );
-    test.identical( op.output.trim(), login );
-    return null;
-  });
-
-  /* - */
-
-  return a.ready;
-
-  /* */
-
-  function requireClean()
-  {
-    delete require.cache[ a.path.nativize( a.abs( userProfileDir, 'hook/git/GitIdentity.js' ) ) ];
-    delete require.cache[ a.path.nativize( a.abs( userProfileDir, 'hook/npm/NpmIdentity.js' ) ) ];
-  }
-}
-
-//
-
-function identityHookCallWithUserHooks( test )
-{
-  const a = test.assetFor( false );
-  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
-  const userProfileDir = a.fileProvider.configUserPath( `.censor/${ profileDir }` );
-  const hook =
-`function onIdentity( identity )
-{
-  const _ = this;
-  _.censor.identitySet({ profileDir : '${ profileDir }', selector : 'user', set : { email : 'user@domain.com' } });
-}
-module.exports = onIdentity;`;
-  const hook2 =
-`function onIdentity( identity )
-{
-  const _ = this;
-  _.censor.identitySet({ profileDir : '${ profileDir }', selector : 'user', set : { token : 'userToken' } });
-}
-module.exports = onIdentity;`;
-
-  /* */
-
-  test.case = 'call git hook';
-  var identity = { name : 'user', login : 'userLogin' };
-  _.censor.identityNew({ profileDir, identity });
-  _.censor.identityHookSet({ profileDir, hook, type : 'git', selector : 'user' });
-  var config = _.censor.configRead({ profileDir });
-  test.identical( config.identity.user.email, undefined );
-  var got = _.censor.identityHookCall({ profileDir, type : 'git', selector : 'user' });
-  test.identical( got, undefined );
-  var config = _.censor.configRead({ profileDir });
-  test.identical( config.identity.user.email, 'user@domain.com' );
-  _.censor.profileDel( profileDir );
-  requireClean();
-
-  test.case = 'call npm hook';
-  var identity = { name : 'user', login : 'userLogin' };
-  _.censor.identityNew({ profileDir, identity });
-  _.censor.identityHookSet({ profileDir, hook, type : 'npm', selector : 'user' });
-  var config = _.censor.configRead({ profileDir });
-  test.identical( config.identity.user.email, undefined );
-  var got = _.censor.identityHookCall({ profileDir, type : 'npm', selector : 'user' });
-  test.identical( got, undefined );
-  var config = _.censor.configRead({ profileDir });
-  test.identical( config.identity.user.email, 'user@domain.com' );
-  _.censor.profileDel( profileDir );
-  requireClean();
-
-  test.case = 'call hooks for general type';
-  var identity = { name : 'user', login : 'userLogin' };
-  _.censor.identityNew({ profileDir, identity });
-  _.censor.identityHookSet({ profileDir, hook, type : 'git', selector : 'user' });
-  _.censor.identityHookSet({ profileDir, hook : hook2, type : 'npm', selector : 'user' });
-  var config = _.censor.configRead({ profileDir });
-  test.identical( config.identity.user.email, undefined );
-  test.identical( config.identity.user.token, undefined );
-  var got = _.censor.identityHookCall({ profileDir, type : 'general', selector : 'user' });
-  test.identical( got, undefined );
-  var config = _.censor.configRead({ profileDir });
-  test.identical( config.identity.user.email, 'user@domain.com' );
-  test.identical( config.identity.user.token, 'userToken' );
-  _.censor.profileDel( profileDir );
-  requireClean();
-
-  test.case = 'call git hooks for different identities';
-  var identity = { name : 'user', login : 'userLogin' };
-  _.censor.identityNew({ profileDir, identity });
-  var identity = { name : 'user2', login : 'userLogin2' };
-  _.censor.identityNew({ profileDir, identity });
-  _.censor.identityHookSet({ profileDir, hook, type : 'git', selector : 'user' });
-  _.censor.identityHookSet({ profileDir, hook : hook2, type : 'npm', selector : 'user2' });
-  var config = _.censor.configRead({ profileDir });
-  test.identical( config.identity.user.email, undefined );
-  test.identical( config.identity.user.token, undefined );
-  test.identical( config.identity.user2.email, undefined );
-  test.identical( config.identity.user2.token, undefined );
-  _.censor.identityHookCall({ profileDir, type : 'git', selector : 'user' });
-  _.censor.identityHookCall({ profileDir, type : 'npm', selector : 'user2' });
-  var config = _.censor.configRead({ profileDir });
-  test.identical( config.identity.user.email, 'user@domain.com' );
-  test.identical( config.identity.user.token, 'userToken' );
-  test.identical( config.identity.user2.email, undefined );
-  test.identical( config.identity.user2.token, undefined );
-  _.censor.profileDel( profileDir );
-  requireClean();
-
-  /* - */
-
-  if( Config.debug )
-  {
-    test.case = 'without arguments';
-    test.shouldThrowErrorSync( () => _.censor.identityHookCall() );
-
-    test.case = 'extra arguments';
-    var o = { profileDir, type : 'git', selector : 'user' };
-    test.shouldThrowErrorSync( () => _.censor.identityHookCall( o, o ) );
-
-    test.case = 'wrong type of options map';
-    test.shouldThrowErrorSync( () => _.censor.identityHookCall([ { profileDir, type : 'git', selector : 'user' } ]) );
-
-    test.case = 'unknown option in options map';
-    test.shouldThrowErrorSync( () => _.censor.identityHookCall({ profileDir, type : 'git', selector : 'user', unknown : 1 }) );
-
-    test.case = 'wrong type of o.type';
-    test.shouldThrowErrorSync( () => _.censor.identityHookCall({ profileDir, type : null, selector : 'user' }) );
-
-    test.case = 'unknown type of o.type';
-    test.shouldThrowErrorSync( () => _.censor.identityHookCall({ profileDir, type : 'unknown', selector : 'user' }) );
-
-    test.case = 'o.selector is glob';
-    test.shouldThrowErrorSync( () => _.censor.identityHookCall({ profileDir, type : 'unknown', selector : 'user*' }) );
-
-    test.case = 'identity type is not equal to o.type, not general identity type';
-    _.censor.identityNew({ profileDir, identity : { name : 'user', login : 'userLogin', type : 'npm' } });
-    test.shouldThrowErrorSync( () => _.censor.identityHookCall({ profileDir, type : 'git', selector : 'user' }) );
-    _.censor.profileDel( profileDir );
-    _.censor.identityNew({ profileDir, identity : { name : 'user', login : 'userLogin', type : 'npm' } });
-    test.shouldThrowErrorSync( () => _.censor.identityHookCall({ profileDir, type : 'general', selector : 'user' }) );
-    _.censor.profileDel( profileDir );
-
-    test.case = 'hook return no routine';
-    _.censor.identityNew({ profileDir, identity : { name : 'user', login : 'userLogin' } });
-    _.censor.identityHookSet({ profileDir, hook : 'console.log( `hook` );', type : 'git', selector : 'user' });
-    test.shouldThrowErrorSync( () => _.censor.identityHookCall({ profileDir, type : 'git', selector : 'user' }) );
-    _.censor.profileDel( profileDir );
-  }
-
-  /* */
-
-  function requireClean()
-  {
-    delete require.cache[ a.path.nativize( a.abs( userProfileDir, 'hook/git/GitIdentity.user.js' ) ) ];
-    delete require.cache[ a.path.nativize( a.abs( userProfileDir, 'hook/npm/NpmIdentity.user.js' ) ) ];
-    delete require.cache[ a.path.nativize( a.abs( userProfileDir, 'hook/npm/NpmIdentity.user2.js' ) ) ];
-  }
-}
-
-//
-
 function identityUse( test )
 {
   const a = test.assetFor( false );
@@ -2203,12 +2019,11 @@ module.exports = onIdentity;`;
     var got = _.censor.identityUse({ profileDir, type : 'git', selector : 'user' });
     test.identical( got, undefined );
     var files = a.find( userProfileDir );
-    test.identical( files, [ '.', './config.yaml', './hook', './hook/git', './hook/git/GitIdentity.js' ] );
+    test.identical( files, [ '.', './config.yaml' ] );
     var config = _.censor.configRead({ profileDir });
     test.identical( config.identity.user, { login : 'userLogin', type : 'git', email : 'user@domain.com' } );
     test.identical( config.identity[ '_previous.git' ], undefined );
     _.censor.profileDel( profileDir );
-    requireClean();
     return null;
   });
   a.shell( 'git config --global --list' )
@@ -2236,12 +2051,11 @@ module.exports = onIdentity;`;
     var got = _.censor.identityUse({ profileDir, type : 'git', selector : 'user' });
     test.identical( got, undefined );
     var files = a.find( userProfileDir );
-    test.identical( files, [ '.', './config.yaml', './hook', './hook/git', './hook/git/GitIdentity.js' ] );
+    test.identical( files, [ '.', './config.yaml' ] );
     var config = _.censor.configRead({ profileDir });
     test.identical( config.identity.user, { login : 'userLogin', type : 'git', email : 'user@domain.com' } );
     test.identical( config.identity[ '_previous.git' ], undefined );
     _.censor.profileDel( profileDir );
-    requireClean();
     return null;
   });
   a.shell( 'git config --global --list' )
@@ -2273,7 +2087,7 @@ module.exports = onIdentity;`;
     var got = _.censor.identityUse({ profileDir, type : 'git', selector : 'user' });
     test.identical( got, undefined );
     var files = a.find( userProfileDir );
-    test.identical( files, [ '.', './config.yaml', './hook', './hook/git', './hook/git/GitIdentity.js' ] );
+    test.identical( files, [ '.', './config.yaml' ] );
     var config = _.censor.configRead({ profileDir });
     test.identical( config.identity.user, { login : 'userLogin', type : 'git', email : 'user@domain.com' } );
     test.identical( config.identity.user2, { login : 'userLogin2', type : 'general', email : 'user2@domain.com' } );
@@ -2282,14 +2096,13 @@ module.exports = onIdentity;`;
     var got = _.censor.identityUse({ profileDir, type : 'git', selector : 'user2' });
     test.identical( got, undefined );
     var files = a.find( userProfileDir );
-    test.identical( files, [ '.', './config.yaml', './hook', './hook/git', './hook/git/GitIdentity.js' ] );
+    test.identical( files, [ '.', './config.yaml' ] );
     var config = _.censor.configRead({ profileDir });
     test.identical( config.identity.user, { login : 'userLogin', type : 'git', email : 'user@domain.com' } );
     test.identical( config.identity.user2, { login : 'userLogin2', type : 'general', email : 'user2@domain.com' } );
     var exp = { 'git.login' : 'userLogin', 'type' : 'git', 'git.email' : 'user@domain.com' };
     test.identical( config.identity[ '_previous.git' ], exp );
     _.censor.profileDel( profileDir );
-    requireClean();
     return null;
   });
   a.shell( 'git config --global --list' )
@@ -2309,7 +2122,7 @@ module.exports = onIdentity;`;
     test.case = 'call user hook';
     var identity = { name : 'user', type : 'git', login : 'userLogin' };
     _.censor.identityNew({ profileDir, identity });
-    _.censor.identityHookSet({ profileDir, hook, type : 'git', selector : 'user' });
+    _.censor.profileHookSet({ profileDir, hook, type : 'git' });
     var config = _.censor.configRead({ profileDir });
     test.identical( config.identity.user.email, undefined );
     var got = _.censor.identityUse({ profileDir, type : 'git', selector : 'user' });
@@ -2317,7 +2130,6 @@ module.exports = onIdentity;`;
     var config = _.censor.configRead({ profileDir });
     test.identical( config.identity.user.email, 'user@domain.com' );
     _.censor.profileDel( profileDir );
-    requireClean();
     return null;
   });
 
@@ -2344,14 +2156,6 @@ module.exports = onIdentity;`;
       a.fileProvider.fileWrite( a.fileProvider.configUserPath( '.gitconfig' ), '' );
       return null;
     });
-  }
-
-  /* */
-
-  function requireClean()
-  {
-    delete require.cache[ a.path.nativize( a.abs( userProfileDir, 'hook/git/GitIdentity.js' ) ) ];
-    delete require.cache[ a.path.nativize( a.abs( userProfileDir, 'hook/npm/NpmIdentity.js' ) ) ];
   }
 }
 
@@ -3184,6 +2988,12 @@ const Proto =
   {
     profileDel,
     profileDelWithOptionsMap,
+    profileHookPathMake,
+    profileHookGet,
+    profileHookCallWithIdentityWithDefaultGitHook,
+    profileHookCallWithIdentityWithDefaultNpmHook,
+    profileHookCallWithIdentityWithUserHooks,
+    profileHookSet,
 
     configRead,
     configReadWithOptionsMap,
@@ -3196,13 +3006,6 @@ const Proto =
     identityNewWithResolving,
     identityFrom,
     identityDel,
-    identityHookPathMake,
-    identityHookGet,
-    identityHookSet,
-    identityHookSetWithOptionDefault,
-    identityHookCallWithDefaultGitHook,
-    identityHookCallWithDefaultNpmHook,
-    identityHookCallWithUserHooks,
     identityUse,
     identityResolveDefaultMaybe,
 

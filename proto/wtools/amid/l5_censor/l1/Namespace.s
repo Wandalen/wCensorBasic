@@ -241,7 +241,313 @@ profileLog.defaults =
   ... profileNameMapFrom.defaults,
   logger : null,
   verbosity : 3,
+};
+
+//
+
+function profileHookPathMake( o )
+{
+  const self = this;
+
+  _.assert( arguments.length === 1, 'Expects exactly one argument' );
+  _.routine.options( profileHookPathMake, o );
+
+  self._profileNameMapFromDefaults( o );
+
+  const typesMap =
+  {
+    git : [ 'git' ],
+    npm : [ 'npm' ],
+    rust : [ 'rust' ],
+  };
+
+  _.assert( o.type in typesMap );
+
+  const baseName = `${ o.type.replace( /^\w/, o.type[ 0 ].toUpperCase() ) }Hook`;
+  const hookRelativePath = _.path.join( o.storageDir, o.profileDir, self.storageHookDir, `${ baseName }.js` );
+  return _.fileProvider.configUserPath( hookRelativePath );
 }
+
+profileHookPathMake.defaults =
+{
+  ... profileNameMapFrom.defaults,
+  type : null,
+};
+
+//
+
+function profileHookGet( o )
+{
+  const self = this;
+
+  _.assert( arguments.length === 1, 'Expects exactly one argument' );
+  _.routine.options( profileHookGet, o );
+
+  self._profileNameMapFromDefaults( o );
+
+  const typesMap =
+  {
+    git : [ 'git' ],
+    npm : [ 'npm' ],
+    rust : [ 'rust' ],
+    general : [ 'git', 'npm', 'rust' ],
+  };
+
+  _.assert( o.type in typesMap );
+
+  const hooksMap =
+  {
+    git : _profileGitHook,
+    npm : _profileNpmHook,
+    rust : _profileRustHook,
+  };
+  const o3 = _.mapOnly_( null, o, self.profileHookPathMake.defaults );
+  const result = [];
+
+  _.each( typesMap[ o.type ], ( type ) => result.push( hookGet( type ) ) );
+  if( result.length === 1 )
+  return result[ 0 ];
+  return result;
+
+  /* */
+
+  function hookGet( type )
+  {
+    o3.type = type;
+    let filePath = self.profileHookPathMake( o3 );
+    if( _.fileProvider.fileExists( filePath ) )
+    return _.fileProvider.fileRead( filePath );
+    else
+    return hooksMap[ type ].toString();
+  }
+}
+
+profileHookGet.defaults =
+{
+  ... profileNameMapFrom.defaults,
+  type : null,
+};
+
+//
+
+function profileHookSet( o )
+{
+  const self = this;
+
+  _.assert( arguments.length === 1, 'Expects exactly one argument' );
+  _.routine.options( profileHookSet, o );
+  _.assert( _.str.defined( o.hook ), 'Expects hook.' );
+
+  self._profileNameMapFromDefaults( o );
+
+  const typesMap =
+  {
+    git : [ 'git' ],
+    npm : [ 'npm' ],
+    rust : [ 'rust' ],
+    general : [ 'git', 'npm', 'rust' ],
+  };
+
+  _.assert( o.type in typesMap );
+
+  const o2 = _.mapOnly_( null, o, self.profileHookPathMake.defaults );
+  _.each( typesMap[ o.type ], ( type ) => hookMake( o.hook, type ) );
+
+  /* */
+
+  function hookMake( data, type )
+  {
+    o2.type = type;
+    const filePath = self.profileHookPathMake( o2 );
+    _.fileProvider.fileWrite({ filePath, data });
+  }
+}
+
+profileHookSet.defaults =
+{
+  ... profileNameMapFrom.defaults,
+  hook : null,
+  type : null,
+};
+
+//
+
+function _profileGitHook( identity, options )
+{
+  const start = _.process.starter
+  ({
+    mode : 'shell',
+    outputCollecting : 1,
+    throwingExitCode : 0,
+    inputMirroring : 0,
+    sync : 1,
+  });
+
+  const login = identity[ 'git.login' ] || identity.login;
+  const email = identity[ 'git.email' ] || identity.email;
+  _.assert( _.str.defined( login ) );
+  _.assert( _.str.defined( email ) );
+  const oldName = start({ execPath : 'git config --global user.name', outputPiping : 0 }).output.trim();
+  if( oldName )
+  {
+    start
+    ({
+      execPath :
+      [
+        `git config --global --unset url.https://${ oldName }@github.com.insteadof`,
+        `git config --global --unset url.https://${ oldName }@bitbucket.org.insteadof`,
+      ],
+    });
+  }
+  start
+  ({
+    execPath :
+    [
+      `git config --global user.name "${ login }"`,
+      `git config --global user.email "${ email }"`,
+      `git config --global url."https://${ login }@github.com".insteadOf "https://github.com"`,
+      `git config --global url."https://${ login }@bitbucket.org".insteadOf "https://bitbucket.org"`,
+    ],
+    throwingExitCode : 1,
+  });
+
+  if( options.logger )
+  start
+  ({
+    execPath :  'git config --global --list --show-origin',
+    logger : options.logger,
+    outputPiping : 1,
+    throwingExitCode : 1,
+  });
+}
+
+//
+
+function _profileNpmHook( identity, options )
+{
+  const tempPath = _.path.tempOpen( 'npmHook' );
+  const start = _.process.starter
+  ({
+    currentPath : tempPath,
+    mode : 'shell',
+    outputCollecting : 1,
+    throwingExitCode : 1,
+    inputMirroring : 0,
+    sync : 1,
+  });
+
+  const login = identity[ 'npm.login' ] || identity.login;
+  const email = identity[ 'npm.email' ] || identity.email;
+  const token = identity[ 'npm.token' ] || identity.token;
+  const password = process.env.NPM_PASS;
+  _.assert( _.str.defined( login ) );
+  _.assert( _.str.defined( email ) );
+  _.assert( _.str.defined( token ) );
+  _.assert( _.str.defined( password ), 'Expects password as environment variable {-NPM_PASS-}' );
+
+  start( 'npm i npm-cli-login' );
+  const npmCli = _.path.nativize( './node_modules/.bin/npm-cli-login' );
+  start
+  ({
+    execPath : `${ npmCli } -u ${ login } -p ${ password } -e ${ email } --quotes`,
+    outputPiping : 0,
+    outputCollecting : 0,
+  });
+
+  if( options.logger )
+  start
+  ({
+    execPath : 'npm profile get --json',
+    outputPiping : 1,
+    logger : options.logger,
+  });
+  _.path.tempClose( tempPath );
+}
+
+//
+
+function _profileRustHook( identity, options )
+{
+}
+
+//
+
+function profileHookCallWithIdentity( o )
+{
+  const self = this;
+
+  _.assert( arguments.length === 1, 'Expects exactly one argument' );
+  _.routine.options( profileHookCallWithIdentity, o );
+
+  const typesMap =
+  {
+    git : [ 'git' ],
+    npm : [ 'npm' ],
+    rust : [ 'rust' ],
+    general : [ 'git', 'npm', 'rust' ],
+  };
+
+  _.assert( o.type in typesMap );
+  _.assert( !_.path.isGlob( o.selector ) );
+
+  o.logger = _.logger.relativeMaybe( o.logger, -3 );
+  self._profileNameMapFromDefaults( o );
+
+  const o2 = _.mapOnly_( null, o, self.identityGet.defaults );
+  const identity = self.identityGet( o2 );
+  _.assert( _.map.is( identity ), `Selected no identity : ${ o.selector }. Please, improve selector.` );
+  _.assert
+  (
+    ( 'login' in identity || `${ o.type }.login` in identity ) && 'type' in identity,
+    `Selected ${ _.props.keys( identity ).length } identity(s). Please, improve selector.`
+  );
+  _.assert( identity.type === 'general' || identity.type === o.type );
+
+  const o3 = _.mapOnly_( null, o, self.profileHookPathMake.defaults );
+  const hooksMap =
+  {
+    git : _profileGitHook,
+    npm : _profileNpmHook,
+    rust : _profileRustHook,
+  };
+
+  _.each( typesMap[ o.type ], ( type ) =>
+  {
+    o3.type = type;
+    let filePath = self.profileHookPathMake( o3 );
+
+    if( _.fileProvider.fileExists( filePath ) )
+    hookCall( filePath );
+    else
+    hooksMap[ type ]( identity, o );
+  });
+
+  /* */
+
+  function hookCall( filePath )
+  {
+    filePath = _.path.nativize( filePath );
+    const routine = require( filePath );
+    _.assert( _.routine.is( routine ) );
+
+    let result = routine.call( _, identity, o );
+    if( _.promiseIs( result ) )
+    result = _.Consequence.From( result );
+    if( _.consequenceIs( result ) )
+    result = result.deasync().sync();
+
+    delete require.cache[ filePath ];
+    return result;
+  }
+}
+
+profileHookCallWithIdentity.defaults =
+{
+  ... profileNameMapFrom.defaults,
+  selector : null,
+  type : null,
+  logger : 2,
+};
 
 //
 
@@ -1018,398 +1324,6 @@ identityDel.defaults =
 
 //
 
-function identityHookPathMake( o )
-{
-  const self = this;
-
-  _.assert( arguments.length === 1, 'Expects exactly one argument' );
-  _.routine.options( identityHookPathMake, o );
-
-  self._configNameMapFromDefaults( o );
-
-  const typesMap =
-  {
-    git : [ 'git' ],
-    npm : [ 'npm' ],
-    rust : [ 'rust' ],
-  };
-
-  _.assert( o.type in typesMap );
-  _.assert( _.str.is( o.selector ) );
-  _.assert( !_.path.isGlob( o.selector ) );
-
-  const baseName = `${ o.type.replace( /^\w/, o.type[ 0 ].toUpperCase() ) }Identity`;
-  let hookRelativePath;
-  if( o.default )
-  hookRelativePath = _.path.join( o.storageDir, o.profileDir, self.storageHookDir, o.type, `${ baseName }.js` );
-  else
-  hookRelativePath = _.path.join( o.storageDir, o.profileDir, self.storageHookDir, o.type, `${ baseName }.${ o.selector }.js` );
-
-  return _.fileProvider.configUserPath( hookRelativePath );
-}
-
-identityHookPathMake.defaults =
-{
-  ... configNameMapFrom.defaults,
-  type : null,
-  selector : null,
-  default : false,
-};
-
-//
-
-function identityHookGet( o )
-{
-  const self = this;
-
-  _.assert( arguments.length === 1, 'Expects exactly one argument' );
-  _.routine.options( identityHookGet, o );
-
-  self._configNameMapFromDefaults( o );
-
-  const typesMap =
-  {
-    git : [ 'git' ],
-    npm : [ 'npm' ],
-    rust : [ 'rust' ],
-    general : [ 'git', 'npm', 'rust' ],
-  };
-
-  _.assert( o.type in typesMap );
-  _.assert( !_.path.isGlob( o.selector ) );
-
-  const o2 = _.mapOnly_( null, o, self.identityGet.defaults );
-  const identity = self.identityGet( o2 );
-  _.assert( _.map.is( identity ), `Selected no identity : ${ o.selector }. Please, improve selector.` );
-  _.assert
-  (
-    ( 'login' in identity || `${ o.type }.login` in identity ) && 'type' in identity,
-    `Selected ${ _.props.keys( identity ).length } identity(s). Please, improve selector.`
-  );
-  _.assert( identity.type === 'general' || identity.type === o.type );
-
-  const o3 = _.mapOnly_( null, o, self.identityHookPathMake.defaults );
-  const result = [];
-  _.each( typesMap[ o.type ], ( type ) => result.push( hookGet( type ) ) );
-  if( result.length === 1 )
-  return result[ 0 ];
-  return result;
-
-  /* */
-
-  function hookGet( type )
-  {
-    o3.type = type;
-    o3.default = false;
-    let filePath = self.identityHookPathMake( o3 );
-    if( _.fileProvider.fileExists( filePath ) )
-    return _.fileProvider.fileRead( filePath );
-
-    o3.default = true;
-    filePath = self.identityHookPathMake( o3 );
-    if( !_.fileProvider.fileExists( filePath ) )
-    self.identityHookSet( o3 );
-    return _.fileProvider.fileRead( filePath );
-  }
-}
-
-identityHookGet.defaults =
-{
-  ... configNameMapFrom.defaults,
-  type : null,
-  selector : null,
-  default : false,
-};
-
-//
-
-function identityHookSet( o )
-{
-  const self = this;
-
-  _.assert( arguments.length === 1, 'Expects exactly one argument' );
-  _.routine.options( identityHookSet, o );
-
-  self._configNameMapFromDefaults( o );
-
-  const typesMap =
-  {
-    git : [ 'git' ],
-    npm : [ 'npm' ],
-    rust : [ 'rust' ],
-    general : [ 'git', 'npm', 'rust' ],
-  };
-
-  _.assert( o.type in typesMap );
-  _.assert( !_.path.isGlob( o.selector ) );
-
-  const o2 = _.mapOnly_( null, o, self.identityGet.defaults );
-  const identity = self.identityGet( o2 );
-  _.assert( _.map.is( identity ), `Selected no identity : ${ o.selector }. Please, improve selector.` );
-  _.assert
-  (
-    ( 'login' in identity || `${ o.type }.login` in identity ) && 'type' in identity,
-    `Selected ${ _.props.keys( identity ).length } identity(s). Please, improve selector.`
-  );
-  _.assert( identity.type === 'general' || identity.type === o.type );
-
-  const o3 = _.mapOnly_( null, o, self.identityHookPathMake.defaults );
-  _.each( typesMap[ o.type ], ( type ) => hookMake( o.hook, type ) );
-
-  /* */
-
-  function hookMake( data, type )
-  {
-    o3.type = type;
-    const filePath = self.identityHookPathMake( o3 );
-    if( o.default )
-    data = hookCodeGet( type );
-    _.fileProvider.fileWrite({ filePath, data });
-    return filePath;
-  }
-
-  /* */
-
-  function hookCodeGet( type )
-  {
-    if( type === 'git' )
-    return gitHookCodeGet();
-    else if( type === 'npm' )
-    return npmHookCodeGet();
-    else
-    return rustHookCodeGet();
-  }
-
-  /* */
-
-  function gitHookCodeGet()
-  {
-    const code =
-    `
-function onIdentity( identity, options )
-{
-  const _ = this;
-  const ready = _.take( null );
-  const start = _.process.starter
-  ({
-    currentPath : __dirname,
-    mode : 'shell',
-    outputCollecting : 1,
-    throwingExitCode : 0,
-    inputMirroring : 0,
-    sync : 1,
-    ready,
-  });
-
-  const login = identity[ 'git.login' ] || identity.login;
-  const email = identity[ 'git.email' ] || identity.email;
-  _.assert( _.str.defined( login ) );
-  _.assert( _.str.defined( email ) );
-  const oldName = start({ execPath : 'git config --global user.name', outputPiping : 0 }).output.trim();
-  if( oldName )
-  {
-    start
-    ({
-      execPath :
-      [
-        \`git config --global --unset url.https://\$\{ oldName \}@github.com.insteadof\`,
-        \`git config --global --unset url.https://\$\{ oldName \}@bitbucket.org.insteadof\`,
-      ],
-    });
-  }
-  start
-  ({
-    execPath :
-    [
-      \`git config --global user.name "\$\{ login \}"\`,
-      \`git config --global user.email "\$\{ email \}"\`,
-      \`git config --global url."https://\$\{ login \}@github.com".insteadOf "https://github.com"\`,
-      \`git config --global url."https://\$\{ login \}@bitbucket.org".insteadOf "https://bitbucket.org"\`,
-    ],
-    throwingExitCode : 1,
-  });
-
-  if( options.logger )
-  start
-  ({
-    execPath :  'git config --global --list --show-origin',
-    logger : options.logger,
-    outputPiping : 1,
-    throwingExitCode : 1,
-  });
-}
-module.exports = onIdentity;
-`;
-    return code;
-  }
-
-  /* */
-
-  function npmHookCodeGet()
-  {
-    const code =
-    `
-function onIdentity( identity, options )
-{
-  const _ = this;
-  const start = _.process.starter
-  ({
-    currentPath : __dirname,
-    mode : 'shell',
-    outputCollecting : 1,
-    throwingExitCode : 1,
-    inputMirroring : 0,
-    sync : 1,
-  });
-
-  const login = identity[ 'npm.login' ] || identity.login;
-  const email = identity[ 'npm.email' ] || identity.email;
-  const token = identity[ 'npm.token' ] || identity.token;
-  const password = process.env.NPM_PASS;
-  _.assert( _.str.defined( login ) );
-  _.assert( _.str.defined( email ) );
-  _.assert( _.str.defined( token ) );
-  _.assert( _.str.defined( password ), 'Expects password as environment variable {-NPM_PASS-}' );
-
-  start( 'npm i npm-cli-login' );
-  const npmCli = _.path.nativize( './node_modules/.bin/npm-cli-login' );
-  start
-  ({
-    execPath : \`\$\{ npmCli \} -u \$\{ login \} -p \$\{ password \} -e \$\{ email \} --quotes\`,
-    outputPiping : 0,
-    outputCollecting : 0,
-  });
-
-  const npmrcPath = _.fileProvider.configUserPath( '.npmrc' );
-
-  const data = \`//registry.npmjs.org/:_authToken="\$\{ token \}"\n\`;
-  let config;
-  if( _.fileProvider.fileExists( npmrcPath ) )
-  {
-    config = _.fileProvider.fileRead( npmrcPath );
-    config = _.str.replace( config, /\\/\\/registry\\.npmjs\\.org.*\\n/, data );
-  }
-  else
-  {
-    config = data;
-  }
-  _.fileProvider.fileWrite( npmrcPath, config );
-
-  if( options.logger )
-  start
-  ({
-    execPath : 'npm profile get --json',
-    outputPiping : 1,
-    logger : options.logger,
-  });
-}
-module.exports = onIdentity;
-`;
-    return code;
-  }
-
-  /* */
-
-  function rustHookCodeGet()
-  {
-    const code =
-    `
-function onIdentity( identity )
-{
-}
-module.exports = onIdentity;
-`;
-    return code;
-  }
-}
-
-identityHookSet.defaults =
-{
-  ... configNameMapFrom.defaults,
-  hook : null,
-  type : null,
-  selector : null,
-  default : false,
-};
-
-//
-
-function identityHookCall( o )
-{
-  const self = this;
-
-  _.assert( arguments.length === 1, 'Expects exactly one argument' );
-  _.routine.options( identityHookCall, o );
-
-  const typesMap =
-  {
-    git : [ 'git' ],
-    npm : [ 'npm' ],
-    rust : [ 'rust' ],
-    general : [ 'git', 'npm', 'rust' ],
-  };
-
-  _.assert( o.type in typesMap );
-  _.assert( !_.path.isGlob( o.selector ) );
-
-  o.logger = _.logger.relativeMaybe( o.logger, -3 );
-  self._configNameMapFromDefaults( o );
-
-  const o2 = _.mapOnly_( null, o, self.identityGet.defaults );
-  const identity = self.identityGet( o2 );
-  _.assert( _.map.is( identity ), `Selected no identity : ${ o.selector }. Please, improve selector.` );
-  _.assert
-  (
-    ( 'login' in identity || `${ o.type }.login` in identity ) && 'type' in identity,
-    `Selected ${ _.props.keys( identity ).length } identity(s). Please, improve selector.`
-  );
-  _.assert( identity.type === 'general' || identity.type === o.type );
-
-  const o3 = _.mapOnly_( null, o, self.identityHookPathMake.defaults );
-
-  _.each( typesMap[ o.type ], ( type ) =>
-  {
-    o3.type = type;
-    o3.default = false;
-    let filePath = self.identityHookPathMake( o3 );
-
-    if( !_.fileProvider.fileExists( filePath ) )
-    {
-      o3.default = true;
-      filePath = self.identityHookPathMake( o3 );
-      if( !_.fileProvider.fileExists( filePath ) )
-      self.identityHookSet( o3 );
-    }
-
-    hookCall( filePath );
-  });
-
-  /* */
-
-  function hookCall( filePath )
-  {
-    const routine = require( _.path.nativize( filePath ) );
-    _.assert( _.routine.is( routine ) );
-
-    let result = routine.call( _, identity, o );
-    if( _.promiseIs( result ) )
-    result = _.Consequence.From( result );
-    if( _.consequenceIs( result ) )
-    result = result.deasync().sync();
-    return result;
-  }
-}
-
-identityHookCall.defaults =
-{
-  ... configNameMapFrom.defaults,
-  selector : null,
-  type : null,
-  logger : 2,
-};
-
-//
-
 function identityUse( o )
 {
   const self = this;
@@ -1459,7 +1373,7 @@ function identityUse( o )
     _.error.attend( err );
   }
 
-  self.identityHookCall( o );
+  self.profileHookCallWithIdentity( _.mapOnly_( null, o, _.censor.profileHookCallWithIdentity.defaults ) );
 }
 
 identityUse.defaults =
@@ -2739,6 +2653,13 @@ function where()
     result[ 'Censor::local' ] = _.path.join( require.resolve( 'wcensor' ), '../../..' );
     result[ 'Censor::entry' ] = require.resolve( 'wcensor' );
     result[ 'Censor::remote' ] = 'https://github.com/Wandalen/wCensor.git';
+    const configsMap = _.censor.configNameMapFrom({});
+    result[ 'Censor::default' ] =
+    {
+      storage : configsMap.storageDir,
+      profile : configsMap.profileDir,
+      config : configsMap.storagePath,
+    };
   }
   catch( err )
   {
@@ -2875,6 +2796,10 @@ let Extension =
   profileRead,
   profileDel,
   profileLog,
+  profileHookPathMake,
+  profileHookGet,
+  profileHookSet,
+  profileHookCallWithIdentity,
 
   _configNameMapFromDefaults,
   configNameMapFrom,
@@ -2900,10 +2825,6 @@ let Extension =
   identityNew,
   identityFrom,
   identityDel,
-  identityHookPathMake,
-  identityHookGet,
-  identityHookSet,
-  identityHookCall,
   identityUse,
   identityResolveDefaultMaybe,
 
