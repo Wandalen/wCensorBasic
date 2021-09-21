@@ -516,10 +516,10 @@ function profileHookCallWithIdentity( o )
     o3.type = type;
     let filePath = self.profileHookPathMake( o3 );
 
-    if( !_.fileProvider.fileExists( filePath ) )
-    hooksMap[ type ]( identity, o );
-    else
+    if( _.fileProvider.fileExists( filePath ) )
     hookCall( filePath );
+    else
+    hooksMap[ type ]( identity, o );
   });
 
   /* */
@@ -1373,7 +1373,7 @@ function identityUse( o )
     _.error.attend( err );
   }
 
-  self.profileHookCallWithIdentity( _.mapOnly_( null, o, _.censor.profileHookCallWithIdentity.defaults  ) );
+  self.profileHookCallWithIdentity( _.mapOnly_( null, o, _.censor.profileHookCallWithIdentity.defaults ) );
 }
 
 identityUse.defaults =
