@@ -1157,9 +1157,14 @@ function identityNew( o )
 
   const loginKey = o.identity.type === 'general' || o.identity.type === null ? 'login' : `${ o.identity.type }.login`;
   if( loginKey in o.identity )
-  _.assert( _.str.defined( o.identity[ loginKey ] ), `Expects field {-o.identity[ '${ loginKey }' ]-} or {-o.identity.login-}.` )
+  {
+    const msg = `Expects defined field {-o.identity[ '${ loginKey }' ]-} or {-o.identity.login-}.`;
+    _.assert( _.str.defined( o.identity[ loginKey ] ), msg );
+  }
   else
-  _.assert( _.str.defined( o.identity.login ), 'Expects field {-o.identity.login-}.' );
+  {
+    _.assert( _.str.defined( o.identity.login ), 'Expects field {-o.identity.login-}.' );
+  }
 
   self._configNameMapFromDefaults( o );
 
@@ -1245,7 +1250,16 @@ function identityFrom( o )
   o3.selector = o3.set[ `${ o.type }.login` ];
 
   if( !o.force )
-  verifyIdentity( o.selector || o3.selector );
+  verifyIdentity( o3.selector );
+
+  if( o.type === 'ssh' )
+  {
+    const keysRelativePath = _.path.join( o.storageDir, o.profileDir, 'ssh', o3.selector );
+    _.fileProvider.filesReflect
+    ({
+      reflectMap : { [ _.fileProvider.configUserPath( '.ssh') ] : _.fileProvider.configUserPath( keysRelativePath ) }
+    });
+  }
 
   return self.identitySet( o3 );
 
@@ -1280,7 +1294,14 @@ function identityFrom( o )
 
   function sshIdentityDataGet()
   {
-    _.assert( false, 'not implemented' );
+    const data = Object.create( null );
+    data.type = 'ssh';
+    data[ 'ssh.login' ] = o3.selector || 'id_rsa';
+    data[ 'ssh.path' ] = _.fileProvider.configUserPath( _.path.join( '.ssh', 'id_rsa' ) );
+    if( !_.fileProvider.fileExists( data[ 'ssh.path' ] ) )
+    data[ 'ssh.path' ] = _.fileProvider.configUserPath( _.path.join( '.ssh', data[ 'ssh.login' ] ) );
+    _.assert( _.fileProvider.fileExists( data[ 'ssh.path' ] ), 'Expects default ssh key `id_rsa` or name of ssh identity key.' );
+    return data;
   }
 
   /* */
@@ -2778,6 +2799,8 @@ let Config = _.Blueprint
 // --
 
 const IdentityTypes = _.set.make([ 'git', 'npm', 'rust', 'ssh' ]);
+
+//
 
 let Extension =
 {

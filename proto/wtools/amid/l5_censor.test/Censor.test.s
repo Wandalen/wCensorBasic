@@ -1830,7 +1830,6 @@ function identityFromWithSsh( test )
     var config = _.censor.configRead({ profileDir });
     var exp = { user : { login : 'userLogin', type : 'general', email : 'user@domain.com' } };
     test.identical( config.identity, exp );
-    _.censor.profileHookCallWithIdentity({ profileDir, type : 'git', selector : 'user' });
     var got = _.censor.identityFrom({ profileDir, type : 'ssh' });
     test.identical( got, undefined );
     var config = _.censor.configRead({ profileDir });
@@ -1854,7 +1853,6 @@ function identityFromWithSsh( test )
     var config = _.censor.configRead({ profileDir });
     var exp = { user : { login : 'userLogin', type : 'general', email : 'user@domain.com' } };
     test.identical( config.identity, exp );
-    _.censor.profileHookCallWithIdentity({ profileDir, type : 'git', selector : 'user' });
     var got = _.censor.identityFrom({ profileDir, selector : 'ssh', type : 'ssh' });
     test.identical( got, undefined );
     var config = _.censor.configRead({ profileDir });
@@ -1910,7 +1908,6 @@ function identityFromWithSsh( test )
     var config = _.censor.configRead({ profileDir });
     var exp = { user : { login : 'userLogin', type : 'general', email : 'user@domain.com' } };
     test.identical( config.identity, exp );
-    _.censor.profileHookCallWithIdentity({ profileDir, type : 'git', selector : 'user' });
     var got = _.censor.identityFrom({ profileDir, selector : 'user2', type : 'ssh' });
     test.identical( got, undefined );
     var config = _.censor.configRead({ profileDir });
