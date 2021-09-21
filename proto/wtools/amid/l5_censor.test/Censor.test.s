@@ -1619,7 +1619,7 @@ function identityNewWithResolving( test )
 
 //
 
-function identityFrom( test )
+function identityFromWithGit( test )
 {
   const a = test.assetFor( false );
 
@@ -1799,6 +1799,183 @@ function identityFrom( test )
   /* - */
 
   return a.ready;
+}
+
+//
+
+function identityFromWithSsh( test )
+{
+  const a = test.assetFor( false );
+
+  if( !_.process.insideTestContainer() )
+  return test.true( true );
+
+  a.fileProvider.dirMake( a.abs( '.' ) );
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+  let originalExists = false;
+  const originalPath = a.fileProvider.configUserPath( '.ssh' );
+  const backupPath = a.fileProvider.configUserPath( '.ssh.bak' );
+  if( _.fileProvider.fileExists( originalPath ) )
+  originalExists = true;
+
+  begin();
+
+  /* - */
+
+  writeKey( 'id_rsa' ).then( () =>
+  {
+    test.case = 'make new identity from ssh, selector - undefined';
+    var identity = { name : 'user', login : 'userLogin', email : 'user@domain.com' };
+    _.censor.identityNew({ profileDir, identity });
+    var config = _.censor.configRead({ profileDir });
+    var exp = { user : { login : 'userLogin', type : 'general', email : 'user@domain.com' } };
+    test.identical( config.identity, exp );
+    _.censor.profileHookCallWithIdentity({ profileDir, type : 'git', selector : 'user' });
+    var got = _.censor.identityFrom({ profileDir, type : 'ssh' });
+    test.identical( got, undefined );
+    var config = _.censor.configRead({ profileDir });
+    var exp =
+    {
+      user : { login : 'userLogin', type : 'general', email : 'user@domain.com' },
+      id_rsa : { 'ssh.login' : 'id_rsa', 'ssh.path' : a.abs( a.fileProvider.configUserPath( '.ssh'), 'id_rsa' ), 'type' : 'ssh' },
+    };
+    test.identical( config.identity, exp );
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+
+  /* */
+
+  a.ready.then( () =>
+  {
+    test.case = 'make new ssh identity from default key, selector - string';
+    var identity = { name : 'user', login : 'userLogin', email : 'user@domain.com' };
+    _.censor.identityNew({ profileDir, identity });
+    var config = _.censor.configRead({ profileDir });
+    var exp = { user : { login : 'userLogin', type : 'general', email : 'user@domain.com' } };
+    test.identical( config.identity, exp );
+    _.censor.profileHookCallWithIdentity({ profileDir, type : 'git', selector : 'user' });
+    var got = _.censor.identityFrom({ profileDir, selector : 'ssh', type : 'ssh' });
+    test.identical( got, undefined );
+    var config = _.censor.configRead({ profileDir });
+    var exp =
+    {
+      user : { login : 'userLogin', type : 'general', email : 'user@domain.com' },
+      ssh : { 'ssh.login' : 'ssh', 'ssh.path' : a.abs( a.fileProvider.configUserPath( '.ssh'), 'id_rsa' ), 'type' : 'ssh' },
+    };
+    test.identical( config.identity, exp );
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+
+  /* */
+
+  a.ready.then( () =>
+  {
+    test.case = 'extend existed identity by specifique options';
+    var identity = { name : 'user', login : 'userLogin', email : 'user@domain.com' };
+    _.censor.identityNew({ profileDir, identity });
+    var config = _.censor.configRead({ profileDir });
+    var exp =
+    {
+      user : { login : 'userLogin', type : 'general', email : 'user@domain.com' },
+    };
+    test.identical( config.identity, exp );
+    var got = _.censor.identityFrom({ profileDir, selector : 'user', type : 'ssh', force : 1 });
+    test.identical( got, undefined );
+    var config = _.censor.configRead({ profileDir });
+    var exp =
+    {
+      user :
+      {
+        'login' : 'userLogin',
+        'type' : 'ssh',
+        'email' : 'user@domain.com',
+        'ssh.login' : 'user',
+        'ssh.path' : a.abs( a.fileProvider.configUserPath( '.ssh'), 'id_rsa' ),
+      },
+    };
+    test.identical( config.identity, exp );
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+
+  /* */
+
+  writeKey( 'user2' ).then( () =>
+  {
+    test.case = 'make new ssh identity from key with identity name, selector - string';
+    var identity = { name : 'user', login : 'userLogin', email : 'user@domain.com' };
+    _.censor.identityNew({ profileDir, identity });
+    var config = _.censor.configRead({ profileDir });
+    var exp = { user : { login : 'userLogin', type : 'general', email : 'user@domain.com' } };
+    test.identical( config.identity, exp );
+    _.censor.profileHookCallWithIdentity({ profileDir, type : 'git', selector : 'user' });
+    var got = _.censor.identityFrom({ profileDir, selector : 'user2', type : 'ssh' });
+    test.identical( got, undefined );
+    var config = _.censor.configRead({ profileDir });
+    var exp =
+    {
+      user : { login : 'userLogin', type : 'general', email : 'user@domain.com' },
+      user2 : { 'ssh.login' : 'user2', 'ssh.path' : a.abs( a.fileProvider.configUserPath( '.ssh'), 'user2' ), 'type' : 'ssh' },
+    };
+    test.identical( config.identity, exp );
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+
+
+  /* - */
+
+  a.ready.finally( ( err, arg ) =>
+  {
+    a.fileProvider.filesDelete( originalPath );
+    if( originalExists )
+    {
+      a.fileProvider.filesReflect
+      ({
+        reflectMap : { [ backupPath ] : originalPath }
+      });
+      a.fileProvider.filesDelete( backupPath );
+    }
+    if( err )
+    throw _.err( err );
+    return arg;
+  });
+
+  /* - */
+
+  return a.ready;
+
+  /* */
+
+  function begin()
+  {
+    return a.ready.then( () =>
+    {
+      if( originalExists )
+      {
+        a.fileProvider.filesReflect
+        ({
+          reflectMap : { [ originalPath ] : backupPath }
+        });
+        a.fileProvider.filesDelete( originalPath );
+      }
+      return null;
+    });
+  }
+
+  /* */
+
+  function writeKey( name )
+  {
+    return a.ready.then( () =>
+    {
+      a.fileProvider.filesDelete( originalPath );
+      a.fileProvider.fileWrite( a.abs( originalPath, name ), name );
+      return null;
+    });
+  }
 }
 
 //
@@ -3006,7 +3183,8 @@ const Proto =
     identitySetWithResolving,
     identityNew,
     identityNewWithResolving,
-    identityFrom,
+    identityFromWithGit,
+    identityFromWithSsh,
     identityDel,
     identityUse,
     identityResolveDefaultMaybe,
