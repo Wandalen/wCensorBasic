@@ -302,7 +302,7 @@ function profileHookGet( test )
   var got = _.censor.profileHookSet({ profileDir, hook, type : 'general' });
   var got = _.censor.profileHookGet({ profileDir, type : 'general' });
   test.true( _.array.is( got ) );
-  test.identical( got.length, 3 );
+  test.identical( got.length, 4 );
   test.identical( got[ 0 ], hook );
   test.identical( got[ 0 ], got[ 1 ] );
   test.identical( got[ 1 ], got[ 2 ] );
@@ -315,6 +315,7 @@ function profileHookGet( test )
     './hook/GitHook.js',
     './hook/NpmHook.js',
     './hook/RustHook.js',
+    './hook/SshHook.js',
   ];
   test.identical( files, exp );
   _.censor.profileDel( profileDir );
@@ -752,6 +753,7 @@ function profileHookSet( test )
     './hook/GitHook.js',
     './hook/NpmHook.js',
     './hook/RustHook.js',
+    './hook/SshHook.js',
   ];
   test.identical( files, exp );
   _.censor.profileDel( profileDir );

@@ -254,14 +254,7 @@ function profileHookPathMake( o )
 
   self._profileNameMapFromDefaults( o );
 
-  const typesMap =
-  {
-    git : [ 'git' ],
-    npm : [ 'npm' ],
-    rust : [ 'rust' ],
-  };
-
-  _.assert( o.type in typesMap );
+  _.assert( _.set.hasKey( self.IdentityTypes, o.type ) );
 
   const baseName = `${ o.type.replace( /^\w/, o.type[ 0 ].toUpperCase() ) }Hook`;
   const hookRelativePath = _.path.join( o.storageDir, o.profileDir, self.storageHookDir, `${ baseName }.js` );
@@ -285,36 +278,36 @@ function profileHookGet( o )
 
   self._profileNameMapFromDefaults( o );
 
-  const typesMap =
-  {
-    git : [ 'git' ],
-    npm : [ 'npm' ],
-    rust : [ 'rust' ],
-    general : [ 'git', 'npm', 'rust' ],
-  };
-
-  _.assert( o.type in typesMap );
+  _.assert( _.set.hasKey( self.IdentityTypes, o.type ) || o.type === 'general' );
 
   const hooksMap =
   {
     git : _profileGitHook,
     npm : _profileNpmHook,
     rust : _profileRustHook,
+    ssh : _profileSshHook,
   };
-  const o3 = _.mapOnly_( null, o, self.profileHookPathMake.defaults );
-  const result = [];
 
-  _.each( typesMap[ o.type ], ( type ) => result.push( hookGet( type ) ) );
-  if( result.length === 1 )
-  return result[ 0 ];
-  return result;
+  const o2 = _.mapOnly_( null, o, self.profileHookPathMake.defaults );
+
+  if( o.type === 'general' )
+  {
+    const result = [];
+    for( let type of self.IdentityTypes )
+    result.push( hookGet( type ) );
+    return result;
+  }
+  else
+  {
+    return hookGet( o.type );
+  }
 
   /* */
 
   function hookGet( type )
   {
-    o3.type = type;
-    let filePath = self.profileHookPathMake( o3 );
+    o2.type = type;
+    let filePath = self.profileHookPathMake( o2 );
     if( _.fileProvider.fileExists( filePath ) )
     return _.fileProvider.fileRead( filePath );
     else
@@ -340,18 +333,19 @@ function profileHookSet( o )
 
   self._profileNameMapFromDefaults( o );
 
-  const typesMap =
-  {
-    git : [ 'git' ],
-    npm : [ 'npm' ],
-    rust : [ 'rust' ],
-    general : [ 'git', 'npm', 'rust' ],
-  };
-
-  _.assert( o.type in typesMap );
+  _.assert( _.set.hasKey( self.IdentityTypes, o.type ) || o.type === 'general' );
 
   const o2 = _.mapOnly_( null, o, self.profileHookPathMake.defaults );
-  _.each( typesMap[ o.type ], ( type ) => hookMake( o.hook, type ) );
+
+  if( o.type === 'general' )
+  {
+    for( let type of self.IdentityTypes )
+    hookMake( o.hook, type );
+  }
+  else
+  {
+    hookMake( o.hook, o.type );
+  }
 
   /* */
 
@@ -472,6 +466,12 @@ function _profileRustHook( identity, options )
 
 //
 
+function _profileSshHook( identity, options )
+{
+}
+
+//
+
 function profileHookCallWithIdentity( o )
 {
   const self = this;
@@ -479,15 +479,7 @@ function profileHookCallWithIdentity( o )
   _.assert( arguments.length === 1, 'Expects exactly one argument' );
   _.routine.options( profileHookCallWithIdentity, o );
 
-  const typesMap =
-  {
-    git : [ 'git' ],
-    npm : [ 'npm' ],
-    rust : [ 'rust' ],
-    general : [ 'git', 'npm', 'rust' ],
-  };
-
-  _.assert( o.type in typesMap );
+  _.assert( _.set.hasKey( self.IdentityTypes, o.type ) || o.type === 'general' );
   _.assert( !_.path.isGlob( o.selector ) );
 
   o.logger = _.logger.relativeMaybe( o.logger, -3 );
@@ -509,9 +501,22 @@ function profileHookCallWithIdentity( o )
     git : _profileGitHook,
     npm : _profileNpmHook,
     rust : _profileRustHook,
+    ssh : _profileSshHook,
   };
 
-  _.each( typesMap[ o.type ], ( type ) =>
+  if( o.type === 'general' )
+  {
+    for( let type of self.IdentityTypes )
+    hookResolve( type );
+  }
+  else
+  {
+    hookResolve( o.type );
+  }
+
+  /* */
+
+  function hookResolve( type )
   {
     o3.type = type;
     let filePath = self.profileHookPathMake( o3 );
@@ -520,7 +525,7 @@ function profileHookCallWithIdentity( o )
     hookCall( filePath );
     else
     hooksMap[ type ]( identity, o );
-  });
+  }
 
   /* */
 
@@ -1176,7 +1181,7 @@ function identityNew( o )
     else
     o.identity.type = identity.type;
   }
-  _.assert( _.longHasAny( [ 'general', 'git', 'npm', 'rust' ], o.identity.type ) );
+  _.assert( _.set.hasKey( self.IdentityTypes, o.identity.type ) || o.identity.type === 'general' );
 
   o.selector = o.identity.name;
   delete o.identity.name;
@@ -1215,6 +1220,7 @@ function identityFrom( o )
     git : gitIdentityDataGet,
     npm : npmIdentityDataGet,
     rust : rustIdentityDataGet,
+    ssh : sshIdentityDataGet,
   };
   _.assert( o.type in identityMakerMap );
 
@@ -1266,6 +1272,13 @@ function identityFrom( o )
   /* */
 
   function rustIdentityDataGet()
+  {
+    _.assert( false, 'not implemented' );
+  }
+
+  /* */
+
+  function sshIdentityDataGet()
   {
     _.assert( false, 'not implemented' );
   }
@@ -1331,15 +1344,7 @@ function identityUse( o )
   _.assert( arguments.length === 1, 'Expects exactly one argument' );
   _.routine.options( identityUse, o );
 
-  const typesMap =
-  {
-    git : [ 'git' ],
-    npm : [ 'npm' ],
-    rust : [ 'rust' ],
-    general : [ 'git', 'npm', 'rust' ],
-  };
-
-  _.assert( o.type in typesMap || o.type === null );
+  _.assert( _.set.hasKey( self.IdentityTypes, o.type ) || o.type === 'general' );
   _.assert( !_.path.isGlob( o.selector ) );
 
   self._configNameMapFromDefaults( o );
@@ -1399,15 +1404,7 @@ function identityResolveDefaultMaybe( o )
 
   _.routine.options( identityResolveDefaultMaybe, o );
 
-  const typesMap =
-  {
-    git : [ 'git' ],
-    npm : [ 'npm' ],
-    rust : [ 'rust' ],
-    general : [ 'git', 'npm', 'rust' ],
-  };
-
-  _.assert( o.type in typesMap || o.type === null );
+  _.assert( _.set.hasKey( self.IdentityTypes, o.type ) || o.type === 'general' || o.type === null );
 
   self._configNameMapFromDefaults( o );
 
@@ -2780,6 +2777,8 @@ let Config = _.Blueprint
 // declare
 // --
 
+const IdentityTypes = _.set.make([ 'git', 'npm', 'rust', 'ssh' ]);
+
 let Extension =
 {
 
@@ -2870,6 +2869,8 @@ let Extension =
   ActionStatus,
   Arrangement,
   Config,
+
+  IdentityTypes,
 
   storageDir : '.censor',
   storagePath : null,
