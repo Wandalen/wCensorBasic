@@ -740,6 +740,13 @@ module.exports = onIdentity;`;
   _.censor.identitySet({ profileDir : '${ profileDir }', selector : 'user', set : { token : 'userToken' } });
 }
 module.exports = onIdentity;`;
+  const hook3 =
+`function onIdentity( identity )
+{
+  const _ = this;
+  _.censor.identitySet({ profileDir : '${ profileDir }', selector : 'user', set : { 'ssh.path' : 'path' } });
+}
+module.exports = onIdentity;`;
 
   /* */
 
@@ -772,6 +779,7 @@ module.exports = onIdentity;`;
   _.censor.identityNew({ profileDir, identity });
   _.censor.profileHookSet({ profileDir, hook, type : 'git' });
   _.censor.profileHookSet({ profileDir, hook : hook2, type : 'npm' });
+  _.censor.profileHookSet({ profileDir, hook : hook3, type : 'ssh' });
   var config = _.censor.configRead({ profileDir });
   test.identical( config.identity.user.email, undefined );
   test.identical( config.identity.user.token, undefined );
@@ -780,6 +788,7 @@ module.exports = onIdentity;`;
   var config = _.censor.configRead({ profileDir });
   test.identical( config.identity.user.email, 'user@domain.com' );
   test.identical( config.identity.user.token, 'userToken' );
+  test.identical( config.identity.user[ 'ssh.path' ], 'path' );
   _.censor.profileDel( profileDir );
 
   test.case = 'call git hooks for different identities';
