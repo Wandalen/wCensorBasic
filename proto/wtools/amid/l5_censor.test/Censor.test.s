@@ -2322,6 +2322,96 @@ function identityDel( test )
 
 //
 
+function identityDelWithSshKeys( test )
+{
+  const a = test.assetFor( false );
+
+  if( !_.process.insideTestContainer() )
+  return test.true( true );
+
+  a.fileProvider.dirMake( a.abs( '.' ) );
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+  const userProfileDir = a.fileProvider.configUserPath( `.censor/${ profileDir }` );
+  let originalExists = false;
+  const originalPath = a.fileProvider.configUserPath( '.ssh' );
+  const backupPath = a.fileProvider.configUserPath( '.ssh.bak' );
+  if( _.fileProvider.fileExists( originalPath ) )
+  originalExists = true;
+
+  begin();
+
+  /* - */
+
+  writeKey( 'id_rsa' ).then( () =>
+  {
+    test.case = 'call ssh hook';
+    _.censor.identityFrom({ profileDir, selector : 'user', type : 'ssh' });
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml', './ssh', './ssh/user', './ssh/user/id_rsa' ] );
+    a.fileProvider.fileWrite( a.abs( originalPath, 'id_rsa' ), 'another data' );
+    var got = _.censor.identityDel({ profileDir, selector : 'user' });
+    test.identical( got, undefined );
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml', './ssh' ] );
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+
+  /* */
+
+  a.ready.finally( ( err, arg ) =>
+  {
+    a.fileProvider.filesDelete( originalPath );
+    if( originalExists )
+    {
+      a.fileProvider.filesReflect
+      ({
+        reflectMap : { [ backupPath ] : originalPath }
+      });
+      a.fileProvider.filesDelete( backupPath );
+    }
+    if( err )
+    throw _.err( err );
+    return arg;
+  });
+
+  /* - */
+
+  return a.ready;
+
+  /* */
+
+  function begin()
+  {
+    return a.ready.then( () =>
+    {
+      if( originalExists )
+      {
+        a.fileProvider.filesReflect
+        ({
+          reflectMap : { [ originalPath ] : backupPath }
+        });
+        a.fileProvider.filesDelete( originalPath );
+      }
+      return null;
+    });
+  }
+
+  /* */
+
+  function writeKey( name )
+  {
+    return a.ready.then( () =>
+    {
+      a.fileProvider.filesDelete( originalPath );
+      a.fileProvider.fileWrite( a.abs( originalPath, name ), name );
+      return null;
+    });
+  }
+}
+
+//
+
 function identityUse( test )
 {
   const a = test.assetFor( false );
@@ -3473,6 +3563,7 @@ const Proto =
     identityFromWithGit,
     identityFromWithSsh,
     identityDel,
+    identityDelWithSshKeys,
     identityUse,
     identityUseSshExperiment,
     identityResolveDefaultMaybe,
