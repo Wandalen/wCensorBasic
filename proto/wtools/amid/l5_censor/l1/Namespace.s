@@ -468,6 +468,35 @@ function _profileRustHook( identity, options )
 
 function _profileSshHook( identity, options )
 {
+  _.assert( _.str.defined( identity[ 'ssh.path' ], 'Expects path to identity keys' ) );
+
+  const keysPath = _.fileProvider.configUserPath( identity[ 'ssh.path' ] );
+  const originalPath = _.fileProvider.configUserPath( '.ssh' );
+  const backupPath = _.fileProvider.configUserPath( '.ssh.backup' );
+
+  _.fileProvider.filesDelete( backupPath );
+  _.fileProvider.filesReflect({ reflectMap : { [ originalPath ] : backupPath } });
+
+  _.fileProvider.filesDelete( originalPath );
+  _.fileProvider.filesReflect({ reflectMap : { [ keysPath ] : originalPath } });
+
+  _.process.starter
+  ({
+    execPath : 'ssh-add -D',
+    mode : 'shell',
+    outputCollecting : 1,
+    throwingExitCode : 1,
+    inputMirroring : 0,
+    sync : 1,
+  });
+
+  if( options.logger )
+  {
+    let msg = `All ssh-identies cleared from cache.`
+    + `\nPlease, add key of identity "${ identity.login }" to ssh-agent by command : "ssh-add [path to key]".`
+    + `\nExample : "ssh-add ~/.ssh/id_rsa"`
+    options.logger.log( msg );
+  }
 }
 
 //
@@ -1297,10 +1326,12 @@ function identityFrom( o )
     const data = Object.create( null );
     data.type = 'ssh';
     data[ 'ssh.login' ] = o3.selector || 'id_rsa';
-    data[ 'ssh.path' ] = _.fileProvider.configUserPath( _.path.join( '.ssh', 'id_rsa' ) );
-    if( !_.fileProvider.fileExists( data[ 'ssh.path' ] ) )
-    data[ 'ssh.path' ] = _.fileProvider.configUserPath( _.path.join( '.ssh', data[ 'ssh.login' ] ) );
-    _.assert( _.fileProvider.fileExists( data[ 'ssh.path' ] ), 'Expects default ssh key `id_rsa` or name of ssh identity key.' );
+    let keyPath = _.fileProvider.configUserPath( _.path.join( '.ssh', 'id_rsa' ) );
+    if( !_.fileProvider.fileExists( keyPath ) )
+    keyPath = _.fileProvider.configUserPath( _.path.join( '.ssh', data[ 'ssh.login' ] ) );
+    _.assert( _.fileProvider.fileExists( keyPath ), 'Expects default ssh key `id_rsa` or name of ssh identity key.' );
+
+    data[ 'ssh.path' ] = _.path.join( o.storageDir, o.profileDir, 'ssh', o3.selector || 'id_rsa' );
     return data;
   }
 
