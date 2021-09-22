@@ -2491,6 +2491,132 @@ module.exports = onIdentity;`;
 
 //
 
+function identityUseSshExperiment( test )
+{
+  const a = test.assetFor( false );
+
+  if( !_.process.insideTestContainer() )
+  return test.true( true );
+
+  a.fileProvider.dirMake( a.abs( '.' ) );
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+  const userProfileDir = a.fileProvider.configUserPath( `.censor/${ profileDir }` );
+  let originalExists = false;
+  const originalPath = a.fileProvider.configUserPath( '.ssh' );
+  const backupPath = a.fileProvider.configUserPath( '.ssh.bak' );
+  if( _.fileProvider.fileExists( originalPath ) )
+  originalExists = true;
+
+  begin();
+
+  /* - */
+
+  writeKey( 'id_rsa' ).then( () =>
+  {
+    test.case = 'change identity';
+    _.censor.identityFrom({ profileDir, selector : 'user', type : 'ssh' });
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml', './ssh', './ssh/user', './ssh/user/id_rsa' ] );
+    return null;
+  });
+  writeKey( 'id_rsa' ).then( () =>
+  {
+    test.case = 'call twice';
+    _.censor.identityFrom({ profileDir, selector : 'user2', type : 'ssh' });
+    var files = a.find( userProfileDir );
+    var exp =
+    [
+      '.',
+      './config.yaml',
+      './ssh',
+      './ssh/user',
+      './ssh/user/id_rsa',
+      './ssh/user2',
+      './ssh/user2/id_rsa'
+    ];
+    test.identical( files, exp );
+    a.fileProvider.fileWrite( a.abs( originalPath, 'some_file' ), 'data' );
+    var got = _.censor.identityUse({ profileDir, type : 'ssh', selector : 'user' });
+    test.identical( got, undefined );
+    var files = a.find( userProfileDir );
+    var exp =
+    [
+      '.',
+      './config.yaml',
+      './ssh',
+      './ssh/_previous.ssh',
+      './ssh/_previous.ssh/id_rsa',
+      './ssh/_previous.ssh/some_file',
+      './ssh/user',
+      './ssh/user/id_rsa',
+      './ssh/user2',
+      './ssh/user2/id_rsa',
+      './ssh/user2/id_rsa/some_file',
+    ];
+    test.identical( files, exp );
+    var data = a.fileProvider.fileRead( a.abs( originalPath, 'id_rsa' ) );
+    test.identical( data, 'id_rsa' );
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+
+  /* */
+
+  a.ready.finally( ( err, arg ) =>
+  {
+    a.fileProvider.filesDelete( originalPath );
+    if( originalExists )
+    {
+      a.fileProvider.filesReflect
+      ({
+        reflectMap : { [ backupPath ] : originalPath }
+      });
+      a.fileProvider.filesDelete( backupPath );
+    }
+    if( err )
+    throw _.err( err );
+    return arg;
+  });
+
+  /* - */
+
+  return a.ready;
+
+  /* */
+
+  function begin()
+  {
+    return a.ready.then( () =>
+    {
+      if( originalExists )
+      {
+        a.fileProvider.filesReflect
+        ({
+          reflectMap : { [ originalPath ] : backupPath }
+        });
+        a.fileProvider.filesDelete( originalPath );
+      }
+      return null;
+    });
+  }
+
+  /* */
+
+  function writeKey( name )
+  {
+    return a.ready.then( () =>
+    {
+      a.fileProvider.filesDelete( originalPath );
+      a.fileProvider.fileWrite( a.abs( originalPath, name ), name );
+      return null;
+    });
+  }
+}
+
+identityUseSshExperiment.experimental = 1;
+
+//
+
 function identityResolveDefaultMaybe( test )
 {
   const profileDir = `test-${ _.intRandom( 1000000 ) }`;
@@ -3339,6 +3465,7 @@ const Proto =
     identityFromWithSsh,
     identityDel,
     identityUse,
+    identityUseSshExperiment,
     identityResolveDefaultMaybe,
 
     fileReplaceBasic,
