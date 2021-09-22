@@ -1516,6 +1516,74 @@ identityResolveDefaultMaybe.defaults =
   service : null,
 };
 
+//
+
+function identitiesEquivalentAre( o )
+{
+  const self = this;
+
+  _.assert( arguments.length === 1, 'Expects single options map {-o-}.' );
+  _.routine.options( identitiesEquivalentAre, o );
+
+  /* */
+
+  const equalizersMap =
+  {
+    'git' : equivalentAreSimple,
+    'npm' : equivalentAreSimple,
+    'rust' : equivalentAreSimple,
+    'ssh' : sshIdentitiesEquivalentAre,
+  };
+
+  _.assert( o.type in equalizersMap );
+
+  return equalizersMap[ o.type ]( o );
+
+  /* */
+
+  function equivalentAreSimple( o )
+  {
+    if
+    (
+      ( o.identity1.type !== o.identity2.type )
+      && o.identity1.type !== 'general'
+      && o.identity2.type !== 'general'
+    )
+    return false;
+
+    return _.props.identical( _.mapBut_( null, o.identity1, [ 'type' ] ), _.mapBut_( null, o.identity2, [ 'type' ] ) );
+  }
+
+  /* */
+
+  function sshIdentitiesEquivalentAre( o )
+  {
+    const srcPath1 = o.identity1[ 'ssh.path' ];
+    const srcPath2 = o.identity2[ 'ssh.path' ];
+
+    if( srcPath1 === undefined || srcPath2 === undefined )
+    return false;
+    if( srcPath1 === srcPath2 )
+    return true;
+
+    const defaultPrivateKeyName = 'id_rsa';
+    const privateKeyPath1 = _.fileProvider.configUserPath( _.path.join( srcPath1, defaultPrivateKeyName ) );
+    _.assert( _.fileProvider.fileExists( privateKeyPath1 ), `Expects private key with name "${ defaultPrivateKeyName }"` );
+    const privateKeyPath2 = _.fileProvider.configUserPath( _.path.join( srcPath2, defaultPrivateKeyName ) );
+    _.assert( _.fileProvider.fileExists( privateKeyPath2 ), `Expects private key with name "${ defaultPrivateKeyName }"` );
+
+    return _.fileProvider.fileRead( privateKeyPath1 ) === _.fileProvider.fileRead( privateKeyPath2 );
+  }
+}
+
+identitiesEquivalentAre.defaults =
+{
+  ... configNameMapFrom.defaults,
+  type : null,
+  identity1 : null,
+  identity2 : null,
+};
+
 // --
 // action
 // --
@@ -2902,6 +2970,7 @@ let Extension =
   identityDel,
   identityUse,
   identityResolveDefaultMaybe,
+  identitiesEquivalentAre,
 
   // action
 
