@@ -1088,7 +1088,7 @@ function identityCopy( o )
   identity.name = o.identityDstName;
   o3.identity = identity;
 
-  return self.identityNew( o3 );
+  self.identityNew( o3 );
 }
 
 identityCopy.defaults =
@@ -1326,12 +1326,8 @@ function identityFrom( o )
     const data = Object.create( null );
     data.type = 'ssh';
     data[ 'ssh.login' ] = o3.selector || 'id_rsa';
-    let keyPath = _.fileProvider.configUserPath( _.path.join( '.ssh', 'id_rsa' ) );
-    if( !_.fileProvider.fileExists( keyPath ) )
-    keyPath = _.fileProvider.configUserPath( _.path.join( '.ssh', data[ 'ssh.login' ] ) );
-    _.assert( _.fileProvider.fileExists( keyPath ), 'Expects default ssh key `id_rsa` or name of ssh identity key.' );
-
-    data[ 'ssh.path' ] = _.path.join( o.storageDir, o.profileDir, 'ssh', o3.selector || 'id_rsa' );
+    _.assert( _.fileProvider.fileExists( _.fileProvider.configUserPath( '.ssh' ) ), 'Expects ssh keys.' );
+    data[ 'ssh.path' ] = _.path.join( o.storageDir, o.profileDir, 'ssh', data[ 'ssh.login' ] );
     return data;
   }
 
