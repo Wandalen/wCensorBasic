@@ -1376,9 +1376,35 @@ function identityDel( o )
   if( o.selector === null )
   o.selector = '';
   _.assert( _.str.is( o.selector ) );
+
+
+  const o2 = _.mapOnly_( null, o, self.identityGet.defaults );
+  const identities = self.identityGet( o2 );
+
+  if( identities )
+  if( 'type' in identities )
+  {
+    if( identities.type === 'ssh' || identities.type === 'general' )
+    deleteLocalSshKeys( identities );
+  }
+  else
+  {
+    for( let identityKey in identities )
+    if( identities[ identityKey ].type === 'ssh' || identities[ identityKey ].type === 'general' )
+    deleteLocalSshKeys( identities[ identityKey ] );
+  }
+
   o.selector = `identity/${ o.selector }`;
 
-  return self.configDel( o );
+  self.configDel( o );
+
+  /* */
+
+  function deleteLocalSshKeys( identity )
+  {
+    const keysRelativePath = _.path.join( o.storageDir, o.profileDir, 'ssh', identity[ 'ssh.login' ] || identity.login );
+    _.fileProvider.filesDelete( _.fileProvider.configUserPath( keysRelativePath ) );
+  }
 }
 
 identityDel.defaults =
