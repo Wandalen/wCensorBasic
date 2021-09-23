@@ -1442,7 +1442,6 @@ function identityUse( o )
   if( o.type === 'ssh' )
   {
     delete o3.dst;
-    o3.deleting = 0;
     self.identityUpdate( o3 );
   }
 
@@ -1470,6 +1469,7 @@ function identityUpdate( o )
   if( o.dst === null )
   {
     const identity = dstIdentityFind();
+    if( identity )
     o.dst = identity.login || identity[ `${ o.type }.login` ];
   }
 

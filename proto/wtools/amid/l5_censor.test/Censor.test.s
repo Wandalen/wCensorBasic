@@ -470,6 +470,8 @@ function profileHookCallWithIdentityWithDefaultGitHook( test )
     return null;
   });
 
+  /* */
+
   a.ready.finally( ( err, arg ) =>
   {
     a.fileProvider.fileWrite( a.fileProvider.configUserPath( '.gitconfig' ), originalConfig );
@@ -2715,6 +2717,88 @@ function identityUseSsh( test )
 
 //
 
+function identityUpdate( test )
+{
+  if( !_.process.insideTestContainer() )
+  return test.true( true );
+
+  const a = test.assetFor( false );
+  a.fileProvider.dirMake( a.abs( '.' ) );
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+  const originalConfig = a.fileProvider.fileRead( a.fileProvider.configUserPath( '.gitconfig' ) );
+
+  begin().then( () =>
+  {
+    const identity = { name : 'user', login : 'userLogin', email : 'user@domain.com', type : 'git' };
+    _.censor.identityNew({ profileDir, identity });
+    _.censor.identityUse({ profileDir, selector : 'user', type : 'git' });
+    return null;
+  });
+
+  /* - */
+
+  a.ready.then( () =>
+  {
+    test.case = 'update not existed identity';
+    var got = _.censor.identityGet({ profileDir, selector : 'user2' });
+    test.identical( got, undefined );
+    _.censor.identityUpdate({ profileDir, dst : 'user2', type : 'git' });
+    var got = _.censor.identityGet({ profileDir, selector : 'user2' });
+    test.identical( got, { 'type' : 'git', 'git.login' : 'userLogin', 'git.email' : 'user@domain.com' } );
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+
+  a.ready.then( () =>
+  {
+    test.case = 'update existed identity, force - 1';
+    const identity = { name : 'user2', login : 'userLogin2', email : 'user2@domain.com', type : 'npm' };
+    _.censor.identityNew({ profileDir, identity });
+    var got = _.censor.identityGet({ profileDir, selector : 'user2' });
+    test.identical( got, { 'login' : 'userLogin2', 'email' : 'user2@domain.com', 'type' : 'npm' } );
+    _.censor.identityUpdate({ profileDir, dst : 'user2', type : 'git', force : 1 });
+    var got = _.censor.identityGet({ profileDir, selector : 'user2' });
+    var exp =
+    {
+      'login' : 'userLogin2',
+      'email' : 'user2@domain.com',
+      'type' : 'git',
+      'git.login' : 'userLogin',
+      'git.email' : 'user@domain.com'
+    };
+    test.identical( got, exp );
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+
+  /* */
+
+  a.ready.finally( ( err, arg ) =>
+  {
+    a.fileProvider.fileWrite( a.fileProvider.configUserPath( '.gitconfig' ), originalConfig );
+    if( err )
+    throw _.err( err );
+    return arg;
+  });
+
+  /* - */
+
+  return a.ready;
+
+  /* */
+
+  function begin()
+  {
+    return a.ready.then( () =>
+    {
+      a.fileProvider.fileWrite( a.fileProvider.configUserPath( '.gitconfig' ), '' );
+      return null;
+    });
+  }
+}
+
+//
+
 function identityResolveDefaultMaybe( test )
 {
   const profileDir = `test-${ _.intRandom( 1000000 ) }`;
@@ -3743,6 +3827,7 @@ const Proto =
     identityUse,
     identityUseSsh,
     identityResolveDefaultMaybe,
+    identityUpdate,
     identitiesEquivalentAre,
     identitiesEquivalentAreWithSsh,
 
