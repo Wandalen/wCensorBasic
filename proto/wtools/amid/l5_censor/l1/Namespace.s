@@ -254,14 +254,7 @@ function profileHookPathMake( o )
 
   self._profileNameMapFromDefaults( o );
 
-  const typesMap =
-  {
-    git : [ 'git' ],
-    npm : [ 'npm' ],
-    rust : [ 'rust' ],
-  };
-
-  _.assert( o.type in typesMap );
+  _.assert( _.set.hasKey( self.IdentityTypes, o.type ) );
 
   const baseName = `${ o.type.replace( /^\w/, o.type[ 0 ].toUpperCase() ) }Hook`;
   const hookRelativePath = _.path.join( o.storageDir, o.profileDir, self.storageHookDir, `${ baseName }.js` );
@@ -285,36 +278,36 @@ function profileHookGet( o )
 
   self._profileNameMapFromDefaults( o );
 
-  const typesMap =
-  {
-    git : [ 'git' ],
-    npm : [ 'npm' ],
-    rust : [ 'rust' ],
-    general : [ 'git', 'npm', 'rust' ],
-  };
-
-  _.assert( o.type in typesMap );
+  _.assert( _.set.hasKey( self.IdentityTypes, o.type ) || o.type === 'general' );
 
   const hooksMap =
   {
     git : _profileGitHook,
     npm : _profileNpmHook,
     rust : _profileRustHook,
+    ssh : _profileSshHook,
   };
-  const o3 = _.mapOnly_( null, o, self.profileHookPathMake.defaults );
-  const result = [];
 
-  _.each( typesMap[ o.type ], ( type ) => result.push( hookGet( type ) ) );
-  if( result.length === 1 )
-  return result[ 0 ];
-  return result;
+  const o2 = _.mapOnly_( null, o, self.profileHookPathMake.defaults );
+
+  if( o.type === 'general' )
+  {
+    const result = [];
+    for( let type of self.IdentityTypes )
+    result.push( hookGet( type ) );
+    return result;
+  }
+  else
+  {
+    return hookGet( o.type );
+  }
 
   /* */
 
   function hookGet( type )
   {
-    o3.type = type;
-    let filePath = self.profileHookPathMake( o3 );
+    o2.type = type;
+    let filePath = self.profileHookPathMake( o2 );
     if( _.fileProvider.fileExists( filePath ) )
     return _.fileProvider.fileRead( filePath );
     else
@@ -340,18 +333,19 @@ function profileHookSet( o )
 
   self._profileNameMapFromDefaults( o );
 
-  const typesMap =
-  {
-    git : [ 'git' ],
-    npm : [ 'npm' ],
-    rust : [ 'rust' ],
-    general : [ 'git', 'npm', 'rust' ],
-  };
-
-  _.assert( o.type in typesMap );
+  _.assert( _.set.hasKey( self.IdentityTypes, o.type ) || o.type === 'general' );
 
   const o2 = _.mapOnly_( null, o, self.profileHookPathMake.defaults );
-  _.each( typesMap[ o.type ], ( type ) => hookMake( o.hook, type ) );
+
+  if( o.type === 'general' )
+  {
+    for( let type of self.IdentityTypes )
+    hookMake( o.hook, type );
+  }
+  else
+  {
+    hookMake( o.hook, o.type );
+  }
 
   /* */
 
@@ -472,6 +466,41 @@ function _profileRustHook( identity, options )
 
 //
 
+function _profileSshHook( identity, options )
+{
+  _.assert( _.str.defined( identity[ 'ssh.path' ], 'Expects path to identity keys' ) );
+
+  const keysPath = _.fileProvider.configUserPath( identity[ 'ssh.path' ] );
+  const originalPath = _.fileProvider.configUserPath( '.ssh' );
+  const backupPath = _.fileProvider.configUserPath( '.ssh.backup' );
+
+  _.fileProvider.filesDelete( backupPath );
+  _.fileProvider.filesReflect({ reflectMap : { [ originalPath ] : backupPath } });
+
+  _.fileProvider.filesDelete( originalPath );
+  _.fileProvider.filesReflect({ reflectMap : { [ keysPath ] : originalPath } });
+
+  _.process.starter
+  ({
+    execPath : 'ssh-add -D',
+    mode : 'shell',
+    outputCollecting : 1,
+    throwingExitCode : 1,
+    inputMirroring : 0,
+    sync : 1,
+  });
+
+  if( options.logger )
+  {
+    let msg = `All ssh-identies cleared from cache.`
+    + `\nPlease, add key of identity "${ identity.login }" to ssh-agent by command : "ssh-add [path to key]".`
+    + `\nExample : "ssh-add ~/.ssh/id_rsa"`
+    options.logger.log( msg );
+  }
+}
+
+//
+
 function profileHookCallWithIdentity( o )
 {
   const self = this;
@@ -479,15 +508,7 @@ function profileHookCallWithIdentity( o )
   _.assert( arguments.length === 1, 'Expects exactly one argument' );
   _.routine.options( profileHookCallWithIdentity, o );
 
-  const typesMap =
-  {
-    git : [ 'git' ],
-    npm : [ 'npm' ],
-    rust : [ 'rust' ],
-    general : [ 'git', 'npm', 'rust' ],
-  };
-
-  _.assert( o.type in typesMap );
+  _.assert( _.set.hasKey( self.IdentityTypes, o.type ) || o.type === 'general' );
   _.assert( !_.path.isGlob( o.selector ) );
 
   o.logger = _.logger.relativeMaybe( o.logger, -3 );
@@ -509,9 +530,22 @@ function profileHookCallWithIdentity( o )
     git : _profileGitHook,
     npm : _profileNpmHook,
     rust : _profileRustHook,
+    ssh : _profileSshHook,
   };
 
-  _.each( typesMap[ o.type ], ( type ) =>
+  if( o.type === 'general' )
+  {
+    for( let type of self.IdentityTypes )
+    hookResolve( type );
+  }
+  else
+  {
+    hookResolve( o.type );
+  }
+
+  /* */
+
+  function hookResolve( type )
   {
     o3.type = type;
     let filePath = self.profileHookPathMake( o3 );
@@ -520,7 +554,7 @@ function profileHookCallWithIdentity( o )
     hookCall( filePath );
     else
     hooksMap[ type ]( identity, o );
-  });
+  }
 
   /* */
 
@@ -1054,7 +1088,7 @@ function identityCopy( o )
   identity.name = o.identityDstName;
   o3.identity = identity;
 
-  return self.identityNew( o3 );
+  self.identityNew( o3 );
 }
 
 identityCopy.defaults =
@@ -1152,9 +1186,14 @@ function identityNew( o )
 
   const loginKey = o.identity.type === 'general' || o.identity.type === null ? 'login' : `${ o.identity.type }.login`;
   if( loginKey in o.identity )
-  _.assert( _.str.defined( o.identity[ loginKey ] ), `Expects field {-o.identity[ '${ loginKey }' ]-} or {-o.identity.login-}.` )
+  {
+    const msg = `Expects defined field {-o.identity[ '${ loginKey }' ]-} or {-o.identity.login-}.`;
+    _.assert( _.str.defined( o.identity[ loginKey ] ), msg );
+  }
   else
-  _.assert( _.str.defined( o.identity.login ), 'Expects field {-o.identity.login-}.' );
+  {
+    _.assert( _.str.defined( o.identity.login ), 'Expects field {-o.identity.login-}.' );
+  }
 
   self._configNameMapFromDefaults( o );
 
@@ -1176,7 +1215,7 @@ function identityNew( o )
     else
     o.identity.type = identity.type;
   }
-  _.assert( _.longHasAny( [ 'general', 'git', 'npm', 'rust' ], o.identity.type ) );
+  _.assert( _.set.hasKey( self.IdentityTypes, o.identity.type ) || o.identity.type === 'general' );
 
   o.selector = o.identity.name;
   delete o.identity.name;
@@ -1215,6 +1254,7 @@ function identityFrom( o )
     git : gitIdentityDataGet,
     npm : npmIdentityDataGet,
     rust : rustIdentityDataGet,
+    ssh : sshIdentityDataGet,
   };
   _.assert( o.type in identityMakerMap );
 
@@ -1239,7 +1279,16 @@ function identityFrom( o )
   o3.selector = o3.set[ `${ o.type }.login` ];
 
   if( !o.force )
-  verifyIdentity( o.selector || o3.selector );
+  verifyIdentity( o3.selector );
+
+  if( o.type === 'ssh' )
+  {
+    const keysRelativePath = _.path.join( o.storageDir, o.profileDir, 'ssh', o3.selector );
+    _.fileProvider.filesReflect
+    ({
+      reflectMap : { [ _.fileProvider.configUserPath( '.ssh') ] : _.fileProvider.configUserPath( keysRelativePath ) }
+    });
+  }
 
   return self.identitySet( o3 );
 
@@ -1268,6 +1317,18 @@ function identityFrom( o )
   function rustIdentityDataGet()
   {
     _.assert( false, 'not implemented' );
+  }
+
+  /* */
+
+  function sshIdentityDataGet()
+  {
+    const data = Object.create( null );
+    data.type = 'ssh';
+    data[ 'ssh.login' ] = o3.selector || 'id_rsa';
+    _.assert( _.fileProvider.fileExists( _.fileProvider.configUserPath( '.ssh' ) ), 'Expects ssh keys.' );
+    data[ 'ssh.path' ] = _.path.join( o.storageDir, o.profileDir, 'ssh', data[ 'ssh.login' ] );
+    return data;
   }
 
   /* */
@@ -1311,9 +1372,35 @@ function identityDel( o )
   if( o.selector === null )
   o.selector = '';
   _.assert( _.str.is( o.selector ) );
+
+
+  const o2 = _.mapOnly_( null, o, self.identityGet.defaults );
+  const identities = self.identityGet( o2 );
+
+  if( identities )
+  if( 'type' in identities )
+  {
+    if( identities.type === 'ssh' || identities.type === 'general' )
+    deleteLocalSshKeys( identities );
+  }
+  else
+  {
+    for( let identityKey in identities )
+    if( identities[ identityKey ].type === 'ssh' || identities[ identityKey ].type === 'general' )
+    deleteLocalSshKeys( identities[ identityKey ] );
+  }
+
   o.selector = `identity/${ o.selector }`;
 
-  return self.configDel( o );
+  self.configDel( o );
+
+  /* */
+
+  function deleteLocalSshKeys( identity )
+  {
+    const keysRelativePath = _.path.join( o.storageDir, o.profileDir, 'ssh', identity[ 'ssh.login' ] || identity.login );
+    _.fileProvider.filesDelete( _.fileProvider.configUserPath( keysRelativePath ) );
+  }
 }
 
 identityDel.defaults =
@@ -1331,15 +1418,7 @@ function identityUse( o )
   _.assert( arguments.length === 1, 'Expects exactly one argument' );
   _.routine.options( identityUse, o );
 
-  const typesMap =
-  {
-    git : [ 'git' ],
-    npm : [ 'npm' ],
-    rust : [ 'rust' ],
-    general : [ 'git', 'npm', 'rust' ],
-  };
-
-  _.assert( o.type in typesMap || o.type === null );
+  _.assert( _.set.hasKey( self.IdentityTypes, o.type ) || o.type === 'general' );
   _.assert( !_.path.isGlob( o.selector ) );
 
   self._configNameMapFromDefaults( o );
@@ -1358,19 +1437,12 @@ function identityUse( o )
 
   /* */
 
-  const previousSelector = `_previous.${ o.type }`;
-  self.identityDel({ profileDir : o.profileDir, selector : previousSelector });
-  const o3 = _.mapOnly_( null, o, self.identityFrom.defaults );
-  o.type = o.type || identity.type;
-  o3.force = true;
-  o3.selector = previousSelector;
-  try
+  let o3 = _.mapOnly_( null, o, self.identityUpdate.defaults );
+  self.identityUpdate( _.map.extend( o3, { dst : `_previous.${ o.type }`, deleting : 1, throwing : 0, force : 1 } ) );
+  if( o.type === 'ssh' )
   {
-    self.identityFrom( o3 );
-  }
-  catch( err )
-  {
-    _.error.attend( err );
+    delete o3.dst;
+    self.identityUpdate( o3 );
   }
 
   self.profileHookCallWithIdentity( _.mapOnly_( null, o, _.censor.profileHookCallWithIdentity.defaults ) );
@@ -1382,6 +1454,98 @@ identityUse.defaults =
   selector : null,
   type : null,
   logger : 2,
+};
+
+//
+
+function identityUpdate( o )
+{
+  const self = this;
+
+  _.assert( arguments.length === 1, 'Expects exactly one argument' );
+  _.routine.options( identityUpdate, o );
+  _.assert( _.str.defined( o.dst ) || o.dst === null );
+
+  if( o.dst === null )
+  {
+    const identity = dstIdentityFind();
+    if( identity )
+    o.dst = identity.login || identity[ `${ o.type }.login` ];
+  }
+
+  if( o.dst )
+  try
+  {
+    if( o.deleting )
+    self.identityDel({ profileDir : o.profileDir, selector : o.dst });
+
+    const o2 = _.mapOnly_( null, o, self.identityFrom.defaults );
+    o2.force = o.force;
+    o2.selector = o.dst;
+    self.identityFrom( o2 );
+  }
+  catch( err )
+  {
+    if( o.throwing )
+    throw _.err( err );
+    else
+    _.error.attend( err );
+  }
+
+  /* */
+
+  function dstIdentityFind()
+  {
+    if( o.type === 'ssh' )
+    return sshIdentityFind();
+    else
+    _.assert( false, 'not implemented' );
+  }
+
+  /* */
+
+  function sshIdentityFind()
+  {
+    const o3 = _.mapOnly_( null, o, self.identityGet.defaults );
+    o3.selector = '';
+    const identitiesMap = self.identityGet( o3 );
+
+    if( 'type' in identitiesMap )
+    {
+      if( identitiesMap[ 'ssh.login' ] && identitiesMap[ 'ssh.login' ] !== '_previous.ssh' )
+      return checkIdentity( identitiesMap );
+    }
+    else
+    {
+      for( let name in identitiesMap )
+      {
+        const identity = checkIdentity( identitiesMap[ name ] );
+        if( identity !== null )
+        if( identity[ 'ssh.login' ] && identity[ 'ssh.login' ] !== '_previous.ssh' )
+        return identity;
+      }
+      return null;
+    }
+  }
+
+  function checkIdentity( identity1 )
+  {
+    if( identity1.type === 'ssh' )
+    if( identity1[ 'ssh.path' ] )
+    if( self.identitiesEquivalentAre({ identity1, identity2 : { 'ssh.path' : '.ssh' }, type : 'ssh' }) )
+    return identity1;
+    return null;
+  }
+}
+
+identityUpdate.defaults =
+{
+  ... configNameMapFrom.defaults,
+  dst : null,
+  type : null,
+  deleting : 0,
+  throwing : 1,
+  force : 0,
 };
 
 //
@@ -1399,15 +1563,7 @@ function identityResolveDefaultMaybe( o )
 
   _.routine.options( identityResolveDefaultMaybe, o );
 
-  const typesMap =
-  {
-    git : [ 'git' ],
-    npm : [ 'npm' ],
-    rust : [ 'rust' ],
-    general : [ 'git', 'npm', 'rust' ],
-  };
-
-  _.assert( o.type in typesMap || o.type === null );
+  _.assert( _.set.hasKey( self.IdentityTypes, o.type ) || o.type === 'general' || o.type === null );
 
   self._configNameMapFromDefaults( o );
 
@@ -1443,6 +1599,74 @@ identityResolveDefaultMaybe.defaults =
   ... configNameMapFrom.defaults,
   type : null,
   service : null,
+};
+
+//
+
+function identitiesEquivalentAre( o )
+{
+  const self = this;
+
+  _.assert( arguments.length === 1, 'Expects single options map {-o-}.' );
+  _.routine.options( identitiesEquivalentAre, o );
+
+  /* */
+
+  const equalizersMap =
+  {
+    'git' : equivalentAreSimple,
+    'npm' : equivalentAreSimple,
+    'rust' : equivalentAreSimple,
+    'ssh' : sshIdentitiesEquivalentAre,
+  };
+
+  _.assert( o.type in equalizersMap );
+
+  return equalizersMap[ o.type ]( o );
+
+  /* */
+
+  function equivalentAreSimple( o )
+  {
+    if
+    (
+      ( o.identity1.type !== o.identity2.type )
+      && o.identity1.type !== 'general'
+      && o.identity2.type !== 'general'
+    )
+    return false;
+
+    return _.props.identical( _.mapBut_( null, o.identity1, [ 'type' ] ), _.mapBut_( null, o.identity2, [ 'type' ] ) );
+  }
+
+  /* */
+
+  function sshIdentitiesEquivalentAre( o )
+  {
+    const srcPath1 = o.identity1[ 'ssh.path' ];
+    const srcPath2 = o.identity2[ 'ssh.path' ];
+
+    if( srcPath1 === undefined || srcPath2 === undefined )
+    return false;
+    if( srcPath1 === srcPath2 )
+    return true;
+
+    const defaultPrivateKeyName = 'id_rsa';
+    const privateKeyPath1 = _.fileProvider.configUserPath( _.path.join( srcPath1, defaultPrivateKeyName ) );
+    _.assert( _.fileProvider.fileExists( privateKeyPath1 ), `Expects private key with name "${ defaultPrivateKeyName }"` );
+    const privateKeyPath2 = _.fileProvider.configUserPath( _.path.join( srcPath2, defaultPrivateKeyName ) );
+    _.assert( _.fileProvider.fileExists( privateKeyPath2 ), `Expects private key with name "${ defaultPrivateKeyName }"` );
+
+    return _.fileProvider.fileRead( privateKeyPath1 ) === _.fileProvider.fileRead( privateKeyPath2 );
+  }
+}
+
+identitiesEquivalentAre.defaults =
+{
+  ... configNameMapFrom.defaults,
+  type : null,
+  identity1 : null,
+  identity2 : null,
 };
 
 // --
@@ -2780,6 +3004,10 @@ let Config = _.Blueprint
 // declare
 // --
 
+const IdentityTypes = _.set.make([ 'git', 'npm', 'rust', 'ssh' ]);
+
+//
+
 let Extension =
 {
 
@@ -2826,7 +3054,9 @@ let Extension =
   identityFrom,
   identityDel,
   identityUse,
+  identityUpdate,
   identityResolveDefaultMaybe,
+  identitiesEquivalentAre,
 
   // action
 
@@ -2870,6 +3100,8 @@ let Extension =
   ActionStatus,
   Arrangement,
   Config,
+
+  IdentityTypes,
 
   storageDir : '.censor',
   storagePath : null,

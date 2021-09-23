@@ -302,7 +302,7 @@ function profileHookGet( test )
   var got = _.censor.profileHookSet({ profileDir, hook, type : 'general' });
   var got = _.censor.profileHookGet({ profileDir, type : 'general' });
   test.true( _.array.is( got ) );
-  test.identical( got.length, 3 );
+  test.identical( got.length, 4 );
   test.identical( got[ 0 ], hook );
   test.identical( got[ 0 ], got[ 1 ] );
   test.identical( got[ 1 ], got[ 2 ] );
@@ -315,6 +315,7 @@ function profileHookGet( test )
     './hook/GitHook.js',
     './hook/NpmHook.js',
     './hook/RustHook.js',
+    './hook/SshHook.js',
   ];
   test.identical( files, exp );
   _.censor.profileDel( profileDir );
@@ -469,6 +470,8 @@ function profileHookCallWithIdentityWithDefaultGitHook( test )
     return null;
   });
 
+  /* */
+
   a.ready.finally( ( err, arg ) =>
   {
     a.fileProvider.fileWrite( a.fileProvider.configUserPath( '.gitconfig' ), originalConfig );
@@ -565,6 +568,161 @@ function profileHookCallWithIdentityWithDefaultNpmHook( test )
 
 //
 
+function profileHookCallWithIdentityWithDefaultSshHook( test )
+{
+  const a = test.assetFor( false );
+
+  if( !_.process.insideTestContainer() )
+  return test.true( true );
+
+  a.fileProvider.dirMake( a.abs( '.' ) );
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+  const userProfileDir = a.fileProvider.configUserPath( `.censor/${ profileDir }` );
+  let originalExists = false;
+  const originalPath = a.fileProvider.configUserPath( '.ssh' );
+  const backupPath = a.fileProvider.configUserPath( '.ssh.bak' );
+  if( _.fileProvider.fileExists( originalPath ) )
+  originalExists = true;
+
+  begin();
+
+  /* - */
+
+  writeKey( 'id_rsa' ).then( () =>
+  {
+    test.case = 'call ssh hook';
+    _.censor.identityFrom({ profileDir, selector : 'user', type : 'ssh' });
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml', './ssh', './ssh/user', './ssh/user/id_rsa' ] );
+    a.fileProvider.fileWrite( a.abs( originalPath, 'id_rsa' ), 'another data' );
+    var got = _.censor.profileHookCallWithIdentity({ profileDir, type : 'ssh', selector : 'user' });
+    test.identical( got, undefined );
+    var data = a.fileProvider.fileRead( a.abs( originalPath, 'id_rsa' ) );
+    test.identical( data, 'id_rsa' );
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+
+  /* */
+
+  writeKey( 'id_rsa' ).then( () =>
+  {
+    test.case = 'call twice';
+    _.censor.identityFrom({ profileDir, selector : 'user', type : 'ssh' });
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml', './ssh', './ssh/user', './ssh/user/id_rsa' ] );
+    a.fileProvider.fileWrite( a.abs( originalPath, 'id_rsa' ), 'another data' );
+    var got = _.censor.profileHookCallWithIdentity({ profileDir, type : 'ssh', selector : 'user' });
+    var got = _.censor.profileHookCallWithIdentity({ profileDir, type : 'ssh', selector : 'user' });
+    test.identical( got, undefined );
+    var data = a.fileProvider.fileRead( a.abs( originalPath, 'id_rsa' ) );
+    test.identical( data, 'id_rsa' );
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+
+  /* */
+
+  writeKey( 'id_rsa' ).then( () =>
+  {
+    test.case = 'change identity';
+    _.censor.identityFrom({ profileDir, selector : 'user', type : 'ssh' });
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml', './ssh', './ssh/user', './ssh/user/id_rsa' ] );
+    return null;
+  });
+  writeKey( 'id_rsa' ).then( () =>
+  {
+    test.case = 'call twice';
+    _.censor.identityFrom({ profileDir, selector : 'user2', type : 'ssh' });
+    var files = a.find( userProfileDir );
+    var exp =
+    [
+      '.',
+      './config.yaml',
+      './ssh',
+      './ssh/user',
+      './ssh/user/id_rsa',
+      './ssh/user2',
+      './ssh/user2/id_rsa'
+    ];
+    test.identical( files, exp );
+    a.fileProvider.fileWrite( a.abs( originalPath, 'some_file' ), 'data' );
+    var got = _.censor.profileHookCallWithIdentity({ profileDir, type : 'ssh', selector : 'user' });
+    test.identical( got, undefined );
+    var files = a.find( userProfileDir );
+    var exp =
+    [
+      '.',
+      './config.yaml',
+      './ssh',
+      './ssh/user',
+      './ssh/user/id_rsa',
+      './ssh/user2',
+      './ssh/user2/id_rsa'
+    ];
+    test.identical( files, exp );
+    var data = a.fileProvider.fileRead( a.abs( originalPath, 'id_rsa' ) );
+    test.identical( data, 'id_rsa' );
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+
+  /* */
+
+  a.ready.finally( ( err, arg ) =>
+  {
+    a.fileProvider.filesDelete( originalPath );
+    if( originalExists )
+    {
+      a.fileProvider.filesReflect
+      ({
+        reflectMap : { [ backupPath ] : originalPath }
+      });
+      a.fileProvider.filesDelete( backupPath );
+    }
+    if( err )
+    throw _.err( err );
+    return arg;
+  });
+
+  /* - */
+
+  return a.ready;
+
+  /* */
+
+  function begin()
+  {
+    return a.ready.then( () =>
+    {
+      if( originalExists )
+      {
+        a.fileProvider.filesReflect
+        ({
+          reflectMap : { [ originalPath ] : backupPath }
+        });
+        a.fileProvider.filesDelete( originalPath );
+      }
+      return null;
+    });
+  }
+
+  /* */
+
+  function writeKey( name )
+  {
+    return a.ready.then( () =>
+    {
+      a.fileProvider.filesDelete( originalPath );
+      a.fileProvider.fileWrite( a.abs( originalPath, name ), name );
+      return null;
+    });
+  }
+}
+
+//
+
 function profileHookCallWithIdentityWithUserHooks( test )
 {
   const a = test.assetFor( false );
@@ -582,6 +740,13 @@ module.exports = onIdentity;`;
 {
   const _ = this;
   _.censor.identitySet({ profileDir : '${ profileDir }', selector : 'user', set : { token : 'userToken' } });
+}
+module.exports = onIdentity;`;
+  const hook3 =
+`function onIdentity( identity )
+{
+  const _ = this;
+  _.censor.identitySet({ profileDir : '${ profileDir }', selector : 'user', set : { 'ssh.path' : 'path' } });
 }
 module.exports = onIdentity;`;
 
@@ -616,6 +781,7 @@ module.exports = onIdentity;`;
   _.censor.identityNew({ profileDir, identity });
   _.censor.profileHookSet({ profileDir, hook, type : 'git' });
   _.censor.profileHookSet({ profileDir, hook : hook2, type : 'npm' });
+  _.censor.profileHookSet({ profileDir, hook : hook3, type : 'ssh' });
   var config = _.censor.configRead({ profileDir });
   test.identical( config.identity.user.email, undefined );
   test.identical( config.identity.user.token, undefined );
@@ -624,6 +790,7 @@ module.exports = onIdentity;`;
   var config = _.censor.configRead({ profileDir });
   test.identical( config.identity.user.email, 'user@domain.com' );
   test.identical( config.identity.user.token, 'userToken' );
+  test.identical( config.identity.user[ 'ssh.path' ], 'path' );
   _.censor.profileDel( profileDir );
 
   test.case = 'call git hooks for different identities';
@@ -752,6 +919,7 @@ function profileHookSet( test )
     './hook/GitHook.js',
     './hook/NpmHook.js',
     './hook/RustHook.js',
+    './hook/SshHook.js',
   ];
   test.identical( files, exp );
   _.censor.profileDel( profileDir );
@@ -1617,7 +1785,7 @@ function identityNewWithResolving( test )
 
 //
 
-function identityFrom( test )
+function identityFromWithGit( test )
 {
   const a = test.assetFor( false );
 
@@ -1797,6 +1965,179 @@ function identityFrom( test )
   /* - */
 
   return a.ready;
+}
+
+//
+
+function identityFromWithSsh( test )
+{
+  const a = test.assetFor( false );
+
+  if( !_.process.insideTestContainer() )
+  return test.true( true );
+
+  a.fileProvider.dirMake( a.abs( '.' ) );
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+  let originalExists = false;
+  const originalPath = a.fileProvider.configUserPath( '.ssh' );
+  const backupPath = a.fileProvider.configUserPath( '.ssh.bak' );
+  if( _.fileProvider.fileExists( originalPath ) )
+  originalExists = true;
+
+  begin();
+
+  /* - */
+
+  writeKey( 'id_rsa' ).then( () =>
+  {
+    test.case = 'make new identity from ssh, selector - undefined';
+    var identity = { name : 'user', login : 'userLogin', email : 'user@domain.com' };
+    _.censor.identityNew({ profileDir, identity });
+    var config = _.censor.configRead({ profileDir });
+    var exp = { user : { login : 'userLogin', type : 'general', email : 'user@domain.com' } };
+    test.identical( config.identity, exp );
+    var got = _.censor.identityFrom({ profileDir, type : 'ssh' });
+    test.identical( got, undefined );
+    var config = _.censor.configRead({ profileDir });
+    var exp =
+    {
+      user : { login : 'userLogin', type : 'general', email : 'user@domain.com' },
+      id_rsa : { 'ssh.login' : 'id_rsa', 'ssh.path' : a.path.join( '.censor', profileDir, 'ssh', 'id_rsa' ), 'type' : 'ssh' },
+    };
+    test.identical( config.identity, exp );
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+
+  /* */
+
+  a.ready.then( () =>
+  {
+    test.case = 'make new ssh identity from default key, selector - string';
+    var identity = { name : 'user', login : 'userLogin', email : 'user@domain.com' };
+    _.censor.identityNew({ profileDir, identity });
+    var config = _.censor.configRead({ profileDir });
+    var exp = { user : { login : 'userLogin', type : 'general', email : 'user@domain.com' } };
+    test.identical( config.identity, exp );
+    var got = _.censor.identityFrom({ profileDir, selector : 'ssh', type : 'ssh' });
+    test.identical( got, undefined );
+    var config = _.censor.configRead({ profileDir });
+    var exp =
+    {
+      user : { login : 'userLogin', type : 'general', email : 'user@domain.com' },
+      ssh : { 'ssh.login' : 'ssh', 'ssh.path' : a.path.join( '.censor', profileDir, 'ssh', 'ssh' ), 'type' : 'ssh' },
+    };
+    test.identical( config.identity, exp );
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+
+  /* */
+
+  a.ready.then( () =>
+  {
+    test.case = 'extend existed identity by specifique options';
+    var identity = { name : 'user', login : 'userLogin', email : 'user@domain.com' };
+    _.censor.identityNew({ profileDir, identity });
+    var config = _.censor.configRead({ profileDir });
+    var exp =
+    {
+      user : { login : 'userLogin', type : 'general', email : 'user@domain.com' },
+    };
+    test.identical( config.identity, exp );
+    var got = _.censor.identityFrom({ profileDir, selector : 'user', type : 'ssh', force : 1 });
+    test.identical( got, undefined );
+    var config = _.censor.configRead({ profileDir });
+    var exp =
+    {
+      user :
+      {
+        'login' : 'userLogin',
+        'type' : 'ssh',
+        'email' : 'user@domain.com',
+        'ssh.login' : 'user',
+        'ssh.path' : a.path.join( '.censor', profileDir, 'ssh', 'user' ),
+      },
+    };
+    test.identical( config.identity, exp );
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+
+  /* */
+
+  writeKey( 'user2' ).then( () =>
+  {
+    test.case = 'make new ssh identity from key with identity name, selector - string';
+    var identity = { name : 'user', login : 'userLogin', email : 'user@domain.com' };
+    _.censor.identityNew({ profileDir, identity });
+    var config = _.censor.configRead({ profileDir });
+    var exp = { user : { login : 'userLogin', type : 'general', email : 'user@domain.com' } };
+    test.identical( config.identity, exp );
+    var got = _.censor.identityFrom({ profileDir, selector : 'user2', type : 'ssh' });
+    test.identical( got, undefined );
+    var config = _.censor.configRead({ profileDir });
+    var exp =
+    {
+      user : { login : 'userLogin', type : 'general', email : 'user@domain.com' },
+      user2 : { 'ssh.login' : 'user2', 'ssh.path' : a.path.join( '.censor', profileDir, 'ssh', 'user2' ), 'type' : 'ssh' },
+    };
+    test.identical( config.identity, exp );
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+
+  /* */
+
+  a.ready.finally( ( err, arg ) =>
+  {
+    a.fileProvider.filesDelete( originalPath );
+    if( originalExists )
+    {
+      a.fileProvider.filesReflect
+      ({
+        reflectMap : { [ backupPath ] : originalPath }
+      });
+      a.fileProvider.filesDelete( backupPath );
+    }
+    if( err )
+    throw _.err( err );
+    return arg;
+  });
+
+  /* - */
+
+  return a.ready;
+
+  /* */
+
+  function begin()
+  {
+    return a.ready.then( () =>
+    {
+      if( originalExists )
+      {
+        a.fileProvider.filesReflect
+        ({
+          reflectMap : { [ originalPath ] : backupPath }
+        });
+        a.fileProvider.filesDelete( originalPath );
+      }
+      return null;
+    });
+  }
+
+  /* */
+
+  function writeKey( name )
+  {
+    return a.ready.then( () =>
+    {
+      a.fileProvider.filesDelete( originalPath );
+      a.fileProvider.fileWrite( a.abs( originalPath, name ), name );
+      return null;
+    });
+  }
 }
 
 //
@@ -1983,6 +2324,96 @@ function identityDel( test )
 
 //
 
+function identityDelWithSshKeys( test )
+{
+  const a = test.assetFor( false );
+
+  if( !_.process.insideTestContainer() )
+  return test.true( true );
+
+  a.fileProvider.dirMake( a.abs( '.' ) );
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+  const userProfileDir = a.fileProvider.configUserPath( `.censor/${ profileDir }` );
+  let originalExists = false;
+  const originalPath = a.fileProvider.configUserPath( '.ssh' );
+  const backupPath = a.fileProvider.configUserPath( '.ssh.bak' );
+  if( _.fileProvider.fileExists( originalPath ) )
+  originalExists = true;
+
+  begin();
+
+  /* - */
+
+  writeKey( 'id_rsa' ).then( () =>
+  {
+    test.case = 'call ssh hook';
+    _.censor.identityFrom({ profileDir, selector : 'user', type : 'ssh' });
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml', './ssh', './ssh/user', './ssh/user/id_rsa' ] );
+    a.fileProvider.fileWrite( a.abs( originalPath, 'id_rsa' ), 'another data' );
+    var got = _.censor.identityDel({ profileDir, selector : 'user' });
+    test.identical( got, undefined );
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml', './ssh' ] );
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+
+  /* */
+
+  a.ready.finally( ( err, arg ) =>
+  {
+    a.fileProvider.filesDelete( originalPath );
+    if( originalExists )
+    {
+      a.fileProvider.filesReflect
+      ({
+        reflectMap : { [ backupPath ] : originalPath }
+      });
+      a.fileProvider.filesDelete( backupPath );
+    }
+    if( err )
+    throw _.err( err );
+    return arg;
+  });
+
+  /* - */
+
+  return a.ready;
+
+  /* */
+
+  function begin()
+  {
+    return a.ready.then( () =>
+    {
+      if( originalExists )
+      {
+        a.fileProvider.filesReflect
+        ({
+          reflectMap : { [ originalPath ] : backupPath }
+        });
+        a.fileProvider.filesDelete( originalPath );
+      }
+      return null;
+    });
+  }
+
+  /* */
+
+  function writeKey( name )
+  {
+    return a.ready.then( () =>
+    {
+      a.fileProvider.filesDelete( originalPath );
+      a.fileProvider.fileWrite( a.abs( originalPath, name ), name );
+      return null;
+    });
+  }
+}
+
+//
+
 function identityUse( test )
 {
   const a = test.assetFor( false );
@@ -2161,6 +2592,213 @@ module.exports = onIdentity;`;
 
 //
 
+function identityUseSsh( test )
+{
+  const a = test.assetFor( false );
+
+  if( !_.process.insideTestContainer() )
+  return test.true( true );
+
+  a.fileProvider.dirMake( a.abs( '.' ) );
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+  const userProfileDir = a.fileProvider.configUserPath( `.censor/${ profileDir }` );
+  let originalExists = false;
+  const originalPath = a.fileProvider.configUserPath( '.ssh' );
+  const backupPath = a.fileProvider.configUserPath( '.ssh.bak' );
+  if( _.fileProvider.fileExists( originalPath ) )
+  originalExists = true;
+
+  begin();
+
+  /* - */
+
+  writeKey( 'id_rsa' ).then( () =>
+  {
+    test.case = 'change identity';
+    _.censor.identityFrom({ profileDir, selector : 'user', type : 'ssh' });
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml', './ssh', './ssh/user', './ssh/user/id_rsa' ] );
+    a.fileProvider.fileAppend( a.fileProvider.configUserPath( `.censor/${ profileDir }/ssh/user/id_rsa` ), '\nunique data' );
+    return null;
+  });
+  writeKey( 'id_rsa' ).then( () =>
+  {
+    test.case = 'call twice';
+    _.censor.identityFrom({ profileDir, selector : 'user2', type : 'ssh' });
+    var files = a.find( userProfileDir );
+    var exp =
+    [
+      '.',
+      './config.yaml',
+      './ssh',
+      './ssh/user',
+      './ssh/user/id_rsa',
+      './ssh/user2',
+      './ssh/user2/id_rsa'
+    ];
+    test.identical( files, exp );
+    a.fileProvider.fileWrite( a.abs( originalPath, 'some_file' ), 'data' );
+    var got = _.censor.identityUse({ profileDir, type : 'ssh', selector : 'user' });
+    test.identical( got, undefined );
+    var files = a.find( userProfileDir );
+    var exp =
+    [
+      '.',
+      './config.yaml',
+      './ssh',
+      './ssh/_previous.ssh',
+      './ssh/_previous.ssh/id_rsa',
+      './ssh/_previous.ssh/some_file',
+      './ssh/user',
+      './ssh/user/id_rsa',
+      './ssh/user2',
+      './ssh/user2/id_rsa',
+      './ssh/user2/some_file',
+    ];
+    test.identical( files, exp );
+    var data = a.fileProvider.fileRead( a.abs( originalPath, 'id_rsa' ) );
+    test.identical( data, 'id_rsa\nunique data' );
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+
+  /* */
+
+  a.ready.finally( ( err, arg ) =>
+  {
+    a.fileProvider.filesDelete( originalPath );
+    if( originalExists )
+    {
+      a.fileProvider.filesReflect
+      ({
+        reflectMap : { [ backupPath ] : originalPath }
+      });
+      a.fileProvider.filesDelete( backupPath );
+    }
+    if( err )
+    throw _.err( err );
+    return arg;
+  });
+
+  /* - */
+
+  return a.ready;
+
+  /* */
+
+  function begin()
+  {
+    return a.ready.then( () =>
+    {
+      if( originalExists )
+      {
+        a.fileProvider.filesReflect
+        ({
+          reflectMap : { [ originalPath ] : backupPath }
+        });
+        a.fileProvider.filesDelete( originalPath );
+      }
+      return null;
+    });
+  }
+
+  /* */
+
+  function writeKey( name )
+  {
+    return a.ready.then( () =>
+    {
+      a.fileProvider.filesDelete( originalPath );
+      a.fileProvider.fileWrite( a.abs( originalPath, name ), name );
+      return null;
+    });
+  }
+}
+
+//
+
+function identityUpdate( test )
+{
+  if( !_.process.insideTestContainer() )
+  return test.true( true );
+
+  const a = test.assetFor( false );
+  a.fileProvider.dirMake( a.abs( '.' ) );
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+  const originalConfig = a.fileProvider.fileRead( a.fileProvider.configUserPath( '.gitconfig' ) );
+
+  begin().then( () =>
+  {
+    const identity = { name : 'user', login : 'userLogin', email : 'user@domain.com', type : 'git' };
+    _.censor.identityNew({ profileDir, identity });
+    _.censor.identityUse({ profileDir, selector : 'user', type : 'git' });
+    return null;
+  });
+
+  /* - */
+
+  a.ready.then( () =>
+  {
+    test.case = 'update not existed identity';
+    var got = _.censor.identityGet({ profileDir, selector : 'user2' });
+    test.identical( got, undefined );
+    _.censor.identityUpdate({ profileDir, dst : 'user2', type : 'git' });
+    var got = _.censor.identityGet({ profileDir, selector : 'user2' });
+    test.identical( got, { 'type' : 'git', 'git.login' : 'userLogin', 'git.email' : 'user@domain.com' } );
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+
+  a.ready.then( () =>
+  {
+    test.case = 'update existed identity, force - 1';
+    const identity = { name : 'user2', login : 'userLogin2', email : 'user2@domain.com', type : 'npm' };
+    _.censor.identityNew({ profileDir, identity });
+    var got = _.censor.identityGet({ profileDir, selector : 'user2' });
+    test.identical( got, { 'login' : 'userLogin2', 'email' : 'user2@domain.com', 'type' : 'npm' } );
+    _.censor.identityUpdate({ profileDir, dst : 'user2', type : 'git', force : 1 });
+    var got = _.censor.identityGet({ profileDir, selector : 'user2' });
+    var exp =
+    {
+      'login' : 'userLogin2',
+      'email' : 'user2@domain.com',
+      'type' : 'git',
+      'git.login' : 'userLogin',
+      'git.email' : 'user@domain.com'
+    };
+    test.identical( got, exp );
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+
+  /* */
+
+  a.ready.finally( ( err, arg ) =>
+  {
+    a.fileProvider.fileWrite( a.fileProvider.configUserPath( '.gitconfig' ), originalConfig );
+    if( err )
+    throw _.err( err );
+    return arg;
+  });
+
+  /* - */
+
+  return a.ready;
+
+  /* */
+
+  function begin()
+  {
+    return a.ready.then( () =>
+    {
+      a.fileProvider.fileWrite( a.fileProvider.configUserPath( '.gitconfig' ), '' );
+      return null;
+    });
+  }
+}
+
+//
+
 function identityResolveDefaultMaybe( test )
 {
   const profileDir = `test-${ _.intRandom( 1000000 ) }`;
@@ -2235,6 +2873,183 @@ function identityResolveDefaultMaybe( test )
   _.censor.identityNew({ profileDir, identity : _.map.extend( null, serviceIdentity1 ) });
   test.shouldThrowErrorSync( () => _.censor.identityResolveDefaultMaybe({ profileDir, service : 'github.com', type : 'npm' }) );
   _.censor.profileDel( profileDir );
+}
+
+//
+
+function identitiesEquivalentAre( test )
+{
+  const a = test.assetFor( false );
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+
+  /* */
+
+  test.case = 'compare equivalent identities';
+  var identity1 = { name : 'user', login : 'userLogin', type : 'general' };
+  var identity2 = { name : 'user', login : 'userLogin', type : 'git' };
+  var got = _.censor.identitiesEquivalentAre({ profileDir, identity1, identity2, type : 'git' });
+  test.identical( got, true );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'compare not equivalent identities';
+  var identity1 = { name : 'user', login : 'userLogin', type : 'general' };
+  var identity2 = { name : 'user2', login : 'userLogin', type : 'git' };
+  var got = _.censor.identitiesEquivalentAre({ profileDir, identity1, identity2, type : 'git' });
+  test.identical( got, false );
+  _.censor.profileDel( profileDir );
+}
+
+//
+
+function identitiesEquivalentAreWithSsh( test )
+{
+  if( !_.process.insideTestContainer() )
+  return test.true( true );
+
+  const a = test.assetFor( false );
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+  a.fileProvider.dirMake( a.abs( '.' ) );
+  const userProfileDir = a.fileProvider.configUserPath( `.censor/${ profileDir }` );
+  let originalExists = false;
+  const originalPath = a.fileProvider.configUserPath( '.ssh' );
+  const backupPath = a.fileProvider.configUserPath( '.ssh.bak' );
+  if( _.fileProvider.fileExists( originalPath ) )
+  originalExists = true;
+
+  begin();
+
+  /* - */
+
+  writeKey( 'id_rsa' ).then( () =>
+  {
+    test.case = 'compare equivalent ssh identities';
+    _.censor.identityFrom({ profileDir, selector : 'user', type : 'ssh' });
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml', './ssh', './ssh/user', './ssh/user/id_rsa' ] );
+    return null;
+  });
+
+  writeKey( 'id_rsa' ).then( () =>
+  {
+    test.case = 'change identity';
+    _.censor.identityFrom({ profileDir, selector : 'user2', type : 'ssh' });
+    var files = a.find( userProfileDir );
+    var exp =
+    [
+      '.',
+      './config.yaml',
+      './ssh',
+      './ssh/user',
+      './ssh/user/id_rsa',
+      './ssh/user2',
+      './ssh/user2/id_rsa',
+    ];
+    test.identical( files, exp );
+    return null;
+  });
+  a.ready.then( () =>
+  {
+    var identity1 = _.censor.identityGet({ profileDir, selector : 'user' });
+    var identity2 = _.censor.identityGet({ profileDir, selector : 'user2' });
+    var got = _.censor.identitiesEquivalentAre({ profileDir, identity1, identity2, type : 'ssh' });
+    test.identical( got, true );
+
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+
+  /* */
+
+  writeKey( 'id_rsa' ).then( () =>
+  {
+    test.case = 'compare not equivalent ssh identities';
+    _.censor.identityFrom({ profileDir, selector : 'user', type : 'ssh' });
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml', './ssh', './ssh/user', './ssh/user/id_rsa' ] );
+    a.fileProvider.fileAppend( a.fileProvider.configUserPath( `.censor/${ profileDir }/ssh/user/id_rsa` ), '\nunique data' );
+    return null;
+  });
+
+  writeKey( 'id_rsa' ).then( () =>
+  {
+    test.case = 'change identity';
+    _.censor.identityFrom({ profileDir, selector : 'user2', type : 'ssh' });
+    var files = a.find( userProfileDir );
+    var exp =
+    [
+      '.',
+      './config.yaml',
+      './ssh',
+      './ssh/user',
+      './ssh/user/id_rsa',
+      './ssh/user2',
+      './ssh/user2/id_rsa',
+    ];
+    test.identical( files, exp );
+    return null;
+  });
+  a.ready.then( () =>
+  {
+    var identity1 = _.censor.identityGet({ profileDir, selector : 'user' });
+    var identity2 = _.censor.identityGet({ profileDir, selector : 'user2' });
+    var got = _.censor.identitiesEquivalentAre({ profileDir, identity1, identity2, type : 'ssh' });
+    test.identical( got, false );
+
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+
+  /* */
+
+  a.ready.finally( ( err, arg ) =>
+  {
+    a.fileProvider.filesDelete( originalPath );
+    if( originalExists )
+    {
+      a.fileProvider.filesReflect
+      ({
+        reflectMap : { [ backupPath ] : originalPath }
+      });
+      a.fileProvider.filesDelete( backupPath );
+    }
+    if( err )
+    throw _.err( err );
+    return arg;
+  });
+
+  /* - */
+
+  return a.ready;
+
+  /* */
+
+  function begin()
+  {
+    return a.ready.then( () =>
+    {
+      if( originalExists )
+      {
+        a.fileProvider.filesReflect
+        ({
+          reflectMap : { [ originalPath ] : backupPath }
+        });
+        a.fileProvider.filesDelete( originalPath );
+      }
+      return null;
+    });
+  }
+
+  /* */
+
+  function writeKey( name )
+  {
+    return a.ready.then( () =>
+    {
+      a.fileProvider.filesDelete( originalPath );
+      a.fileProvider.fileWrite( a.abs( originalPath, name ), name );
+      return null;
+    });
+  }
 }
 
 //
@@ -2992,6 +3807,7 @@ const Proto =
     profileHookGet,
     profileHookCallWithIdentityWithDefaultGitHook,
     profileHookCallWithIdentityWithDefaultNpmHook,
+    profileHookCallWithIdentityWithDefaultSshHook,
     profileHookCallWithIdentityWithUserHooks,
     profileHookSet,
 
@@ -3004,10 +3820,16 @@ const Proto =
     identitySetWithResolving,
     identityNew,
     identityNewWithResolving,
-    identityFrom,
+    identityFromWithGit,
+    identityFromWithSsh,
     identityDel,
+    identityDelWithSshKeys,
     identityUse,
+    identityUseSsh,
     identityResolveDefaultMaybe,
+    identityUpdate,
+    identitiesEquivalentAre,
+    identitiesEquivalentAreWithSsh,
 
     fileReplaceBasic,
     filesReplaceBasic,
