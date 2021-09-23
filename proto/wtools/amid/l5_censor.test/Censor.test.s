@@ -2713,8 +2713,6 @@ function identityUseSsh( test )
   }
 }
 
-identityUseSsh.experimental = 1;
-
 //
 
 function identityResolveDefaultMaybe( test )
@@ -2790,6 +2788,30 @@ function identityResolveDefaultMaybe( test )
   test.case = 'resolve identity, but combination of o.type and o.service is wrong';
   _.censor.identityNew({ profileDir, identity : _.map.extend( null, serviceIdentity1 ) });
   test.shouldThrowErrorSync( () => _.censor.identityResolveDefaultMaybe({ profileDir, service : 'github.com', type : 'npm' }) );
+  _.censor.profileDel( profileDir );
+}
+
+//
+
+function identitiesEquivalentAre( test )
+{
+  const a = test.assetFor( false );
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+
+  /* */
+
+  test.case = 'compare equivalent identities';
+  var identity1 = { name : 'user', login : 'userLogin', type : 'general' };
+  var identity2 = { name : 'user', login : 'userLogin', type : 'git' };
+  var got = _.censor.identitiesEquivalentAre({ profileDir, identity1, identity2, type : 'git' });
+  test.identical( got, true );
+  _.censor.profileDel( profileDir );
+
+  test.case = 'compare not equivalent identities';
+  var identity1 = { name : 'user', login : 'userLogin', type : 'general' };
+  var identity2 = { name : 'user2', login : 'userLogin', type : 'git' };
+  var got = _.censor.identitiesEquivalentAre({ profileDir, identity1, identity2, type : 'git' });
+  test.identical( got, false );
   _.censor.profileDel( profileDir );
 }
 
@@ -3568,6 +3590,7 @@ const Proto =
     identityUse,
     identityUseSsh,
     identityResolveDefaultMaybe,
+    identitiesEquivalentAre,
 
     fileReplaceBasic,
     filesReplaceBasic,
