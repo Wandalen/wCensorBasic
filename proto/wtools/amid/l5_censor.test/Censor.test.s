@@ -2817,6 +2817,159 @@ function identitiesEquivalentAre( test )
 
 //
 
+function identitiesEquivalentAreWithSsh( test )
+{
+  if( !_.process.insideTestContainer() )
+  return test.true( true );
+
+  const a = test.assetFor( false );
+  const profileDir = `test-${ _.intRandom( 1000000 ) }`;
+  a.fileProvider.dirMake( a.abs( '.' ) );
+  const userProfileDir = a.fileProvider.configUserPath( `.censor/${ profileDir }` );
+  let originalExists = false;
+  const originalPath = a.fileProvider.configUserPath( '.ssh' );
+  const backupPath = a.fileProvider.configUserPath( '.ssh.bak' );
+  if( _.fileProvider.fileExists( originalPath ) )
+  originalExists = true;
+
+  begin();
+
+  /* - */
+
+  writeKey( 'id_rsa' ).then( () =>
+  {
+    test.case = 'compare equivalent ssh identities';
+    _.censor.identityFrom({ profileDir, selector : 'user', type : 'ssh' });
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml', './ssh', './ssh/user', './ssh/user/id_rsa' ] );
+    return null;
+  });
+
+  writeKey( 'id_rsa' ).then( () =>
+  {
+    test.case = 'change identity';
+    _.censor.identityFrom({ profileDir, selector : 'user2', type : 'ssh' });
+    var files = a.find( userProfileDir );
+    var exp =
+    [
+      '.',
+      './config.yaml',
+      './ssh',
+      './ssh/user',
+      './ssh/user/id_rsa',
+      './ssh/user2',
+      './ssh/user2/id_rsa',
+    ];
+    test.identical( files, exp );
+    return null;
+  });
+  a.ready.then( () =>
+  {
+    var identity1 = _.censor.identityGet({ profileDir, selector : 'user' });
+    var identity2 = _.censor.identityGet({ profileDir, selector : 'user2' });
+    var got = _.censor.identitiesEquivalentAre({ profileDir, identity1, identity2, type : 'ssh' });
+    test.identical( got, true );
+
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+
+  /* */
+
+  writeKey( 'id_rsa' ).then( () =>
+  {
+    test.case = 'compare not equivalent ssh identities';
+    _.censor.identityFrom({ profileDir, selector : 'user', type : 'ssh' });
+    var files = a.find( userProfileDir );
+    test.identical( files, [ '.', './config.yaml', './ssh', './ssh/user', './ssh/user/id_rsa' ] );
+    a.fileProvider.fileAppend( a.fileProvider.configUserPath( `.censor/${ profileDir }/ssh/user/id_rsa` ), '\nunique data' );
+    return null;
+  });
+
+  writeKey( 'id_rsa' ).then( () =>
+  {
+    test.case = 'change identity';
+    _.censor.identityFrom({ profileDir, selector : 'user2', type : 'ssh' });
+    var files = a.find( userProfileDir );
+    var exp =
+    [
+      '.',
+      './config.yaml',
+      './ssh',
+      './ssh/user',
+      './ssh/user/id_rsa',
+      './ssh/user2',
+      './ssh/user2/id_rsa',
+    ];
+    test.identical( files, exp );
+    return null;
+  });
+  a.ready.then( () =>
+  {
+    var identity1 = _.censor.identityGet({ profileDir, selector : 'user' });
+    var identity2 = _.censor.identityGet({ profileDir, selector : 'user2' });
+    var got = _.censor.identitiesEquivalentAre({ profileDir, identity1, identity2, type : 'ssh' });
+    test.identical( got, false );
+
+    _.censor.profileDel( profileDir );
+    return null;
+  });
+
+  /* */
+
+  a.ready.finally( ( err, arg ) =>
+  {
+    a.fileProvider.filesDelete( originalPath );
+    if( originalExists )
+    {
+      a.fileProvider.filesReflect
+      ({
+        reflectMap : { [ backupPath ] : originalPath }
+      });
+      a.fileProvider.filesDelete( backupPath );
+    }
+    if( err )
+    throw _.err( err );
+    return arg;
+  });
+
+  /* - */
+
+  return a.ready;
+
+  /* */
+
+  function begin()
+  {
+    return a.ready.then( () =>
+    {
+      if( originalExists )
+      {
+        a.fileProvider.filesReflect
+        ({
+          reflectMap : { [ originalPath ] : backupPath }
+        });
+        a.fileProvider.filesDelete( originalPath );
+      }
+      return null;
+    });
+  }
+
+  /* */
+
+  function writeKey( name )
+  {
+    return a.ready.then( () =>
+    {
+      a.fileProvider.filesDelete( originalPath );
+      a.fileProvider.fileWrite( a.abs( originalPath, name ), name );
+      return null;
+    });
+  }
+}
+
+//
+
 function fileReplaceBasic( test )
 {
   let context = this;
@@ -3591,6 +3744,7 @@ const Proto =
     identityUseSsh,
     identityResolveDefaultMaybe,
     identitiesEquivalentAre,
+    identitiesEquivalentAreWithSsh,
 
     fileReplaceBasic,
     filesReplaceBasic,
