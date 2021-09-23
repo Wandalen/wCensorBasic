@@ -151,7 +151,6 @@ module:
           - ../proto/node_modules/Tools
           - ../proto/node_modules/wcensorbasic
           - ../proto/wtools
-          - ../proto/wtools/abase
           - ../proto/wtools/amid
           - ../proto/wtools/amid/l5_censor
           - ../proto/wtools/amid/l5_censor/entry
@@ -201,11 +200,6 @@ module:
             ../proto/wtools/amid/l5_censor.test/_asset/hlinkHyphened/dir1/File1.txt
           - >-
             ../proto/wtools/amid/l5_censor.test/_asset/hlinkHyphened/dir1/File2.txt
-          - ../proto/wtools/amid/l5_censor.test/_asset/hlinkHyphened/dir2
-          - >-
-            ../proto/wtools/amid/l5_censor.test/_asset/hlinkHyphened/dir2/-File1.txt
-          - >-
-            ../proto/wtools/amid/l5_censor.test/_asset/hlinkHyphened/dir2/-File2.txt
           - >-
             ../proto/wtools/amid/l5_censor.test/_asset/listingReorderPartiallyOrdered
           - >-
@@ -220,7 +214,6 @@ module:
           - ../proto/wtools/amid/l5_censor.test/_asset/listingSqueeze/3_F2.txt
           - ../proto/wtools/amid/l5_censor.test/_asset/listingSqueeze/5_F0.txt
           - ../proto/wtools/amid/l5_censor.test/_asset/listingSqueeze/_3_F1.txt
-          - ../proto/wtools/atop
     submodule:
       wTools:
         path: 'npm:///wTools'
