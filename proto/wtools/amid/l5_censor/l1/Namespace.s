@@ -1468,7 +1468,10 @@ function identityUpdate( o )
   _.assert( _.str.defined( o.dst ) || o.dst === null );
 
   if( o.dst === null )
-  o.dst = dstIdentityFind();
+  {
+    const identity = dstIdentityFind();
+    o.dst = identity.login || identity[ `${ o.type }.login` ];
+  }
 
   if( o.dst )
   try
@@ -1494,7 +1497,7 @@ function identityUpdate( o )
   function dstIdentityFind()
   {
     if( o.type === 'ssh' )
-    return sshIdentityFind()
+    return sshIdentityFind();
     else
     _.assert( false, 'not implemented' );
   }
@@ -1507,8 +1510,9 @@ function identityUpdate( o )
     o3.selector = '';
     const identitiesMap = self.identityGet( o3 );
 
-    if( 'type' in identiesMap )
+    if( 'type' in identitiesMap )
     {
+      if( identitiesMap[ 'ssh.login' ] && identitiesMap[ 'ssh.login' ] !== '_previous.ssh' )
       return checkIdentity( identitiesMap );
     }
     else
@@ -1517,6 +1521,7 @@ function identityUpdate( o )
       {
         const identity = checkIdentity( identitiesMap[ name ] );
         if( identity !== null )
+        if( identity[ 'ssh.login' ] && identity[ 'ssh.login' ] !== '_previous.ssh' )
         return identity;
       }
       return null;
@@ -1527,7 +1532,7 @@ function identityUpdate( o )
   {
     if( identity1.type === 'ssh' )
     if( identity1[ 'ssh.path' ] )
-    if( self.identitiesEquivalentAre({ identity1, identity2 : { 'ssh.path' : '.ssh' }, type : 'ssh' }) );
+    if( self.identitiesEquivalentAre({ identity1, identity2 : { 'ssh.path' : '.ssh' }, type : 'ssh' }) )
     return identity1;
     return null;
   }

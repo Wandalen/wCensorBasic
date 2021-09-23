@@ -2590,7 +2590,7 @@ module.exports = onIdentity;`;
 
 //
 
-function identityUseSshExperiment( test )
+function identityUseSsh( test )
 {
   const a = test.assetFor( false );
 
@@ -2616,6 +2616,7 @@ function identityUseSshExperiment( test )
     _.censor.identityFrom({ profileDir, selector : 'user', type : 'ssh' });
     var files = a.find( userProfileDir );
     test.identical( files, [ '.', './config.yaml', './ssh', './ssh/user', './ssh/user/id_rsa' ] );
+    a.fileProvider.fileAppend( a.fileProvider.configUserPath( `.censor/${ profileDir }/ssh/user/id_rsa` ), '\nunique data' );
     return null;
   });
   writeKey( 'id_rsa' ).then( () =>
@@ -2650,11 +2651,11 @@ function identityUseSshExperiment( test )
       './ssh/user/id_rsa',
       './ssh/user2',
       './ssh/user2/id_rsa',
-      './ssh/user2/id_rsa/some_file',
+      './ssh/user2/some_file',
     ];
     test.identical( files, exp );
     var data = a.fileProvider.fileRead( a.abs( originalPath, 'id_rsa' ) );
-    test.identical( data, 'id_rsa' );
+    test.identical( data, 'id_rsa\nunique data' );
     _.censor.profileDel( profileDir );
     return null;
   });
@@ -2712,7 +2713,7 @@ function identityUseSshExperiment( test )
   }
 }
 
-identityUseSshExperiment.experimental = 1;
+identityUseSsh.experimental = 1;
 
 //
 
@@ -3565,7 +3566,7 @@ const Proto =
     identityDel,
     identityDelWithSshKeys,
     identityUse,
-    identityUseSshExperiment,
+    identityUseSsh,
     identityResolveDefaultMaybe,
 
     fileReplaceBasic,
