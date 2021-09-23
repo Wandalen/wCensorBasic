@@ -1437,19 +1437,13 @@ function identityUse( o )
 
   /* */
 
-  const previousSelector = `_previous.${ o.type }`;
-  self.identityDel({ profileDir : o.profileDir, selector : previousSelector });
-  const o3 = _.mapOnly_( null, o, self.identityFrom.defaults );
-  o.type = o.type || identity.type;
-  o3.force = true;
-  o3.selector = previousSelector;
-  try
+  let o3 = _.mapOnly_( null, o, self.identityUpdate.defaults );
+  self.identityUpdate( _.map.extend( o3, { dst : `_previous.${ o.type }`, deleting : 1, throwing : 0, force : 1 } ) );
+  if( o.type === 'ssh' )
   {
-    self.identityFrom( o3 );
-  }
-  catch( err )
-  {
-    _.error.attend( err );
+    delete o3.dst;
+    o3.deleting = 0;
+    self.identityUpdate( o3 );
   }
 
   self.profileHookCallWithIdentity( _.mapOnly_( null, o, _.censor.profileHookCallWithIdentity.defaults ) );
@@ -1461,6 +1455,92 @@ identityUse.defaults =
   selector : null,
   type : null,
   logger : 2,
+};
+
+//
+
+function identityUpdate( o )
+{
+  const self = this;
+
+  _.assert( arguments.length === 1, 'Expects exactly one argument' );
+  _.routine.options( identityUpdate, o );
+  _.assert( _.str.defined( o.dst ) || o.dst === null );
+
+  if( o.dst === null )
+  o.dst = dstIdentityFind();
+
+  if( o.dst )
+  try
+  {
+    if( o.deleting )
+    self.identityDel({ profileDir : o.profileDir, selector : o.dst });
+
+    const o2 = _.mapOnly_( null, o, self.identityFrom.defaults );
+    o2.force = o.force;
+    o2.selector = o.dst;
+    self.identityFrom( o2 );
+  }
+  catch( err )
+  {
+    if( o.throwing )
+    throw _.err( err );
+    else
+    _.error.attend( err );
+  }
+
+  /* */
+
+  function dstIdentityFind()
+  {
+    if( o.type === 'ssh' )
+    return sshIdentityFind()
+    else
+    _.assert( false, 'not implemented' );
+  }
+
+  /* */
+
+  function sshIdentityFind()
+  {
+    const o3 = _.mapOnly_( null, o, self.identityGet.defaults );
+    o3.selector = '';
+    const identitiesMap = self.identityGet( o3 );
+
+    if( 'type' in identiesMap )
+    {
+      return checkIdentity( identitiesMap );
+    }
+    else
+    {
+      for( let name in identitiesMap )
+      {
+        const identity = checkIdentity( identitiesMap[ name ] );
+        if( identity !== null )
+        return identity;
+      }
+      return null;
+    }
+  }
+
+  function checkIdentity( identity1 )
+  {
+    if( identity1.type === 'ssh' )
+    if( identity1[ 'ssh.path' ] )
+    if( self.identitiesEquivalentAre({ identity1, identity2 : { 'ssh.path' : '.ssh' }, type : 'ssh' }) );
+    return identity1;
+    return null;
+  }
+}
+
+identityUpdate.defaults =
+{
+  ... configNameMapFrom.defaults,
+  dst : null,
+  type : null,
+  deleting : 0,
+  throwing : 1,
+  force : 0,
 };
 
 //
@@ -2969,6 +3049,7 @@ let Extension =
   identityFrom,
   identityDel,
   identityUse,
+  identityUpdate,
   identityResolveDefaultMaybe,
   identitiesEquivalentAre,
 
