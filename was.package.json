@@ -1,6 +1,6 @@
 {
   "name": "wcensorbasic",
-  "version": "0.2.172",
+  "version": "0.2.173",
   "description": "Tool to edit files massively and with undo",
   "author": "Kostiantyn Wandalen <wandalen@obox.systems>",
   "license": "MIT",
