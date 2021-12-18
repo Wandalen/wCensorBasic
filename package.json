@@ -1,6 +1,6 @@
 {
   "name": "wcensorbasic",
-  "version": "0.2.173",
+  "version": "0.2.174",
   "description": "Tool to edit files massively and with undo",
   "author": "Kostiantyn Wandalen <wandalen@obox.systems>",
   "license": "MIT",
@@ -23,13 +23,13 @@
     "url": "https://github.com/Wandalen/wCensorBasic/issues"
   },
   "dependencies": {
-    "wTools": "delta",
-    "wresolver": "delta",
-    "wfilesbasic": "delta",
-    "wfilesarchive": "delta"
+    "wTools": "alpha",
+    "wresolver": "alpha",
+    "wfilesbasic": "alpha",
+    "wfilesarchive": "alpha"
   },
   "devDependencies": {
-    "wTesting": "delta",
+    "wTesting": "alpha",
     "eslint": "7.32.0"
   },
   "keywords": [
